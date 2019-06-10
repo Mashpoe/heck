@@ -12,7 +12,8 @@
 typedef enum heck_type heck_type;
 enum heck_type {
 	TYPE_NUM = 0,
-	TYPE_STR = 0
+	TYPE_STR,
+	TYPE_BOOL
 };
 
 #endif /* types_h */

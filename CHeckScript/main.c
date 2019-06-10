@@ -14,8 +14,7 @@
 int main(int argc, const char * argv[]) {
 	// insert code here...
 
-	FILE* f = fopen("youtube", "r");
-	
+	FILE* f = fopen("frick.heck", "r");
 	
 	if (f) {
 		//printf("start.\n");

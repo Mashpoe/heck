@@ -430,7 +430,7 @@ bool heck_lex(heck_code* c, FILE* f) {
 					} else if (strcmp(token, "let") == 0) {
 						add_keyword(c, &fp, KW_LET);
 						
-					} else if (strcmp(token, "fun") == 0) {
+					} else if (strcmp(token, "function") == 0) {
 						add_keyword(c, &fp, KW_FUN);
 						
 					} else if (strcmp(token, "return") == 0) {

@@ -33,10 +33,10 @@ void heck_print_token(heck_token* tk) {
 	
 	switch (tk->type) {
 		case TK_IDF:
-			printf("[%s] ", (char*)tk->value);
+			printf("[%s]", (char*)tk->value);
 			break;
 		case TK_NUM:
-			printf("%Lf ", *(long double*)tk->value);
+			printf("#%Lf", *(long double*)tk->value);
 			break;
 		case TK_STR:
 			printf("\"%s\"", (char*)tk->value);
@@ -71,7 +71,7 @@ void heck_print_token(heck_token* tk) {
 					printf("let ");
 					break;
 				case KW_FUN:
-					printf("fun ");
+					printf("function ");
 					break;
 				case KW_RETURN:
 					printf("return ");
@@ -88,7 +88,7 @@ void heck_print_token(heck_token* tk) {
 			}
 			break;
 		case TK_PAR_L:
-			printf("(");
+			printf(" (");
 			break;
 		case TK_PAR_R:
 			printf(")");
@@ -103,19 +103,19 @@ void heck_print_token(heck_token* tk) {
 			printf("]");
 			break;
 		case TK_CRL_L:
-			printf("{");
+			printf(" {");
 			break;
 		case TK_CRL_R:
 			printf("}");
 			break;
 		case TK_OP:
-			printf("#op ");
+			printf(" @op ");
 			break;
 		case TK_ENDL:
-			printf("\n");
+			//printf("\n");
 			break;
 		default:
-			printf("#tk ");
+			printf(" @tk ");
 			break;
 	}
 	

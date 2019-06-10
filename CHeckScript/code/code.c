@@ -37,12 +37,28 @@ void heck_print_tokens(heck_code* c) {
 	
 	int ln = 0;
 	
+	int indent = 0;
+	
 	size_t num_tokens = vector_size(c->token_vec);
 	for (int i = 0; i < num_tokens; i++) {
 		
+		if (c->token_vec[i]->type == TK_CRL_L) {
+			indent++;
+		} else if (c->token_vec[i]->type == TK_CRL_R) {
+			indent--;
+		}
+		
 		if (c->token_vec[i]->ln > ln) {
-			ln = c->token_vec[i]->ln;
-			printf("% 3d| ", ln);
+			
+			while (ln < c->token_vec[i]->ln) {
+				ln++;
+				printf("\n% 3d| ", ln);
+			}
+			
+			for (int i = 0; i < indent; i++) {
+				printf("\t");
+			}
+			
 		}
 		
 		heck_print_token(c->token_vec[i]);
