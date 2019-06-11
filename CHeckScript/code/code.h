@@ -11,7 +11,7 @@
 
 #include <stdbool.h>
 #include "token.h"
-#include "cvec.h"
+#include "vec.h"
 
 typedef struct heck_code heck_code;
 

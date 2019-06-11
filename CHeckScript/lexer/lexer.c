@@ -187,7 +187,7 @@ bool heck_lex(heck_code* c, FILE* f) {
 		// ((((((MAYBE))))))
 		switch (fp.current) {
 			case '\n': // semicolons and newlines can separate statements
-				add_token(c, &fp, TK_ENDL, NULL);
+				//add_token(c, &fp, TK_ENDL, NULL);
 			case '\r':
 			case '\t': // fallthrough
 			case ' ': { // ignore tabs, spaces, and newlines
@@ -231,6 +231,7 @@ bool heck_lex(heck_code* c, FILE* f) {
 				break;
 			}
 			case '!':
+				add_token(c, &fp, TK_OP_NOT, NULL);
 				break;
 			case '>': {
 				if (matchStringAtPos(&fp, ">=", fp.ch, true)) {

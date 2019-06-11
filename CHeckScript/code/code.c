@@ -67,30 +67,6 @@ void heck_print_tokens(heck_code* c) {
 	printf("\n");
 }
 
-// converts tokens into a syntax tree, clears the code's tokens and resets current to STMT_END
-void parse_tokens(heck_code* c) {
-	
-	switch (c->token_vec[0]->type) {
-		case TK_KW:
-			
-			switch (*(heck_kw_type*)c->token_vec[0]->value) {
-				case KW_FUN:
-					break;
-					
-				default:
-					break;
-			}
-			
-			break;
-			
-		case TK_CRL_L:
-			
-		default:
-			break;
-	}
-	
-}
-
 bool heck_add_token(heck_code* c, heck_token* tk) {
 	
 	_vector_add(&c->token_vec, heck_token*) = tk;

@@ -8,8 +8,9 @@
 
 #include <stdio.h>
 #include "str.h"
-#include "cvec.h"
+#include "vec.h"
 #include "lexer.h"
+#include "parser.h"
 
 int main(int argc, const char * argv[]) {
 	// insert code here...
@@ -22,6 +23,7 @@ int main(int argc, const char * argv[]) {
 		heck_lex(c, f);
 		//printf("done.\n");
 		heck_print_tokens(c);
+		heck_parse(c);
 		
 		heck_free(c);
 	}

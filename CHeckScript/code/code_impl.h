@@ -14,7 +14,7 @@
 
 #include "code.h"
 #include "token.h"
-#include "cvec.h"
+#include "vec.h"
 #include "hashmap.h"
 
 enum statement_type {

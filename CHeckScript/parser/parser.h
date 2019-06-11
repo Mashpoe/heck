@@ -14,6 +14,6 @@
 
 typedef struct heck_parser heck_parser;
 
-bool HECK_PARSE(heck_code* c);
+bool heck_parse(heck_code* c);
 
 #endif /* parser_h */
