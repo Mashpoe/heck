@@ -44,48 +44,44 @@ void heck_print_token(heck_token* tk) {
 		case TK_ERR:
 			printf("\nerr: ln %i ch %i - %s\n", tk->ln, tk->ch, (char*)tk->value);
 			break;
-		case TK_KW:
-			switch (*(heck_kw_type*)tk->value) {
-				case KW_IF:
-					printf("if ");
-					break;
-				case KW_ELSE:
-					printf("else ");
-					break;
-				case KW_DO:
-					printf("do ");
-					break;
-				case KW_WHILE:
-					printf("while ");
-					break;
-				case KW_FOR:
-					printf("for ");
-					break;
-				case KW_SWITCH:
-					printf("switch ");
-					break;
-				case KW_CASE:
-					printf("case ");
-					break;
-				case KW_LET:
-					printf("let ");
-					break;
-				case KW_FUN:
-					printf("function ");
-					break;
-				case KW_RETURN:
-					printf("return ");
-					break;
-				case KW_CLASS:
-					printf("class ");
-					break;
-				case KW_PUBLIC:
-					printf("public ");
-					break;
-				case KW_PRIVATE:
-					printf("private ");
-					break;
-			}
+		case TK_KW_IF:
+			printf("if ");
+			break;
+		case TK_KW_ELSE:
+			printf("else ");
+			break;
+		case TK_KW_DO:
+			printf("do ");
+			break;
+		case TK_KW_WHILE:
+			printf("while ");
+			break;
+		case TK_KW_FOR:
+			printf("for ");
+			break;
+		case TK_KW_SWITCH:
+			printf("switch ");
+			break;
+		case TK_KW_CASE:
+			printf("case ");
+			break;
+		case TK_KW_LET:
+			printf("let ");
+			break;
+		case TK_KW_FUN:
+			printf("function ");
+			break;
+		case TK_KW_RETURN:
+			printf("return ");
+			break;
+		case TK_KW_CLASS:
+			printf("class ");
+			break;
+		case TK_KW_PUBLIC:
+			printf("public ");
+			break;
+		case TK_KW_PRIVATE:
+			printf("private ");
 			break;
 		case TK_PAR_L:
 			printf(" (");
@@ -102,17 +98,14 @@ void heck_print_token(heck_token* tk) {
 		case TK_SQR_R:
 			printf("]");
 			break;
-		case TK_CRL_L:
+		case TK_BRAC_L:
 			printf(" {");
 			break;
-		case TK_CRL_R:
+		case TK_BRAC_R:
 			printf("}");
 			break;
 		case TK_OP:
 			printf(" @op ");
-			break;
-		case TK_ENDL:
-			//printf("\n");
 			break;
 		default:
 			printf(" @tk ");

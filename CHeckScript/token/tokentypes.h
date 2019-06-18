@@ -19,16 +19,20 @@ enum heck_tk_type {
 	TK_PAR_R,		// NULL
 	TK_SQR_L,		// NULL (square brackets)
 	TK_SQR_R,		// NULL
-	TK_CRL_L,		// NULL (curly brackets)
-	TK_CRL_R,		// NULL
+	TK_BRAC_L,		// NULL (curly brackets)
+	TK_BRAC_R,		// NULL
 	//TK_AGL_L,		// NULL (angle brackets)
 	//TK_AGL_R,		// NULL
 	TK_COMMA,		// NULL
 	TK_NUM,			// long double (number)
 	TK_STR,			// library string (string)
 	TK_SEMI,		// NULL (semicolon)
-	TK_ENDL,		// NULL (newline/end of a line)
+	
+	// NULL (newline/end of a line) ((((just check the line number between token in the rare case newlines matter))))
+	//TK_ENDL,
+	
 	TK_ERR,			// library string (error)
+	TK_EOF,			// NULL
 
 	// ALL OPERATORS (nullptr)
 	
@@ -78,7 +82,7 @@ enum heck_tk_type {
 	TK_OP_SHFT_R_ASG,	// >>=
 	TK_OP_DOT,			// .
 	
-	// ALL KEYWORDS (nullptr)
+	// ALL KEYWORDS (NULL)
 	
 	TK_KW_TRUE,
 	TK_KW_FALSE,
@@ -94,7 +98,16 @@ enum heck_tk_type {
 	TK_KW_RETURN,
 	TK_KW_CLASS,
 	TK_KW_PUBLIC,
-	TK_KW_PRIVATE
+	TK_KW_PRIVATE,
+	
+	// ALL TYPES
+	
+	// (NULL)
+	TK_TP_NUM,
+	TK_TP_STR,
+	TK_TP_BOOL,
+	
+	TK_TP_OBJ,			// pointer to class declaration in syntax tree (do not free on token cleanup)
 };
 
 typedef enum heck_kw_type heck_kw_type;

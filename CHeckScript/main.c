@@ -12,10 +12,20 @@
 #include "lexer.h"
 #include "parser.h"
 
+// solve this problem in heck
+/*
+int run(void);
+
+int a = run();
+
+int run() {
+	return a;
+}*/
+
 int main(int argc, const char * argv[]) {
 	// insert code here...
 
-	FILE* f = fopen("frick.heck", "r");
+	FILE* f = fopen("frick.js", "r");
 	
 	if (f) {
 		//printf("start.\n");

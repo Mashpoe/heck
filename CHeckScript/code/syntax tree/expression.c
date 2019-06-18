@@ -51,19 +51,16 @@ heck_expr* create_expr_literal(void* value, heck_tk_type type) {
 	return e;
 }
 
-heck_expr* create_expr_value(string name) {
+heck_expr* create_expr_value(heck_expr_idf name) {
 	heck_expr* e = malloc(sizeof(heck_expr));
 	e->type = EXPR_VALUE;
 	
-	heck_expr_value* value = malloc(sizeof(heck_expr_value));
-	value->name = name;
-	
-	e->expr = value;
+	e->expr = name;
 	
 	return e;
 }
 
-heck_expr* create_expr_call(string name) {
+heck_expr* create_expr_call(heck_expr_idf name) {
 	heck_expr* e = malloc(sizeof(heck_expr));
 	e->type = EXPR_CALL;
 	
@@ -72,6 +69,19 @@ heck_expr* create_expr_call(string name) {
 	call->arg_vec = _vector_create(heck_expr*);
 	
 	e->expr = call;
+	
+	return e;
+}
+
+heck_expr* create_expr_asg(heck_expr_idf name, heck_expr* value) {
+	heck_expr* e = malloc(sizeof(heck_expr));
+	e->type = EXPR_ASG;
+	
+	heck_expr_asg* asg = malloc(sizeof(heck_expr_asg));
+	asg->name = name;
+	asg->value = value;
+	
+	e->expr = asg;
 	
 	return e;
 }
@@ -96,17 +106,28 @@ void free_expr(heck_expr* expr) {
 			free_expr(((heck_expr_unary*)expr)->expr);
 			free(expr);
 			break;
+		case EXPR_VALUE: // fallthrough
+			// literal & identifier data is stored in token list and does not need to be freed
+			// just free the vector
+			vector_free(expr->expr);
 		case EXPR_CALL: // fallthrough
 			for (vec_size i = vector_size(((heck_expr_call*)expr)->arg_vec); i-- > 0;) {
 				free_expr(((heck_expr_call*)expr)->arg_vec[i]);
 			}
 			vector_free(((heck_expr_call*)expr)->arg_vec);
 		case EXPR_LITERAL:
-		case EXPR_VALUE:
-			free(expr); // literal & identifier data is stored in token list and does not need to be freed
-			break;
 		case EXPR_ERR:
+			free(expr);
 			break;
+	}
+}
+
+void print_idf(heck_expr_idf idf) {
+	for (int i = 0; i < vector_size(idf); i++) {
+		printf("%s", idf[i]);
+		if (i < vector_size(idf) - 1) {
+			printf(".");
+		}
 	}
 }
 
@@ -152,18 +173,32 @@ void print_expr(heck_expr* expr) {
 			break;
 		}
 		case EXPR_VALUE: {
-			heck_expr_value* value = expr->expr;
-			printf("[%s]", (string)value->name);
+			heck_expr_value value = expr->expr;
+			printf("[");
+			print_idf(value);
+			printf("]");
 			break;
 		}
 		case EXPR_CALL: {
 			heck_expr_call* call = expr->expr;
-			printf("[%s(", (string)call->name);
+			printf("[");
+			print_idf(call->name);
+			printf("(");
 			for (vec_size i = 0; i < vector_size(call->arg_vec); i++) {
 				print_expr(call->arg_vec[i]);
-				printf(", ");
+				if (i < vector_size(call->arg_vec) - 1) {
+					printf(", ");
+				}
 			}
 			printf(")]");
+			break;
+		}
+		case EXPR_ASG: {
+			heck_expr_asg* asg = expr->expr;
+			printf("[");
+			print_idf(asg->name);
+			printf("] = ");
+			print_expr(asg->value);
 			break;
 		}
 		case EXPR_ERR:

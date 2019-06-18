@@ -216,10 +216,10 @@ bool heck_lex(heck_code* c, FILE* f) {
 				add_token(c, &fp, TK_SQR_R, NULL);
 				break;
 			case '{':
-				add_token(c, &fp, TK_CRL_L, NULL);
+				add_token(c, &fp, TK_BRAC_L, NULL);
 				break;
 			case '}':
-				add_token(c, &fp, TK_CRL_R, NULL);
+				add_token(c, &fp, TK_BRAC_R, NULL);
 				break;
 			case '=': {
 				if (matchStringAtPos(&fp, "==", fp.ch, true)) {
@@ -408,34 +408,34 @@ bool heck_lex(heck_code* c, FILE* f) {
 					
 					// check for keywords
 					if (strcmp(token, "if") == 0) {
-						add_keyword(c, &fp, KW_IF);
+						add_token(c, &fp, TK_KW_IF, NULL);
 						
 					} else if (strcmp(token, "else") == 0) {
-						add_keyword(c, &fp, KW_ELSE);
+						add_token(c, &fp, TK_KW_ELSE, NULL);
 						
 					} else if (strcmp(token, "do") == 0) {
-						add_keyword(c, &fp, KW_DO);
+						add_token(c, &fp, TK_KW_DO, NULL);
 						
 					} else if (strcmp(token, "while") == 0) {
-						add_keyword(c, &fp, KW_WHILE);
+						add_token(c, &fp, TK_KW_WHILE, NULL);
 						
 					} else if (strcmp(token, "for") == 0) {
-						add_keyword(c, &fp, KW_FOR);
+						add_token(c, &fp, TK_KW_FOR, NULL);
 						
 					} else if (strcmp(token, "switch") == 0) {
-						add_keyword(c, &fp, KW_SWITCH);
+						add_token(c, &fp, TK_KW_SWITCH, NULL);
 						
 					} else if (strcmp(token,  "case") == 0) {
-						add_keyword(c, &fp, KW_CASE);
+						add_token(c, &fp, TK_KW_CASE, NULL);
 						
 					} else if (strcmp(token, "let") == 0) {
-						add_keyword(c, &fp, KW_LET);
+						add_token(c, &fp, TK_KW_LET, NULL);
 						
 					} else if (strcmp(token, "function") == 0) {
-						add_keyword(c, &fp, KW_FUN);
+						add_token(c, &fp, TK_KW_FUN, NULL);
 						
 					} else if (strcmp(token, "return") == 0) {
-						add_keyword(c, &fp, KW_RETURN);
+						add_token(c, &fp, TK_KW_RETURN, NULL);
 						
 					} else { // it is an identifier and not a keyword
 						add_token(c, &fp, TK_IDF, token);
@@ -461,6 +461,9 @@ bool heck_lex(heck_code* c, FILE* f) {
 	if (fp.current_line != NULL) {
 		free(fp.current_line);
 	}
+	
+	// add the end token
+	add_token(c, &fp, TK_EOF, NULL);
 	
 	return true;
 }

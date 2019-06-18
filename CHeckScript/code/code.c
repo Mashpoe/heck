@@ -14,7 +14,6 @@
 heck_code* heck_create() {
 	heck_code* c = malloc(sizeof(heck_code));
 	c->token_vec = vector_create(sizeof(heck_token*));
-	c->current = STMT_END;
 	c->globals = hashmap_new();
 	return c;
 }
@@ -42,9 +41,9 @@ void heck_print_tokens(heck_code* c) {
 	size_t num_tokens = vector_size(c->token_vec);
 	for (int i = 0; i < num_tokens; i++) {
 		
-		if (c->token_vec[i]->type == TK_CRL_L) {
+		if (c->token_vec[i]->type == TK_BRAC_L) {
 			indent++;
-		} else if (c->token_vec[i]->type == TK_CRL_R) {
+		} else if (c->token_vec[i]->type == TK_BRAC_R) {
 			indent--;
 		}
 		

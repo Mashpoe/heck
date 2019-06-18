@@ -14,19 +14,13 @@
 
 #include "code.h"
 #include "token.h"
+#include "statement.h"
 #include "vec.h"
 #include "hashmap.h"
 
-enum statement_type {
-	STMT_END,
-	STMT_FUNC,
-	STMT_VAR,
-	STMT_EXP
-};
-
 struct heck_code {
 	heck_token** token_vec; // token vector
-	enum statement_type current;
+	heck_stmt** syntax_tree_vec; // syntax tree
 	map_t globals;
 };
 
