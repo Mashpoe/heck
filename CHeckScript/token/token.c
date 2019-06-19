@@ -3,7 +3,6 @@
 //  CHeckScript
 //
 //  Created by Mashpoe on 3/20/19.
-//  Copyright © 2019 Mashpoe. All rights reserved.
 //
 
 #include <stdlib.h>

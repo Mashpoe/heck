@@ -3,7 +3,6 @@
 //  CHeckScript
 //
 //  Created by Mashpoe on 3/12/19.
-//  Copyright © 2019 Mashpoe. All rights reserved.
 //
 
 #ifndef tokentypes_h

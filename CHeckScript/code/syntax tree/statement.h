@@ -3,7 +3,6 @@
 //  CHeckScript
 //
 //  Created by Mashpoe on 6/9/19.
-//  Copyright © 2019 Mashpoe. All rights reserved.
 //
 
 #ifndef statement_h

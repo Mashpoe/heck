@@ -244,6 +244,7 @@ heck_expr* expression(parser* p) {
 heck_stmt* statement(parser* p);
 
 heck_stmt* let_statement(parser* p) {
+	step(p);
 	
 	if (match(p, TK_IDF)) {
 		string name = previous(p)->value;
@@ -260,6 +261,7 @@ heck_stmt* let_statement(parser* p) {
 }
 
 heck_stmt* if_statement(parser* p) {
+	step(p);
 	
 	// if statements do not need (parentheses) around the condition in heck
 	heck_stmt* s = create_stmt_if(expression(p));
@@ -289,6 +291,7 @@ heck_stmt* if_statement(parser* p) {
 
 // TODO: error if there are any duplicate argument names
 heck_stmt* fun_statement(parser* p) {
+	step(p);
 	
 	if (match(p, TK_IDF)) {
 		heck_stmt* s = create_stmt_fun(identifier(p));
@@ -388,6 +391,7 @@ heck_stmt* fun_statement(parser* p) {
 }
 
 heck_stmt* ret_statement(parser* p) {
+	step(p);
 	
 	// expression must start on the same line as return statement or else it's void
 	if (match(p, TK_SEMI) || match_endl(p)) {
@@ -398,6 +402,8 @@ heck_stmt* ret_statement(parser* p) {
 }
 
 heck_stmt* scope_statement(parser* p) {
+	step(p);
+	
 	heck_stmt* s = create_stmt_scope();
 	
 	for (;;) {
@@ -416,9 +422,7 @@ heck_stmt* scope_statement(parser* p) {
 
 heck_stmt* statement(parser* p) {
 	
-	step(p);
-	
-	switch (previous(p)->type) {
+	switch (peek(p)->type) {
 		case TK_KW_LET:
 			return let_statement(p);
 			break;
