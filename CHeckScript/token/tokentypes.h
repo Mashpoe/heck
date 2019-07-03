@@ -48,6 +48,10 @@ enum heck_tk_type {
 	TK_OP_SHFT_L,	// <<
 	TK_OP_SHFT_R,	// >>
 	
+	// TERNARY OPERATOR
+	TK_Q_MARK,		// ?
+	TK_COLON,		// :
+	
 	// these 3 are placed before the comparison operators unlike c and c++
 	// this is intentional, so the expression (flags & MASK == FLAG)
 	// evaluates to ((flags & MASK) == FLAG) instead of (flags & (MASK == FLAG))
@@ -93,11 +97,13 @@ enum heck_tk_type {
 	TK_KW_SWITCH,
 	TK_KW_CASE,
 	TK_KW_LET,
-	TK_KW_FUN,			// function
+	TK_KW_FUNC,
 	TK_KW_RETURN,
 	TK_KW_CLASS,
 	TK_KW_PUBLIC,
 	TK_KW_PRIVATE,
+	TK_KW_NAMESPACE,
+	TK_KW_GLOBAL,
 	
 	// ALL TYPES
 	

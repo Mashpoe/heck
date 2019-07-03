@@ -3,7 +3,6 @@
 //  CHeckScript
 //
 //  Created by Mashpoe on 3/12/19.
-//  Copyright © 2019 Mashpoe. All rights reserved.
 //
 
 #include "lexer.h"
@@ -135,39 +134,7 @@ void add_token(heck_code* c, file_pos* fp, enum heck_tk_type type, void* value) 
 	tk->type = type;
 	tk->value = value;
 	
-	heck_add_token(c, tk);
-}
-
-void add_keyword(heck_code* c, file_pos* fp, enum heck_kw_type type) {
-	heck_token* tk = malloc(sizeof(heck_token));
-	tk->ln = fp->ln; // ln is already 1 indexed
-	tk->ch = fp->ch + 1; // make ch 1 indexed
-	tk->type = TK_KW;
-	
-	// will be freed on token cleanup
-	enum heck_kw_type* value = malloc(sizeof(enum heck_kw_type));
-	*value = type;
-	
-	// TODO: Maybe store the data in the pointer instead an address? save memory?
-	tk->value = value;
-	
-	heck_add_token(c, tk);
-}
-
-void add_operator(heck_code* c, file_pos* fp, enum heck_op_type type) {
-	heck_token* tk = malloc(sizeof(heck_token));
-	tk->ln = fp->ln; // ln is already 1 indexed
-	tk->ch = fp->ch + 1; // make ch 1 indexed
-	tk->type = TK_OP;
-	
-	// will be freed on token cleanup
-	enum heck_op_type* value = malloc(sizeof(enum heck_op_type));
-	*value = type;
-	
-	// TODO: Maybe store the data in the pointer instead an address? save memory?
-	tk->value = value;
-	
-	heck_add_token(c, tk);
+	_vector_add(&c->token_vec, heck_token*) = tk;
 }
 
 bool parse_string(heck_code* c, file_pos* fp);
@@ -230,6 +197,12 @@ bool heck_lex(heck_code* c, FILE* f) {
 				}
 				break;
 			}
+			case '?':
+				add_token(c, &fp, TK_Q_MARK, NULL);
+				break;
+			case ':':
+				add_token(c, &fp, TK_COLON, NULL);
+				break;
 			case '!':
 				add_token(c, &fp, TK_OP_NOT, NULL);
 				break;
@@ -425,14 +398,14 @@ bool heck_lex(heck_code* c, FILE* f) {
 					} else if (strcmp(token, "switch") == 0) {
 						add_token(c, &fp, TK_KW_SWITCH, NULL);
 						
-					} else if (strcmp(token,  "case") == 0) {
+					} else if (strcmp(token, "case") == 0) {
 						add_token(c, &fp, TK_KW_CASE, NULL);
 						
 					} else if (strcmp(token, "let") == 0) {
 						add_token(c, &fp, TK_KW_LET, NULL);
 						
 					} else if (strcmp(token, "function") == 0) {
-						add_token(c, &fp, TK_KW_FUN, NULL);
+						add_token(c, &fp, TK_KW_FUNC, NULL);
 						
 					} else if (strcmp(token, "return") == 0) {
 						add_token(c, &fp, TK_KW_RETURN, NULL);

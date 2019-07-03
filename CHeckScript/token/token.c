@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include "token.h"
 #include "str.h"
+#include "vec.h"
 #include <stdio.h>
 
 void heck_free_token_data(heck_token* tk) {
@@ -67,7 +68,7 @@ void heck_print_token(heck_token* tk) {
 		case TK_KW_LET:
 			printf("let ");
 			break;
-		case TK_KW_FUN:
+		case TK_KW_FUNC:
 			printf("function ");
 			break;
 		case TK_KW_RETURN:
@@ -112,4 +113,3 @@ void heck_print_token(heck_token* tk) {
 	}
 	
 }
-

@@ -13,12 +13,10 @@
 
 // solve this problem in heck
 /*
-int run(void);
+let a = run()
 
-int a = run();
-
-int run() {
-	return a;
+function run() {
+	return a
 }*/
 
 int main(int argc, const char * argv[]) {

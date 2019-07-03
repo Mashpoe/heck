@@ -59,17 +59,17 @@ heck_stmt* create_stmt_ret(heck_expr* expr) {
 	return s;
 }
 
-heck_stmt* create_stmt_fun(heck_expr_idf name) {
+heck_stmt* create_stmt_func(heck_expr_idf name) {
 	heck_stmt* s = malloc(sizeof(heck_stmt));
-	s->type = STMT_FUN;
+	s->type = STMT_FUNC;
 	
-	heck_stmt_fun* fun_stmt = malloc(sizeof(heck_stmt_fun));
-	fun_stmt->name = name;
-	fun_stmt->param_vec = _vector_create(heck_param*);
-	fun_stmt->stmt_vec = _vector_create(heck_stmt*);
-	fun_stmt->return_type = TYPE_GEN;
+	heck_stmt_func* func_stmt = malloc(sizeof(heck_stmt_func));
+	func_stmt->name = name;
+	func_stmt->param_vec = _vector_create(heck_param*);
+	func_stmt->stmt_vec = _vector_create(heck_stmt*);
+	func_stmt->return_type = TYPE_GEN;
 	
-	s->value = fun_stmt;
+	s->value = func_stmt;
 	return s;
 }
 
@@ -79,11 +79,11 @@ heck_stmt* create_stmt_class(heck_expr_idf name) {
 	
 	heck_stmt_class* class_stmt = malloc(sizeof(heck_stmt_class));
 	class_stmt->name = name;
-	class_stmt->pvt_fun_vec = _vector_create(heck_stmt_fun*);
-	class_stmt->pub_fun_vec = _vector_create(heck_stmt_fun*);
+	class_stmt->pvt_funcs = hashmap_new();
+	class_stmt->pub_funcs = hashmap_new();
 	
-	class_stmt->pvt_var_vec = _vector_create(heck_stmt_let*);
-	class_stmt->pub_var_vec = _vector_create(heck_stmt_let*);
+	class_stmt->pvt_vars = hashmap_new();
+	class_stmt->pub_vars = hashmap_new();
 	
 	s->value = class_stmt;
 	return s;
@@ -129,9 +129,9 @@ void print_stmt(heck_stmt* stmt, int indent) {
 		}
 		case STMT_IF: {
 			heck_stmt_if* if_stmt = stmt->value;
-			printf("if (");
+			printf("if ");
 			print_expr(if_stmt->condition);
-			printf(") {\n");
+			printf(" {\n");
 			
 			for (int i = 0; i < vector_size(if_stmt->stmt_vec); i++) {
 				print_stmt(if_stmt->stmt_vec[i], indent + 1);
@@ -149,23 +149,23 @@ void print_stmt(heck_stmt* stmt, int indent) {
 			printf("\n");
 			break;
 		}
-		case STMT_FUN: {
-			heck_stmt_fun* fun_stmt = stmt->value;
+		case STMT_FUNC: {
+			heck_stmt_func* func_stmt = stmt->value;
 			printf("function [");
-			print_idf(fun_stmt->name);
+			print_idf(func_stmt->name);
 			printf("] (");
 			
-			for (int i = 0; i < vector_size(fun_stmt->param_vec); i++) {
-				printf("[%s]", fun_stmt->param_vec[i]->name);
-				if (i < vector_size(fun_stmt->param_vec) - 1) {
+			for (int i = 0; i < vector_size(func_stmt->param_vec); i++) {
+				printf("[%s]", func_stmt->param_vec[i]->name);
+				if (i < vector_size(func_stmt->param_vec) - 1) {
 					printf(", ");
 				}
 			}
 			
 			printf(") {\n");
 			
-			for (int i = 0; i < vector_size(fun_stmt->stmt_vec); i++) {
-				print_stmt(fun_stmt->stmt_vec[i], indent + 1);
+			for (int i = 0; i < vector_size(func_stmt->stmt_vec); i++) {
+				print_stmt(func_stmt->stmt_vec[i], indent + 1);
 			}
 			
 			printf("}\n");

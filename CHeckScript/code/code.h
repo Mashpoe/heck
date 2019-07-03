@@ -20,6 +20,4 @@ void heck_free(heck_code* c);
 
 void heck_print_tokens(heck_code* c);
 
-bool heck_add_token(heck_code* c, heck_token* tk);
-
 #endif /* code_h */

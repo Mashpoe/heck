@@ -21,6 +21,7 @@ enum heck_expr_type {
 	EXPR_VALUE,		// value of a variable
 	EXPR_CALL,
 	EXPR_ASG,
+	EXPR_TER,
 	EXPR_ERR		// error parsing
 };
 
@@ -68,6 +69,13 @@ struct heck_expr_asg {
 	heck_expr* value;
 };
 
+typedef struct heck_expr_ternary heck_expr_ternary;
+struct heck_expr_ternary {
+	heck_expr* condition;
+	heck_expr* value_a;
+	heck_expr* value_b;
+};
+
 heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr* right);
 
 heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator);
@@ -79,6 +87,8 @@ heck_expr* create_expr_value(heck_expr_idf name);
 heck_expr* create_expr_call(heck_expr_idf name);
 
 heck_expr* create_expr_asg(heck_expr_idf name, heck_expr* value);
+
+heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b);
 
 heck_expr* create_expr_err(void);
 

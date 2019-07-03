@@ -13,7 +13,7 @@
 heck_code* heck_create() {
 	heck_code* c = malloc(sizeof(heck_code));
 	c->token_vec = vector_create(sizeof(heck_token*));
-	c->globals = hashmap_new();
+	//c->global = create_namespace(/*something*/);
 	return c;
 }
 

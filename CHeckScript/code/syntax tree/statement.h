@@ -9,13 +9,14 @@
 #define statement_h
 
 #include "expression.h"
+#include "hashmap.h"
 
 typedef enum heck_stmt_type heck_stmt_type;
 enum heck_stmt_type {
 	STMT_EXPR,
 	STMT_LET,
 	STMT_IF,
-	STMT_FUN,
+	STMT_FUNC,
 	STMT_RET,
 	STMT_CLASS,
 	STMT_SCOPE,
@@ -57,8 +58,8 @@ struct heck_param {
 	heck_expr* def_val; // default value
 };
 
-typedef struct heck_stmt_fun heck_stmt_fun;
-struct heck_stmt_fun {
+typedef struct heck_stmt_func heck_stmt_func;
+struct heck_stmt_func {
 	heck_expr_idf name;
 	
 	heck_param** param_vec;
@@ -67,17 +68,20 @@ struct heck_stmt_fun {
 	heck_data_type return_type;
 };
 
+// define a function declaration as a vector of overloads for a function of a given name
+typedef heck_stmt_func** heck_func_dec;
+
 typedef struct heck_stmt_class heck_stmt_class;
 struct heck_stmt_class {
 	heck_expr_idf name;
 	
-	// private & public methods
-	heck_stmt_fun* pvt_fun_vec;
-	heck_stmt_fun* pub_fun_vec;
+	// maps of function declartions (private & public methods)
+	map_t pvt_funcs;
+	map_t pub_funcs;
 	
 	// private & public variables
-	heck_stmt_let* pvt_var_vec;
-	heck_stmt_let* pub_var_vec;
+	map_t pvt_vars;
+	map_t pub_vars;
 };
 
 typedef struct heck_stmt_scope heck_stmt_scope;
@@ -95,7 +99,7 @@ heck_param* create_param(string name);
 
 heck_stmt* create_stmt_ret(heck_expr* value);
 
-heck_stmt* create_stmt_fun(heck_expr_idf name);
+heck_stmt* create_stmt_func(heck_expr_idf name);
 
 heck_stmt* create_stmt_class(heck_expr_idf name);
 

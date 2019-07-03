@@ -85,6 +85,20 @@ heck_expr* create_expr_asg(heck_expr_idf name, heck_expr* value) {
 	return e;
 }
 
+heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b) {
+	heck_expr* e = malloc(sizeof(heck_expr));
+	e->type = EXPR_TER;
+	
+	heck_expr_ternary* ternary = malloc(sizeof(heck_expr_ternary));
+	ternary->condition = condition;
+	ternary->value_a = value_a;
+	ternary->value_b = value_b;
+	
+	e->expr = ternary;
+	
+	return e;
+}
+
 heck_expr* create_expr_err() {
 	heck_expr* e = malloc(sizeof(heck_expr));
 	e->type = EXPR_ERR;
@@ -99,11 +113,9 @@ void free_expr(heck_expr* expr) {
 		case EXPR_BINARY:
 			free_expr(((heck_expr_binary*)expr)->left);
 			free_expr(((heck_expr_binary*)expr)->right);
-			free(expr);
 			break;
 		case EXPR_UNARY:
 			free_expr(((heck_expr_unary*)expr)->expr);
-			free(expr);
 			break;
 		case EXPR_VALUE: // fallthrough
 			// literal & identifier data is stored in token list and does not need to be freed
@@ -116,9 +128,18 @@ void free_expr(heck_expr* expr) {
 			vector_free(((heck_expr_call*)expr)->arg_vec);
 		case EXPR_LITERAL:
 		case EXPR_ERR:
-			free(expr);
+			break;
+		case EXPR_ASG:
+			free_expr(((heck_expr_asg*)expr)->value);
+			break;
+		case EXPR_TER:
+			free_expr(((heck_expr_ternary*)expr)->condition);
+			free_expr(((heck_expr_ternary*)expr)->value_a);
+			free_expr(((heck_expr_ternary*)expr)->value_b);
 			break;
 	}
+	
+	free(expr);
 }
 
 void print_idf(heck_expr_idf idf) {
@@ -198,6 +219,17 @@ void print_expr(heck_expr* expr) {
 			print_idf(asg->name);
 			printf("] = ");
 			print_expr(asg->value);
+			break;
+		}
+		case EXPR_TER: {
+			heck_expr_ternary* ternary = expr->expr;
+			printf("[");
+			print_expr(ternary->condition);
+			printf("] ? [");
+			print_expr(ternary->value_a);
+			printf("] : [");
+			print_expr(ternary->value_b);
+			printf("]");
 			break;
 		}
 		case EXPR_ERR:

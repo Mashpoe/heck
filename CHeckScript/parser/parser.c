@@ -3,13 +3,13 @@
 //  CHeckScript
 //
 //  Created by Mashpoe on 3/26/19.
-//  Copyright © 2019 Mashpoe. All rights reserved.
 //
 
 #include "parser.h"
 #include "code_impl.h"
 #include "expression.h"
 #include "statement.h"
+#include "namespace.h"
 #include "tokentypes.h"
 
 #include <stdio.h>
@@ -70,7 +70,7 @@ void panic_mode(parser* p) {
 			case TK_BRAC_R:
 			case TK_KW_LET:
 			case TK_KW_IF:
-			case TK_KW_FUN:
+			case TK_KW_FUNC:
 			case TK_KW_CLASS:
 				return;
 			default:
@@ -230,8 +230,21 @@ heck_expr* assignment(parser* p) {
 	return expr;
 }
 
+heck_expr* ternary(parser* p) {
+	heck_expr* expr = assignment(p);
+	
+	if (match(p, TK_Q_MARK)) {
+		heck_expr* value_a = expression(p);
+		
+		//                                        haha, ternary in the ternary parser
+		return create_expr_ternary(expr, value_a, match(p, TK_COLON) ? expression(p) : create_expr_err());
+	}
+	
+	return expr;
+}
+
 heck_expr* expression(parser* p) {
-	return assignment(p);
+	return ternary(p);
 }
 
 /*
@@ -290,11 +303,11 @@ heck_stmt* if_statement(parser* p) {
 }
 
 // TODO: error if there are any duplicate argument names
-heck_stmt* fun_statement(parser* p) {
+heck_stmt* func_statement(parser* p) {
 	step(p);
 	
 	if (match(p, TK_IDF)) {
-		heck_stmt* s = create_stmt_fun(identifier(p));
+		heck_stmt* s = create_stmt_func(identifier(p));
 		
 		if (match(p, TK_PAR_L)) {
 			
@@ -336,7 +349,7 @@ heck_stmt* fun_statement(parser* p) {
 						param->def_val = expression(p);
 					}
 					
-					_vector_add(&((heck_stmt_fun*)s->value)->param_vec, heck_param*) = param;
+					_vector_add(&((heck_stmt_func*)s->value)->param_vec, heck_param*) = param;
 					
 				} else {
 					// TODO: report expected expression
@@ -363,7 +376,7 @@ heck_stmt* fun_statement(parser* p) {
 					} else if (match(p, TK_BRAC_R)) {
 						break;
 					} else {
-						_vector_add(&((heck_stmt_fun*)s->value)->stmt_vec, heck_stmt*) = statement(p);
+						_vector_add(&((heck_stmt_func*)s->value)->stmt_vec, heck_stmt*) = statement(p);
 					}
 				}
 				
@@ -371,7 +384,7 @@ heck_stmt* fun_statement(parser* p) {
 				// TODO: report expected '{'
 				
 				// populate if statement with only an error
-				_vector_add(&((heck_stmt_fun*)s->value)->stmt_vec, heck_stmt*) = create_stmt_err();
+				_vector_add(&((heck_stmt_func*)s->value)->stmt_vec, heck_stmt*) = create_stmt_err();
 				
 				panic_mode(p);
 			}
@@ -420,6 +433,13 @@ heck_stmt* scope_statement(parser* p) {
 	return s;
 }
 
+heck_stmt* namespace(parser* p) {
+	
+	// check if namespace is already defined
+	
+	return NULL;
+}
+
 heck_stmt* statement(parser* p) {
 	
 	switch (peek(p)->type) {
@@ -429,8 +449,8 @@ heck_stmt* statement(parser* p) {
 		case TK_KW_IF:
 			return if_statement(p);
 			break;
-		case TK_KW_FUN:
-			return fun_statement(p);
+		case TK_KW_FUNC:
+			return func_statement(p);
 			break;
 		case TK_KW_RETURN:
 			return ret_statement(p);
@@ -449,8 +469,23 @@ bool heck_parse(heck_code* c) {
 	p->code = c;
 	p->success = true;
 	
+	//heck_namespace* global = create_namespace(NULL);
+	
 	while (!atEnd(p)) {
 		heck_stmt* e = statement(p);
+//
+//		switch(e->type) {
+//			case STMT_LET:
+//
+//				hashmap_put(global->var_map, ((heck_stmt_let*)e->value)->name, e->value);
+//				break;
+//			case STMT_FUNC:
+//				hashmap_put(global->func_map, ((heck_stmt_func*)e->value)->name, e->value);
+//				break;
+//			default:
+//				break;
+//
+//		}
 		print_stmt(e, 0);
 		//_vector_add(c->syntax_tree_vec, heck_stmt*) = statement(p);
 	}

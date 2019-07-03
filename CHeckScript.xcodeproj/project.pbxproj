@@ -12,6 +12,7 @@
 		2AC0194A22AE4E5C00EC72AE /* expression.c in Sources */ = {isa = PBXBuildFile; fileRef = 2AC0194922AE4E5C00EC72AE /* expression.c */; };
 		2AC0194C22B0557400EC72AE /* statement.c in Sources */ = {isa = PBXBuildFile; fileRef = 2AC0194B22B0557400EC72AE /* statement.c */; };
 		2AC8FD4E22B978180019C9F3 /* compiler.c in Sources */ = {isa = PBXBuildFile; fileRef = 2AC8FD4D22B978180019C9F3 /* compiler.c */; };
+		2AC8FD5322C00CBD0019C9F3 /* namespace.c in Sources */ = {isa = PBXBuildFile; fileRef = 2AC8FD5222C00CBD0019C9F3 /* namespace.c */; };
 		2AECE61F222606C300D2219B /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 2AECE61E222606C300D2219B /* main.c */; };
 		2AECE630223181CF00D2219B /* vec.c in Sources */ = {isa = PBXBuildFile; fileRef = 2AECE62E223181CE00D2219B /* vec.c */; };
 		2AEFAF8222380BBD00BBA04F /* hashmap.c in Sources */ = {isa = PBXBuildFile; fileRef = 2AEFAF8122380BBD00BBA04F /* hashmap.c */; };
@@ -42,6 +43,8 @@
 		2AC0194B22B0557400EC72AE /* statement.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = statement.c; sourceTree = "<group>"; };
 		2AC8FD4C22B978180019C9F3 /* compiler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = compiler.h; sourceTree = "<group>"; };
 		2AC8FD4D22B978180019C9F3 /* compiler.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = compiler.c; sourceTree = "<group>"; };
+		2AC8FD5122C00CBD0019C9F3 /* namespace.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = namespace.h; sourceTree = "<group>"; };
+		2AC8FD5222C00CBD0019C9F3 /* namespace.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = namespace.c; sourceTree = "<group>"; };
 		2AECE61B222606C300D2219B /* CHeckScript */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CHeckScript; sourceTree = BUILT_PRODUCTS_DIR; };
 		2AECE61E222606C300D2219B /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		2AECE62E223181CE00D2219B /* vec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = vec.c; sourceTree = "<group>"; };
@@ -194,6 +197,8 @@
 				2AC0194922AE4E5C00EC72AE /* expression.c */,
 				2AC0194822AE259B00EC72AE /* statement.h */,
 				2AC0194B22B0557400EC72AE /* statement.c */,
+				2AC8FD5122C00CBD0019C9F3 /* namespace.h */,
+				2AC8FD5222C00CBD0019C9F3 /* namespace.c */,
 			);
 			path = "syntax tree";
 			sourceTree = "<group>";
@@ -225,7 +230,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastUpgradeCheck = 1010;
-				ORGANIZATIONNAME = Mashpoe;
+				ORGANIZATIONNAME = "";
 				TargetAttributes = {
 					2AECE61A222606C300D2219B = {
 						CreatedOnToolsVersion = 10.1;
@@ -255,6 +260,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2A320CC822987F5C0017F5AA /* str.c in Sources */,
+				2AC8FD5322C00CBD0019C9F3 /* namespace.c in Sources */,
 				2AC0194C22B0557400EC72AE /* statement.c in Sources */,
 				2A87E2E6224ADF9300BE659C /* parser.c in Sources */,
 				2AEFAF852238179E00BBA04F /* lexer.c in Sources */,
