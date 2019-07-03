@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include "str.h"
 #include "vec.h"
-#include "lexer.h"
+#include "scanner.h"
 #include "parser.h"
 
 // solve this problem in heck
@@ -27,7 +27,7 @@ int main(int argc, const char * argv[]) {
 	if (f) {
 		//printf("start.\n");
 		heck_code* c = heck_create();
-		heck_lex(c, f);
+		heck_scan(c, f);
 		//printf("done.\n");
 		heck_print_tokens(c);
 		heck_parse(c);

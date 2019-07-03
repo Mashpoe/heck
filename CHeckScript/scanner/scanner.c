@@ -1,11 +1,11 @@
 //
-//  lexer.c
+//  scanner.c
 //  CHeckScript
 //
 //  Created by Mashpoe on 3/12/19.
 //
 
-#include "lexer.h"
+#include "scanner.h"
 #include "code_impl.h"
 #include "str.h"
 #include <ctype.h>
@@ -24,7 +24,7 @@ struct file_pos {
 	int current; // current char
 };
 
-int lex_step_line(file_pos* fp) {
+int scan_step_line(file_pos* fp) {
 	fp->ln++;
 	fp->ch = 0;
 	fp->line_length = getline(&fp->current_line, &fp->buff_size, fp->f);
@@ -75,7 +75,7 @@ int lex_step_line(file_pos* fp) {
 	}
 }
 
-int lex_step(file_pos* fp) {
+int scan_step(file_pos* fp) {
 	
 	if (++fp->ch < fp->line_length) {
 		// regular line character
@@ -84,7 +84,7 @@ int lex_step(file_pos* fp) {
 		return fp->current;
 		
 	} else {
-		return lex_step_line(fp);
+		return scan_step_line(fp);
 	}
 }
 
@@ -103,7 +103,7 @@ bool matchStringAtPos(file_pos* fp, char* s, int l_pos, bool do_step) {
 	
 	if (do_step) {
 		for (int i = s_pos; i-- > 0;) {
-			lex_step(fp);
+			scan_step(fp);
 		}
 	}
 	
@@ -139,12 +139,12 @@ void add_token(heck_code* c, file_pos* fp, enum heck_tk_type type, void* value) 
 
 bool parse_string(heck_code* c, file_pos* fp);
 
-bool heck_lex(heck_code* c, FILE* f) {
+bool heck_scan(heck_code* c, FILE* f) {
 	
 	file_pos fp = {f,0,0,0,0,NULL,'\0'};
 	
 	// get the first line and first character
-	lex_step_line(&fp); // will set the fp.ln to 1
+	scan_step_line(&fp); // will set the fp.ln to 1
 	
 	while (fp.current != EOF) {
 		
@@ -159,7 +159,7 @@ bool heck_lex(heck_code* c, FILE* f) {
 			case '\t': // fallthrough
 			case ' ': { // ignore tabs, spaces, and newlines
 				do {
-					lex_step(&fp);
+					scan_step(&fp);
 				} while (is_space_line_end(&fp));
 				continue; // avoid the step at the end
 				//break;
@@ -274,7 +274,7 @@ bool heck_lex(heck_code* c, FILE* f) {
 				if (matchStringAtPos(&fp, "//", fp.ch, true)) { // single line comment
 					
 					while (!is_end(&fp)) {
-						lex_step(&fp);
+						scan_step(&fp);
 					}
 					
 					continue; // don't skip over newline or EOF
@@ -282,7 +282,7 @@ bool heck_lex(heck_code* c, FILE* f) {
 				} else if (matchStringAtPos(&fp, "/*", fp.ch, true)) { // multiline comment
 					while (!matchStringAtPos(&fp, "*/", fp.ch, true)) { // look for the closing "*/"
 						// stop if we reach the end of the file
-						if (lex_step(&fp) == EOF) {
+						if (scan_step(&fp) == EOF) {
 							break;
 						}
 					}
@@ -350,13 +350,13 @@ bool heck_lex(heck_code* c, FILE* f) {
 						} else {
 							add_token(c, &fp, TK_ERR, string_create("unable to parse number"));
 							do {
-								lex_step(&fp); // seek to the end of the invalid token
+								scan_step(&fp); // seek to the end of the invalid token
 							} while (!is_space_end(&fp));
 						}
 						
 					} else {
 						do {
-							lex_step(&fp); // seek to the end of the double
+							scan_step(&fp); // seek to the end of the double
 						} while (&fp.current_line[fp.ch] != num_end && fp.current != EOF);
 						
 						long double* num = malloc(sizeof(long double)); // num will be freed during token cleanup
@@ -374,7 +374,7 @@ bool heck_lex(heck_code* c, FILE* f) {
 					string token = string_create(NULL);
 					do {
 						string_add_char(&token, fp.current);
-						lex_step(&fp);
+						scan_step(&fp);
 					} while(fp.current != EOF &&
 							(isalnum(fp.current) || fp.current == '_' ||	// identifiers can start with 'A'-'z' or '_'
 							(unsigned char)fp.current >= 0x80));			// start or body of unicode character
@@ -427,7 +427,7 @@ bool heck_lex(heck_code* c, FILE* f) {
 		
 		
 		// step by default, can be overridden with continue;
-		lex_step(&fp);
+		scan_step(&fp);
 		
 	}
 	
@@ -449,7 +449,7 @@ bool parse_string(heck_code* c, file_pos* fp) {
 	
 	// add to the string until we reach an unescaped quote of the same type
 	bool ch_escaped = false;
-	while (lex_step(fp) != quote || ch_escaped) {
+	while (scan_step(fp) != quote || ch_escaped) {
 		
 		if (is_end(fp)) {
 			add_token(c, fp, TK_ERR, string_create("expected terminating quote"));
@@ -495,9 +495,9 @@ bool parse_string(heck_code* c, file_pos* fp) {
 					// seek to the end of the string or line, whichever comes first
 					do {
 						ch_escaped = (!ch_escaped && fp->current == '\\');
-						lex_step(fp);
+						scan_step(fp);
 						if (!ch_escaped && fp->current == quote) {
-							lex_step(fp); // step past the trailing quote
+							scan_step(fp); // step past the trailing quote
 							break;
 						}
 					} while (!is_end(fp));
