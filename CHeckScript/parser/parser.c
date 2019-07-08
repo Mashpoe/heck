@@ -91,15 +91,15 @@ heck_expr* expression(parser* p);
 
 heck_idf identifier(parser* p) { // assumes an identifier was just found with match(p)
 	
-	int index = 0, len = 1;
-	string* idf = malloc(sizeof(string) * (len + 1));
+	int len = 0, alloc = 1;
+	string* idf = malloc(sizeof(string) * (alloc + 1));
 	
 	do {
 		// add string to identifier chain
-		idf[index++] = previous(p)->value;
+		idf[len++] = previous(p)->value;
 		// reallocate if necessary
-		if (index == len) {
-			idf = realloc(idf, sizeof(string) * (++len + 1));
+		if (len == alloc) {
+			idf = realloc(idf, sizeof(string) * (++alloc + 1));
 		}
 
 		if (!match(p, TK_OP_DOT))
@@ -108,7 +108,7 @@ heck_idf identifier(parser* p) { // assumes an identifier was just found with ma
 	} while (match(p, TK_IDF));
 
 	// add null terminator
-	idf[index] = NULL;
+	idf[len] = NULL;
 
 	return idf;
 }
