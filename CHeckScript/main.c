@@ -28,8 +28,6 @@ int main(int argc, const char * argv[]) {
 	
 	if (f) {
 		
-
-		
 		//printf("start.\n");
 		heck_code* c = heck_create();
 		heck_scan(c, f);

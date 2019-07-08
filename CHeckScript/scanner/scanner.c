@@ -7,10 +7,10 @@
 
 #include "scanner.h"
 #include "code_impl.h"
-#include "str.h"
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include "str.h"
 
 typedef struct file_pos file_pos;
 
@@ -323,7 +323,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 			}
 			case '\\': // escape sequences outside of strings, comments, and line endings
 				// AFAIK escape sequences don't belong here
-				add_token(c, &fp, TK_ERR, string_create("unexpected escape sequence"));
+				add_token(c, &fp, TK_ERR, str_copy("unexpected escape sequence"));
 				break;
 			case '\'': // single quote
 			case '"': { // double quote
@@ -348,7 +348,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 						if (fp.current == '.') {
 							add_token(c, &fp, TK_OP_DOT, NULL);
 						} else {
-							add_token(c, &fp, TK_ERR, string_create("unable to parse number"));
+							add_token(c, &fp, TK_ERR, str_copy("unable to parse number"));
 							do {
 								scan_step(&fp); // seek to the end of the invalid token
 							} while (!is_space_end(&fp));
@@ -371,9 +371,10 @@ bool heck_scan(heck_code* c, FILE* f) {
 						   (unsigned char)fp.current >= 0xC0)			// start of unicode character
 				{
 					
-					string token = string_create(NULL);
+					int len, alloc;
+					char* token = str_create(&len, &alloc, NULL);
 					do {
-						string_add_char(&token, fp.current);
+						token = str_add_char(token, &len, &alloc, fp.current);
 						scan_step(&fp);
 					} while(fp.current != EOF &&
 							(isalnum(fp.current) || fp.current == '_' ||	// identifiers can start with 'A'-'z' or '_'
@@ -415,7 +416,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 						continue; // prevent the string from being freed
 					}
 					
-					string_free(token);
+					free(token);
 					
 					continue; // avoid step at the end
 					
@@ -445,17 +446,18 @@ bool parse_string(heck_code* c, file_pos* fp) {
 	
 	char quote = fp->current; // keep track of the quote type we're using
 	
-	string str = string_create(NULL);
+	int index, len;
+	char* str = str_create(&index, &len, NULL);
 	
 	// add to the string until we reach an unescaped quote of the same type
 	bool ch_escaped = false;
 	while (scan_step(fp) != quote || ch_escaped) {
 		
 		if (is_end(fp)) {
-			add_token(c, fp, TK_ERR, string_create("expected terminating quote"));
+			add_token(c, fp, TK_ERR, str_copy("expected terminating quote"));
 			
 			// free the invalid string
-			string_free(str);
+			free(str);
 			return false;
 		}
 		
@@ -469,27 +471,28 @@ bool parse_string(heck_code* c, file_pos* fp) {
 				case '\'': // fallthrough
 				case '"':
 				case '\\':
-					string_add_char(&str, fp->current);
+					str = str_add_char(str, &index, &len, fp->current);
 					break;
 				case 'n':
-					string_add_char(&str, '\n');
+					str = str_add_char(str, &index, &len, '\n');
 					break;
 				case 'r':
-					string_add_char(&str, '\r');
+					str = str_add_char(str, &index, &len, '\r');
 					break;
 				case 'b':
-					string_add_char(&str, '\b');
+					str = str_add_char(str, &index, &len, '\b');
 					break;
 				case 't':
-					string_add_char(&str, '\t');
+					str = str_add_char(str, &index, &len, '\t');
 					break;
 					// TODO: handle more escape sequences:
 					// https://en.wikipedia.org/wiki/Escape_sequences_in_C#Table_of_escape_sequences
 				default: {
 					// string will be freed during token cleanup
-					string err_str = string_create("invalid escape sequence: ");
+					int len, alloc;
+					string err_str = str_create(&len, &alloc, "invalid escape sequence: ");
 					// TODO: format certain character values
-					string_add_char(&err_str, fp->current);
+					err_str = str_add_char(err_str, &len, &alloc, fp->current);
 					add_token(c, fp, TK_ERR, err_str); // report error
 					
 					// seek to the end of the string or line, whichever comes first
@@ -503,7 +506,7 @@ bool parse_string(heck_code* c, file_pos* fp) {
 					} while (!is_end(fp));
 					
 					// free the invalid string
-					string_free(str);
+					free(str);
 					return false;
 					
 				}
@@ -517,7 +520,7 @@ bool parse_string(heck_code* c, file_pos* fp) {
 			continue;
 			
 		} else {
-			string_add_char(&str, fp->current);
+			str = str_add_char(str, &index, &len, fp->current);
 		}
 		
 	}

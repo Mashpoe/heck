@@ -54,7 +54,7 @@ heck_expr* create_expr_value(heck_idf name) {
 	heck_expr* e = malloc(sizeof(heck_expr));
 	e->type = EXPR_VALUE;
 	
-	e->expr = name;
+	e->expr = (void*)name;
 	
 	return e;
 }
@@ -132,7 +132,7 @@ void free_expr(heck_expr* expr) {
 		case EXPR_ASG: {
 			heck_expr_asg* asg = (heck_expr_asg*)expr;
 			free_expr(asg->value);
-			free(asg->name);
+			free((void*)asg->name);
 			break;
 		}
 		case EXPR_TER:

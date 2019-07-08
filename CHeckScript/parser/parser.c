@@ -366,14 +366,14 @@ void func_statement(parser* p, heck_scope* scope) {
 				// TODO: report invalid parameter name (must not contain '.' separated values)
 				
 				if (param_type != NULL) {
-					free(param_type);
+					free((void*)param_type);
 				}
-				free(param_name);
+				free((void*)param_name);
 				return;
 			}
 			
 			heck_param* param = create_param(param_name[0]);
-			free(param_name);
+			free((void*)param_name);
 			
 			if (param_type != NULL) {
 				param->type = TYPE_OBJ;
@@ -408,7 +408,7 @@ void func_statement(parser* p, heck_scope* scope) {
 			} else if (match(p, TK_BRAC_R)) {
 				break;
 			} else {
-				_vector_add(&func->stmt_vec, heck_stmt*) = statement(p, scope);
+				_vector_add(&func->stmt_vec, heck_stmt*) = statement(p, child);
 			}
 		}
 		

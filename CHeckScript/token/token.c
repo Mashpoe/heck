@@ -18,10 +18,10 @@ void heck_free_token_data(heck_token* tk) {
 		case TK_NUM:
 			free(tk->value);
 			break;
+		case TK_ERR: // fallthrough
 		case TK_STR:
-		case TK_ERR:
 		case TK_IDF:
-			string_free((string)tk->value);
+			free((char*)tk->value);
 			break;
 		default:
 			break;
