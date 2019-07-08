@@ -56,7 +56,7 @@ struct heck_param {
 	string name; // name of the parameter
 	
 	heck_data_type type;
-	heck_expr_idf obj_type; // NULL unless type == TYPE_OBJ
+	heck_idf obj_type; // NULL unless type == TYPE_OBJ
 	
 	heck_expr* def_val; // default value
 };
@@ -78,22 +78,22 @@ typedef heck_stmt_func** heck_func_dec;
 // CLASS
 typedef struct heck_stmt_class heck_stmt_class;
 struct heck_stmt_class {
-	heck_expr_idf name;
+	heck_idf name;
 	
 	// private & public variables
 	map_t vars;
 };
-heck_stmt* create_stmt_class(heck_expr_idf name);
+heck_stmt* create_stmt_class(heck_idf name);
 
 // NAMESPACE
 // not to be confused with the scope namespace, heck_nmsp.
 // stores a name so statements can be compiled in the right context
 typedef struct heck_stmt_nmsp heck_stmt_nmsp;
 struct heck_stmt_nmsp {
-	heck_expr_idf name;
+	heck_idf name;
 	heck_stmt** stmt_vec;
 };
-heck_stmt* create_stmt_nmsp(heck_expr_idf name);
+heck_stmt* create_stmt_nmsp(heck_idf name);
 
 // SCOPE
 // not to be confused with heck_scope

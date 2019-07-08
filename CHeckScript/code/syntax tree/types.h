@@ -14,8 +14,8 @@ enum heck_data_type {
 	TYPE_STR,
 	TYPE_BOOL,
 	
-	// instance of a specific class, store alongside a heck_expr_idf (may be a child class e.g. ClassA.ClassB)
-	TYPE_OBJ, // set the heck_expr_idf to NULL if it is an 'Object' type
+	// instance of a specific class, store alongside a heck_idf (may be a child class e.g. ClassA.ClassB)
+	TYPE_OBJ, // set the heck_idf to NULL if it is an 'Object' type
 	
 	TYPE_GEN,		// generic type (type hasn't been deduced by the compiler yet)
 	TYPE_VOID,		// void return value

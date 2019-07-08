@@ -40,11 +40,11 @@ struct heck_nmsp {
 	map_t var_map;
 };
 heck_nmsp* create_nmsp(void);
-heck_scope* scope_add_nmsp(heck_scope* scope, heck_nmsp* child, heck_expr_idf name);
+heck_scope* scope_add_nmsp(heck_scope* scope, heck_nmsp* child, heck_idf name);
 heck_scope* create_scope_nmsp(void);
 
 // CLASS
-heck_scope* scope_add_class(heck_scope* scope, heck_stmt_class* child, heck_expr_idf name);
+heck_scope* scope_add_class(heck_scope* scope, heck_stmt_class* child, heck_idf name);
 
 // FUNCTION
 typedef struct heck_func heck_func;
@@ -55,7 +55,7 @@ struct heck_func {
 	heck_data_type return_type;
 };
 heck_func* create_func(void);
-heck_scope* scope_add_func(heck_scope* scope, heck_func* child, heck_expr_idf name);
+heck_scope* scope_add_func(heck_scope* scope, heck_func* child, heck_idf name);
 
 
 void print_scope(heck_scope* scope);

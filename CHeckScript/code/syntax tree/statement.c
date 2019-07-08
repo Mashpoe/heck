@@ -72,7 +72,7 @@ heck_stmt* create_stmt_func() {
 	return s;
 }
 
-heck_stmt* create_stmt_class(heck_expr_idf name) {
+heck_stmt* create_stmt_class(heck_idf name) {
 	heck_stmt* s = malloc(sizeof(heck_stmt));
 	s->type = STMT_CLASS;
 	
