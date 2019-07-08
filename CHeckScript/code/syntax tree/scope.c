@@ -18,32 +18,27 @@ heck_scope* create_scope(heck_scope_type type) {
 	return scope;
 }
 
-heck_scope* create_child(heck_scope* scope, heck_expr_idf name, heck_scope_type type) {
-	
-	// cast to int, it's unlikely that an identifier chain is longer than INT_MAX
-	int prefix_size = (int)vector_size(name);
+heck_scope* create_child(heck_scope* scope, heck_idf name, heck_scope_type type) {
 	
 	// iterate through the tree of scopes
-	for (int i = 0; i < prefix_size; i++) {
+	int i = 0;
+	do  {
 		heck_scope* child;
 		if (hashmap_get(scope->scope_map, name[i], (any_t)&child) == MAP_MISSING) {
 			
 			// if a scope doesn't exist, create it
-			int j = i; // just so we don't mess with i
 			do {
 				child = create_scope(SCOPE_UNKNOWN);
-				hashmap_put(scope->scope_map, name[j], child);
+				hashmap_put(scope->scope_map, name[i], child);
 				scope = child;
-			} while (++j < prefix_size);
+			} while (name[++i] != NULL);
 			break;
 			
 		} else {
 			scope = child;
 		}
-	}
-	
-	//heck_scope* child = create_scope(type);
-	//hashmap_put(scope->scope_map, name[prefix_size], child);
+		
+	} while (name[++i] != NULL);
 	
 	return scope;
 }
@@ -55,7 +50,7 @@ heck_nmsp* create_nmsp(void) {
 	
 	return nmsp;
 }
-heck_scope* scope_add_nmsp(heck_scope* scope, heck_nmsp* child, heck_expr_idf name) {
+heck_scope* scope_add_nmsp(heck_scope* scope, heck_nmsp* child, heck_idf name) {
 	
 	// create a child, populate it with the namespace
 	heck_scope* child_scope = create_child(scope, name, SCOPE_NAMESPACE);
@@ -69,7 +64,7 @@ heck_scope* create_scope_nmsp(void) {
 	return scope;
 }
 
-heck_scope* scope_add_class(heck_scope* scope, heck_stmt_class* child, heck_expr_idf name) {
+heck_scope* scope_add_class(heck_scope* scope, heck_stmt_class* child, heck_idf name) {
 	return NULL;
 }
 
@@ -82,7 +77,7 @@ heck_func* create_func(void) {
 	return func;
 }
 
-heck_scope* scope_add_func(heck_scope* scope, heck_func* child, heck_expr_idf name) {
+heck_scope* scope_add_func(heck_scope* scope, heck_func* child, heck_idf name) {
 	
 	// create a child, populate it with the function
 	heck_scope* child_scope = create_child(scope, name, SCOPE_FUCNTION);

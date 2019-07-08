@@ -51,21 +51,21 @@ struct heck_expr_literal {
 };
 
 // vector of consecutive identifiers separated by '.'
-typedef string* heck_expr_idf;
+typedef const string* heck_idf;
 
 // variable value
-typedef heck_expr_idf heck_expr_value;
+typedef heck_idf heck_expr_value;
 
 // function call
 typedef struct heck_expr_call heck_expr_call;
 struct heck_expr_call {
-	heck_expr_idf name;
+	heck_idf name;
 	heck_expr** arg_vec; // arguments
 };
 
 typedef struct heck_expr_asg heck_expr_asg;
 struct heck_expr_asg {
-	heck_expr_idf name;
+	heck_idf name;
 	heck_expr* value;
 };
 
@@ -82,11 +82,11 @@ heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator);
 
 heck_expr* create_expr_literal(void* value, heck_tk_type type);
 
-heck_expr* create_expr_value(heck_expr_idf name);
+heck_expr* create_expr_value(heck_idf name);
 
-heck_expr* create_expr_call(heck_expr_idf name);
+heck_expr* create_expr_call(heck_idf name);
 
-heck_expr* create_expr_asg(heck_expr_idf name, heck_expr* value);
+heck_expr* create_expr_asg(heck_idf name, heck_expr* value);
 
 heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b);
 
@@ -94,7 +94,7 @@ heck_expr* create_expr_err(void);
 
 void free_expr(heck_expr* expr);
 
-void print_idf(heck_expr_idf idf);
+void print_idf(heck_idf idf);
 
 void print_expr(heck_expr* expr);
 

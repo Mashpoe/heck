@@ -89,16 +89,27 @@ void panic_mode(parser* p) {
 // forward declarations:
 heck_expr* expression(parser* p);
 
-heck_expr_idf identifier(parser* p) { // assumes an identifier was just found with match(p)
+heck_idf identifier(parser* p) { // assumes an identifier was just found with match(p)
 	
-	heck_expr_idf idf = _vector_create(string);
+	int index = 0, len = 1;
+	string* idf = malloc(sizeof(string) * (len + 1));
 	
 	do {
-		_vector_add(&idf, string) = previous(p)->value;
+		// add string to identifier chain
+		idf[index++] = previous(p)->value;
+		// reallocate if necessary
+		if (index == len) {
+			idf = realloc(idf, sizeof(string) * (++len + 1));
+		}
+
 		if (!match(p, TK_OP_DOT))
 			break;
+
 	} while (match(p, TK_IDF));
-	
+
+	// add null terminator
+	idf[index] = NULL;
+
 	return idf;
 }
 
@@ -115,7 +126,7 @@ heck_expr* primary(parser* p) {
 	// This is the ONLY place where the global keyword should be used
 	if (match(p, TK_IDF)) {
 		
-		heck_expr_idf name = identifier(p);
+		heck_idf name = identifier(p);
 		
 		if (match(p, TK_PAR_L)) { // function call
 			heck_expr* call = create_expr_call(name);
@@ -225,7 +236,7 @@ heck_expr* assignment(parser* p) {
 	if (match(p, TK_OP_ASG)) {
 		
 		if (expr->type == EXPR_VALUE) {
-			return create_expr_asg((heck_expr_idf)expr->expr, expression(p));
+			return create_expr_asg((heck_idf)expr->expr, expression(p));
 		}
 		
 		// TODO: report invalid assignment target
@@ -342,26 +353,27 @@ void func_statement(parser* p, heck_scope* scope) {
 			}
 			
 			// create the parameter
-			heck_expr_idf param_type = NULL;
-			heck_expr_idf param_name = identifier(p);
+			heck_idf param_type = NULL;
+			heck_idf param_name = identifier(p);
 			
 			if (match(p, TK_IDF)) {
 				param_type = param_name;
 				param_name = identifier(p);
 			}
 			
-			if (vector_size(param_name) > 1) {
+			
+			if (param_name[1] != NULL) { // if element[1] is null than the identifier has one value
 				// TODO: report invalid parameter name (must not contain '.' separated values)
 				
 				if (param_type != NULL) {
-					vector_free(param_type);
+					free(param_type);
 				}
-				vector_free(param_name);
+				free(param_name);
 				return;
 			}
 			
 			heck_param* param = create_param(param_name[0]);
-			vector_free(param_name);
+			free(param_name);
 			
 			if (param_type != NULL) {
 				param->type = TYPE_OBJ;

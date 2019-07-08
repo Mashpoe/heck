@@ -50,7 +50,7 @@ heck_expr* create_expr_literal(void* value, heck_tk_type type) {
 	return e;
 }
 
-heck_expr* create_expr_value(heck_expr_idf name) {
+heck_expr* create_expr_value(heck_idf name) {
 	heck_expr* e = malloc(sizeof(heck_expr));
 	e->type = EXPR_VALUE;
 	
@@ -59,7 +59,7 @@ heck_expr* create_expr_value(heck_expr_idf name) {
 	return e;
 }
 
-heck_expr* create_expr_call(heck_expr_idf name) {
+heck_expr* create_expr_call(heck_idf name) {
 	heck_expr* e = malloc(sizeof(heck_expr));
 	e->type = EXPR_CALL;
 	
@@ -72,7 +72,7 @@ heck_expr* create_expr_call(heck_expr_idf name) {
 	return e;
 }
 
-heck_expr* create_expr_asg(heck_expr_idf name, heck_expr* value) {
+heck_expr* create_expr_asg(heck_idf name, heck_expr* value) {
 	heck_expr* e = malloc(sizeof(heck_expr));
 	e->type = EXPR_ASG;
 	
@@ -129,9 +129,12 @@ void free_expr(heck_expr* expr) {
 		case EXPR_LITERAL:
 		case EXPR_ERR:
 			break;
-		case EXPR_ASG:
-			free_expr(((heck_expr_asg*)expr)->value);
+		case EXPR_ASG: {
+			heck_expr_asg* asg = (heck_expr_asg*)expr;
+			free_expr(asg->value);
+			free(asg->name);
 			break;
+		}
 		case EXPR_TER:
 			free_expr(((heck_expr_ternary*)expr)->condition);
 			free_expr(((heck_expr_ternary*)expr)->value_a);
@@ -142,12 +145,16 @@ void free_expr(heck_expr* expr) {
 	free(expr);
 }
 
-void print_idf(heck_expr_idf idf) {
-	for (int i = 0; i < vector_size(idf); i++) {
-		printf("%s", idf[i]);
-		if (i < vector_size(idf) - 1) {
-			printf(".");
-		}
+void print_idf(heck_idf idf) {
+	
+	// print first element
+	printf("%s", idf[0]);
+	
+	// print extra elements if any exist
+	int i = 1;
+	while (idf[i] != NULL) {
+		printf(".");
+		printf("%s", idf[i++]);
 	}
 }
 
