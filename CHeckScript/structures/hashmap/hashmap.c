@@ -346,7 +346,8 @@ int hashmap_iterate(map_t in, PFany f, any_t item) {
 	for(i = 0; i< m->table_size; i++)
 		if(m->data[i].in_use != 0) {
 			any_t data = (any_t) (m->data[i].data);
-			int status = f(item, data);
+			any_t key = (any_t) (m->data[i].key);
+			int status = f(key, data, item);
 			if (status != MAP_OK) {
 				return status;
 			}

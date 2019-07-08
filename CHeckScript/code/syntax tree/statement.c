@@ -59,12 +59,11 @@ heck_stmt* create_stmt_ret(heck_expr* expr) {
 	return s;
 }
 
-heck_stmt* create_stmt_func(heck_expr_idf name) {
+heck_stmt* create_stmt_func() {
 	heck_stmt* s = malloc(sizeof(heck_stmt));
 	s->type = STMT_FUNC;
 	
 	heck_stmt_func* func_stmt = malloc(sizeof(heck_stmt_func));
-	func_stmt->name = name;
 	func_stmt->param_vec = _vector_create(heck_param*);
 	func_stmt->stmt_vec = _vector_create(heck_stmt*);
 	func_stmt->return_type = TYPE_GEN;
@@ -79,11 +78,8 @@ heck_stmt* create_stmt_class(heck_expr_idf name) {
 	
 	heck_stmt_class* class_stmt = malloc(sizeof(heck_stmt_class));
 	class_stmt->name = name;
-	class_stmt->pvt_funcs = hashmap_new();
-	class_stmt->pub_funcs = hashmap_new();
 	
-	class_stmt->pvt_vars = hashmap_new();
-	class_stmt->pub_vars = hashmap_new();
+	class_stmt->vars = hashmap_new();
 	
 	s->value = class_stmt;
 	return s;
@@ -152,7 +148,7 @@ void print_stmt(heck_stmt* stmt, int indent) {
 		case STMT_FUNC: {
 			heck_stmt_func* func_stmt = stmt->value;
 			printf("function [");
-			print_idf(func_stmt->name);
+			//print_idf(func_stmt->name);
 			printf("] (");
 			
 			for (int i = 0; i < vector_size(func_stmt->param_vec); i++) {

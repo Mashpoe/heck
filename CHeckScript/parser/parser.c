@@ -9,7 +9,7 @@
 #include "code_impl.h"
 #include "expression.h"
 #include "statement.h"
-#include "namespace.h"
+#include "scope.h"
 #include "tokentypes.h"
 
 #include <stdio.h>
@@ -111,6 +111,8 @@ heck_expr* primary(parser* p) {
 		return create_expr_literal(previous(p)->value, previous(p)->type);
 	}
 	
+	// TODO: add support for "global" keyword, e.g. global.xyz = "value"
+	// This is the ONLY place where the global keyword should be used
 	if (match(p, TK_IDF)) {
 		
 		heck_expr_idf name = identifier(p);
@@ -153,6 +155,8 @@ heck_expr* primary(parser* p) {
 		//consume(RIGHT_PAREN, "Expect ')' after expression.");
 		//return new Expr.Grouping(expr);
 	}
+	
+	// TODO: report expected expression
 	panic_mode(p);
 	return create_expr_err();
 }
@@ -236,8 +240,13 @@ heck_expr* ternary(parser* p) {
 	if (match(p, TK_Q_MARK)) {
 		heck_expr* value_a = expression(p);
 		
-		//                                        haha, ternary in the ternary parser
-		return create_expr_ternary(expr, value_a, match(p, TK_COLON) ? expression(p) : create_expr_err());
+		if (!match(p, TK_COLON)) {
+			// TODO: report expected ':'
+			return create_expr_ternary(expr, value_a, create_expr_err());
+		} else {
+			return create_expr_ternary(expr, value_a, expression(p));
+		}
+		
 	}
 	
 	return expr;
@@ -254,7 +263,7 @@ heck_expr* expression(parser* p) {
  */
 
 // forward declarations
-heck_stmt* statement(parser* p);
+heck_stmt* statement(parser* p, heck_scope* scope);
 
 heck_stmt* let_statement(parser* p) {
 	step(p);
@@ -273,7 +282,7 @@ heck_stmt* let_statement(parser* p) {
 	return create_stmt_err();
 }
 
-heck_stmt* if_statement(parser* p) {
+heck_stmt* if_statement(parser* p, heck_scope* scope) {
 	step(p);
 	
 	// if statements do not need (parentheses) around the condition in heck
@@ -287,7 +296,7 @@ heck_stmt* if_statement(parser* p) {
 			} else if (match(p, TK_BRAC_R)) {
 				break;
 			} else {
-				_vector_add(&((heck_stmt_if*)s->value)->stmt_vec, heck_stmt*) = statement(p);
+				_vector_add(&((heck_stmt_if*)s->value)->stmt_vec, heck_stmt*) = statement(p, scope);
 			}
 		}
 		
@@ -302,105 +311,106 @@ heck_stmt* if_statement(parser* p) {
 	return s;
 }
 
-// TODO: error if there are any duplicate argument names
-heck_stmt* func_statement(parser* p) {
+// TODO: error if there are any duplicate parameter names
+void func_statement(parser* p, heck_scope* scope) {
 	step(p);
 	
-	if (match(p, TK_IDF)) {
-		heck_stmt* s = create_stmt_func(identifier(p));
+	if (!match(p, TK_IDF)) {
+		// TODO: report expected identifier
+		panic_mode(p);
+		return;
+	}
+	
+	heck_func* func = create_func();
+	heck_scope* child = scope_add_func(scope, func, identifier(p));
+	
+	if (!match(p, TK_PAR_L)) {
+		// TODO: report expected '('
+		panic_mode(p);
+		return;
+	}
+	
+	// parse parameters
+	if (!match(p, TK_PAR_R)) {
 		
-		if (match(p, TK_PAR_L)) {
+		for (;;) {
 			
-			if (match(p, TK_PAR_R))
-				return s;
+			if (!match(p, TK_IDF)) {
+				// TODO: report expected an identifier
+				panic_mode(p);
+				return;
+			}
 			
-			// parse parameters
-			for (;;) {
+			// create the parameter
+			heck_expr_idf param_type = NULL;
+			heck_expr_idf param_name = identifier(p);
+			
+			if (match(p, TK_IDF)) {
+				param_type = param_name;
+				param_name = identifier(p);
+			}
+			
+			if (vector_size(param_name) > 1) {
+				// TODO: report invalid parameter name (must not contain '.' separated values)
 				
-				if (match(p, TK_IDF)) {
-					
-					heck_expr_idf param_type = NULL;
-					heck_expr_idf param_name = identifier(p);
-					
-					if (match(p, TK_IDF)) {
-						param_type = param_name;
-						param_name = identifier(p);
-					}
-					
-					if (vector_size(param_name) > 1) {
-						// TODO: report invalid parameter name (must not contain '.' separated values)
-						
-						if (param_type != NULL) {
-							vector_free(param_type);
-						}
-						vector_free(param_name);
-						return s;
-					}
-					
-					heck_param* param = create_param(param_name[0]);
-					vector_free(param_name);
-					
-					if (param_type != NULL) {
-						param->type = TYPE_OBJ;
-						param->obj_type = param_type;
-					}
-					
-					if (match(p, TK_OP_ASG)) { // handle default argument values (e.g. arg = expr)
-						param->def_val = expression(p);
-					}
-					
-					_vector_add(&((heck_stmt_func*)s->value)->param_vec, heck_param*) = param;
-					
-				} else {
-					// TODO: report expected expression
-					panic_mode(p);
-					return s;
+				if (param_type != NULL) {
+					vector_free(param_type);
 				}
+				vector_free(param_name);
+				return;
+			}
+			
+			heck_param* param = create_param(param_name[0]);
+			vector_free(param_name);
+			
+			if (param_type != NULL) {
+				param->type = TYPE_OBJ;
+				param->obj_type = param_type;
+			}
+			
+			if (match(p, TK_OP_ASG)) { // handle default argument values (e.g. arg = expr)
+				param->def_val = expression(p);
+			}
+			
+			_vector_add(&func->param_vec, heck_param*) = param;
+			
+			// continue if there is a comma
+			if (!match(p, TK_COMMA)) {
 				
 				if (match(p, TK_PAR_R)) {
-					break;
-				} else if (!match(p, TK_COMMA)) {
-					// TODO: report expected ')'
-					panic_mode(p);
-					break;
+					break; // stop the loop
 				}
-				
-			}
-			
-			if (match(p, TK_BRAC_L)) {
-				
-				for (;;) {
-					if (atEnd(p)) {
-						// TODO report unexpected EOF
-						break;
-					} else if (match(p, TK_BRAC_R)) {
-						break;
-					} else {
-						_vector_add(&((heck_stmt_func*)s->value)->stmt_vec, heck_stmt*) = statement(p);
-					}
-				}
-				
-			} else {
-				// TODO: report expected '{'
-				
-				// populate if statement with only an error
-				_vector_add(&((heck_stmt_func*)s->value)->stmt_vec, heck_stmt*) = create_stmt_err();
-				
+				// TODO: report expected ')'
 				panic_mode(p);
+				return;
 			}
-			
-		} else {
-			// TODO: report expected '('
+		}
+	}
+	
+	if (match(p, TK_BRAC_L)) {
+		
+		for (;;) {
+			if (atEnd(p)) {
+				// TODO report unexpected EOF
+				break;
+			} else if (match(p, TK_BRAC_R)) {
+				break;
+			} else {
+				_vector_add(&func->stmt_vec, heck_stmt*) = statement(p, scope);
+			}
 		}
 		
-		return s;
-		
 	} else {
-		// TODO: report expected identifier
+		// TODO: report expected '{'
+		
+		// populate function with only an error
+		//_vector_add(&func->stmt_vec, heck_stmt*) = create_stmt_err();
+		
 		panic_mode(p);
 	}
 	
-	return create_stmt_err();
+	return;
+	
 }
 
 heck_stmt* ret_statement(parser* p) {
@@ -414,7 +424,7 @@ heck_stmt* ret_statement(parser* p) {
 	return create_stmt_ret(expression(p));
 }
 
-heck_stmt* scope_statement(parser* p) {
+heck_stmt* scope_statement(parser* p, heck_scope* scope) {
 	step(p);
 	
 	heck_stmt* s = create_stmt_scope();
@@ -426,36 +436,38 @@ heck_stmt* scope_statement(parser* p) {
 		} else if (match(p, TK_BRAC_R)) {
 			break;
 		} else {
-			_vector_add(&s->value, heck_stmt*) = statement(p);
+			_vector_add(&s->value, heck_stmt*) = statement(p, scope);
 		}
 	}
 	
 	return s;
 }
 
-heck_stmt* namespace(parser* p) {
+heck_stmt* namespace(parser* p, heck_scope* scope) {
 	
 	// check if namespace is already defined
 	
 	return NULL;
 }
 
-heck_stmt* statement(parser* p) {
+heck_stmt* statement(parser* p, heck_scope* scope) {
 	
 	switch (peek(p)->type) {
 		case TK_KW_LET:
 			return let_statement(p);
 			break;
 		case TK_KW_IF:
-			return if_statement(p);
+			return if_statement(p, scope);
 			break;
 		case TK_KW_FUNC:
-			return func_statement(p);
+			func_statement(p, scope);
+			return NULL;
 			break;
 		case TK_KW_RETURN:
 			return ret_statement(p);
+			break;
 		case TK_BRAC_L:
-			return scope_statement(p);
+			return scope_statement(p, scope);
 			break;
 		default:
 			return create_stmt_expr(expression(p));
@@ -472,23 +484,28 @@ bool heck_parse(heck_code* c) {
 	//heck_namespace* global = create_namespace(NULL);
 	
 	while (!atEnd(p)) {
-		heck_stmt* e = statement(p);
+		heck_stmt* e = statement(p, c->global);
 //
 //		switch(e->type) {
 //			case STMT_LET:
 //
 //				hashmap_put(global->var_map, ((heck_stmt_let*)e->value)->name, e->value);
 //				break;
-//			case STMT_FUNC:
-//				hashmap_put(global->func_map, ((heck_stmt_func*)e->value)->name, e->value);
+//			case STMT_FUNC: {
+//				hashmap_put(c->global->scope_map, ((heck_stmt_func*)e->value)->name, e->value);
 //				break;
+//			}
 //			default:
 //				break;
 //
 //		}
-		print_stmt(e, 0);
+		if (e) {
+			print_stmt(e, 0);
+		}
 		//_vector_add(c->syntax_tree_vec, heck_stmt*) = statement(p);
 	}
+	
+	print_scope(c->global);
 	
 	return p->success;
 }

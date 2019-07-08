@@ -7,3 +7,9 @@
 
 #include "compiler.h"
 
+bool compile(heck_code* c) {
+	
+	
+	
+	return true;
+}

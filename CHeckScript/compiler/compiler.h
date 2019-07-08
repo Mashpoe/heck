@@ -8,6 +8,8 @@
 #ifndef compiler_h
 #define compiler_h
 
-#include <stdio.h>
+#include "code.h"
+
+bool compile(heck_code* c);
 
 #endif /* compiler_h */

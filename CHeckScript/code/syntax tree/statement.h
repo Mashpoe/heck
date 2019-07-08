@@ -29,25 +29,28 @@ struct heck_stmt {
 	void* value;
 };
 
+// EXPRESSION STATEMENT
 // just use a regular heck_expr* for expression statements
-/*
-typedef struct heck_stmt_expr heck_stmt_expr;
-struct heck_stmt_expr {
-	
-};*/
+heck_stmt* create_stmt_expr(heck_expr* expr);
 
+// LET STATEMENT
 typedef struct heck_stmt_let heck_stmt_let;
 struct heck_stmt_let {
 	string name;
 	heck_expr* value;
 };
+heck_stmt* create_stmt_let(string name, heck_expr* value);
 
+
+// IF STATEMENT
 typedef struct heck_stmt_if heck_stmt_if;
 struct heck_stmt_if {
 	heck_expr* condition;
 	heck_stmt** stmt_vec;
 };
+heck_stmt* create_stmt_if(heck_expr* condition);
 
+// FUNCTION PARAMETER
 typedef struct heck_param heck_param;
 struct heck_param {
 	string name; // name of the parameter
@@ -57,54 +60,51 @@ struct heck_param {
 	
 	heck_expr* def_val; // default value
 };
+heck_param* create_param(string name);
 
+// FUNCTION
 typedef struct heck_stmt_func heck_stmt_func;
 struct heck_stmt_func {
-	heck_expr_idf name;
-	
 	heck_param** param_vec;
 	heck_stmt** stmt_vec;
 	
 	heck_data_type return_type;
 };
-
+heck_stmt* create_stmt_func(void);
+heck_stmt* create_stmt_ret(heck_expr* value);
 // define a function declaration as a vector of overloads for a function of a given name
 typedef heck_stmt_func** heck_func_dec;
 
+// CLASS
 typedef struct heck_stmt_class heck_stmt_class;
 struct heck_stmt_class {
 	heck_expr_idf name;
 	
-	// maps of function declartions (private & public methods)
-	map_t pvt_funcs;
-	map_t pub_funcs;
-	
 	// private & public variables
-	map_t pvt_vars;
-	map_t pub_vars;
+	map_t vars;
 };
+heck_stmt* create_stmt_class(heck_expr_idf name);
 
+// NAMESPACE
+// not to be confused with the scope namespace, heck_nmsp.
+// stores a name so statements can be compiled in the right context
+typedef struct heck_stmt_nmsp heck_stmt_nmsp;
+struct heck_stmt_nmsp {
+	heck_expr_idf name;
+	heck_stmt** stmt_vec;
+};
+heck_stmt* create_stmt_nmsp(heck_expr_idf name);
+
+// SCOPE
+// not to be confused with heck_scope
+// so statements can be compiled in the right context
 typedef struct heck_stmt_scope heck_stmt_scope;
 struct heck_stmt_scope {
 	heck_stmt** stmt_vec;
 };
-
-heck_stmt* create_stmt_expr(heck_expr* expr);
-
-heck_stmt* create_stmt_let(string name, heck_expr* value);
-
-heck_stmt* create_stmt_if(heck_expr* condition);
-
-heck_param* create_param(string name);
-
-heck_stmt* create_stmt_ret(heck_expr* value);
-
-heck_stmt* create_stmt_func(heck_expr_idf name);
-
-heck_stmt* create_stmt_class(heck_expr_idf name);
-
 heck_stmt* create_stmt_scope(void);
 
+// ERROR
 heck_stmt* create_stmt_err(void);
 
 void print_stmt(heck_stmt* stmt, int indent);

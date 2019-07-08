@@ -11,6 +11,8 @@
 #include "scanner.h"
 #include "parser.h"
 
+#include "hashmap.h"
+
 // solve this problem in heck
 /*
 let a = run()
@@ -25,12 +27,15 @@ int main(int argc, const char * argv[]) {
 	FILE* f = fopen("frick.js", "r");
 	
 	if (f) {
+		
+
+		
 		//printf("start.\n");
 		heck_code* c = heck_create();
 		heck_scan(c, f);
-		//printf("done.\n");
 		heck_print_tokens(c);
 		heck_parse(c);
+		//printf("done.\n");
 		
 		heck_free(c);
 	}

@@ -15,12 +15,12 @@
 #include "token.h"
 #include "statement.h"
 #include "vec.h"
-#include "namespace.h"
+#include "scope.h"
 
 struct heck_code {
 	heck_token** token_vec; // token vector
 	heck_stmt** syntax_tree_vec; // syntax tree
-	heck_namespace* global;
+	heck_scope* global;
 };
 
 #endif /* code_impl_h */
