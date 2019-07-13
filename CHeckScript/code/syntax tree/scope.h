@@ -11,51 +11,46 @@
 #include "hashmap.h"
 #include "statement.h"
 
-typedef enum heck_scope_type heck_scope_type;
-enum heck_scope_type {
-	SCOPE_NAMESPACE,
-	SCOPE_CLASS,
-	SCOPE_FUCNTION,
-	SCOPE_VARIABLE,
-	SCOPE_UNKNOWN,
+typedef enum heck_idf_type heck_idf_type;
+enum heck_idf_type {
+	IDF_NONE,				// for blocks of code
+	IDF_UNDECLARED,			// definition namespace or class has not been found yet
+	IDF_NAMESPACE,
+	IDF_CLASS,
+	IDF_UNDECLARED_CLASS,	// a forward declaration has not been found yet
+	IDF_FUNCTION,
+	IDF_UNDECLARED_FUNC,	// a forward declaration has not been found yet
+	IDF_VARIABLE,
 };
 
-typedef struct heck_scope heck_scope;
-struct heck_scope {
-	heck_scope_type type;
+typedef struct heck_scope {
+	heck_idf_type type;
 	
-	// child scopes (heck_scope; populate when parsing)
-	map_t scope_map;
+	// identifier map
+	map_t idf_map;
 	
 	void* value;
-};
+} heck_scope;
+heck_scope* create_scope(heck_idf_type type);
 
+// vvv TYPES OF CHILD scopeS vvv
 
-// vvv TYPES OF CHILD SCOPES vvv
-
-// NAMESPACE
-typedef struct heck_nmsp heck_nmsp;
-struct heck_nmsp {
-	// variables (heck_stmt_let; populate when compiling)
-	map_t var_map;
-};
-heck_nmsp* create_nmsp(void);
-heck_scope* scope_add_nmsp(heck_scope* scope, heck_nmsp* child, heck_idf name);
-heck_scope* create_scope_nmsp(void);
+// scope
+heck_scope* create_nmsp(void);
+heck_scope* add_nmsp_idf(heck_scope* scope, heck_scope* child, heck_idf name);
 
 // CLASS
-heck_scope* scope_add_class(heck_scope* scope, heck_stmt_class* child, heck_idf name);
+heck_scope* add_class_idf(heck_scope* scope, heck_stmt_class* child, heck_idf name);
 
 // FUNCTION
-typedef struct heck_func heck_func;
-struct heck_func {
+typedef struct heck_func {
 	heck_param** param_vec;
 	heck_stmt** stmt_vec;
 	
 	heck_data_type return_type;
-};
+} heck_func;
 heck_func* create_func(void);
-heck_scope* scope_add_func(heck_scope* scope, heck_func* child, heck_idf name);
+heck_scope* add_func_idf(heck_scope* nmsp, heck_func* child, heck_idf name);
 
 
 void print_scope(heck_scope* scope);

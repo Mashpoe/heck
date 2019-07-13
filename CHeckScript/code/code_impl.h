@@ -14,8 +14,8 @@
 #include "code.h"
 #include "token.h"
 #include "statement.h"
-#include "vec.h"
 #include "scope.h"
+#include "vec.h"
 
 struct heck_code {
 	heck_token** token_vec; // token vector

@@ -7,10 +7,10 @@
 
 #include "parser.h"
 #include "code_impl.h"
+#include "tokentypes.h"
 #include "expression.h"
 #include "statement.h"
 #include "scope.h"
-#include "tokentypes.h"
 
 #include <stdio.h>
 
@@ -50,10 +50,7 @@ bool match(parser* p, heck_tk_type type) {
 
 // don't step because newlines aren't tokens
 bool match_endl(parser* p) {
-	if (previous(p)->ln < peek(p)->ln) {
-		return true;
-	}
-	return false;
+	return previous(p)->ln < peek(p)->ln;
 }
 
 void panic_mode(parser* p) {
@@ -333,7 +330,7 @@ void func_statement(parser* p, heck_scope* scope) {
 	}
 	
 	heck_func* func = create_func();
-	heck_scope* child = scope_add_func(scope, func, identifier(p));
+	heck_scope* child = add_func_idf(scope, func, identifier(p));
 	
 	if (!match(p, TK_PAR_L)) {
 		// TODO: report expected '('
@@ -436,10 +433,11 @@ heck_stmt* ret_statement(parser* p) {
 	return create_stmt_ret(expression(p));
 }
 
-heck_stmt* scope_statement(parser* p, heck_scope* scope) {
+heck_stmt* block_statement(parser* p, heck_scope* scope) {
 	step(p);
 	
-	heck_stmt* s = create_stmt_scope();
+	heck_stmt* s = create_stmt_block();
+	heck_stmt_block* block = s->value;
 	
 	for (;;) {
 		if (atEnd(p)) {
@@ -448,7 +446,7 @@ heck_stmt* scope_statement(parser* p, heck_scope* scope) {
 		} else if (match(p, TK_BRAC_R)) {
 			break;
 		} else {
-			_vector_add(&s->value, heck_stmt*) = statement(p, scope);
+			_vector_add(&block->stmt_vec, heck_stmt*) = statement(p, block->scope);
 		}
 	}
 	
@@ -479,7 +477,7 @@ heck_stmt* statement(parser* p, heck_scope* scope) {
 			return ret_statement(p);
 			break;
 		case TK_BRAC_L:
-			return scope_statement(p, scope);
+			return block_statement(p, scope);
 			break;
 		default:
 			return create_stmt_expr(expression(p));

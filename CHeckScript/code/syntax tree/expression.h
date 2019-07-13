@@ -25,30 +25,26 @@ enum heck_expr_type {
 	EXPR_ERR		// error parsing
 };
 
-typedef struct heck_expr heck_expr;
-struct heck_expr {
+typedef struct heck_expr {
 	heck_expr_type type;
 	void* expr;
-};
+} heck_expr;
 
-typedef struct heck_expr_binary heck_expr_binary;
-struct heck_expr_binary {
+typedef struct heck_expr_binary {
 	heck_expr* left;
 	heck_tk_type operator;
 	heck_expr* right;
-};
+} heck_expr_binary;
 
-typedef struct heck_expr_unary heck_expr_unary;
-struct heck_expr_unary {
+typedef struct heck_expr_unary {
 	heck_expr* expr;
 	heck_tk_type operator;
-};
+} heck_expr_unary;
 
-typedef struct heck_expr_literal heck_expr_literal;
-struct heck_expr_literal {
-	heck_tk_type type; // TODO ((((((maybe)))))) make it heck_type
+typedef struct heck_expr_literal {
+	heck_data_type type;
 	void* value;
-};
+} heck_expr_literal;
 
 // vector of consecutive identifiers separated by '.'
 typedef const string* heck_idf;
@@ -57,24 +53,21 @@ typedef const string* heck_idf;
 typedef heck_idf heck_expr_value;
 
 // function call
-typedef struct heck_expr_call heck_expr_call;
-struct heck_expr_call {
+typedef struct heck_expr_call {
 	heck_idf name;
 	heck_expr** arg_vec; // arguments
-};
+} heck_expr_call;
 
-typedef struct heck_expr_asg heck_expr_asg;
-struct heck_expr_asg {
+typedef struct heck_expr_asg {
 	heck_idf name;
 	heck_expr* value;
-};
+} heck_expr_asg;
 
-typedef struct heck_expr_ternary heck_expr_ternary;
-struct heck_expr_ternary {
+typedef struct heck_expr_ternary {
 	heck_expr* condition;
 	heck_expr* value_a;
 	heck_expr* value_b;
-};
+} heck_expr_ternary;
 
 heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr* right);
 

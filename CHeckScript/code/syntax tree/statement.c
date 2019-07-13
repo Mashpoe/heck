@@ -6,6 +6,7 @@
 //
 
 #include "statement.h"
+#include "scope.h"
 #include <stdio.h>
 
 heck_stmt* create_stmt_expr(heck_expr* expr) {
@@ -85,12 +86,17 @@ heck_stmt* create_stmt_class(heck_idf name) {
 	return s;
 }
 
-heck_stmt* create_stmt_scope(void) {
+heck_stmt* create_stmt_block(void) {
 	
 	heck_stmt* s = malloc(sizeof(heck_stmt));
-	s->type = STMT_SCOPE;
+	s->type = STMT_BLOCK;
 	
-	s->value = _vector_create(heck_stmt*);
+	heck_stmt_block* block_stmt = malloc(sizeof(heck_stmt_block));
+	block_stmt->stmt_vec = _vector_create(heck_stmt*);
+	block_stmt->scope = create_scope(IDF_NONE);
+	block_stmt->type = BLOCK_DEFAULT;
+	
+	s->value = block_stmt;
 	
 	return s;
 }
@@ -174,12 +180,14 @@ void print_stmt(heck_stmt* stmt, int indent) {
 		case STMT_ERR:
 			printf("@error\n");
 			break;
-		case STMT_SCOPE:
+		case STMT_BLOCK: {
+			heck_stmt_block* block = stmt->value;
 			printf("{\n");
-			for (int i = 0; i < vector_size(stmt->value); i++) {
-				print_stmt(((heck_stmt**)stmt->value)[i], indent + 1);
+			for (int i = 0; i < vector_size(block->stmt_vec); i++) {
+				print_stmt(((heck_stmt**)block->stmt_vec)[i], indent + 1);
 			}
 			printf("}\n");
 			break;
+		}
 	}
 }

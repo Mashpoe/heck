@@ -7,14 +7,14 @@
 
 #include "code.h"
 #include "code_impl.h"
-#include <stdio.h>
-#include "str.h"
 #include "scope.h"
+#include "str.h"
+#include <stdio.h>
 
 heck_code* heck_create() {
 	heck_code* c = malloc(sizeof(heck_code));
 	c->token_vec = vector_create(sizeof(heck_token*));
-	c->global = create_scope_nmsp();
+	c->global = create_nmsp();
 	c->syntax_tree_vec = _vector_create(heck_stmt*);
 	return c;
 }
