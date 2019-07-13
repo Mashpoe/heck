@@ -95,7 +95,7 @@
 		2AECE612222606C300D2219B = {
 			isa = PBXGroup;
 			children = (
-				2AECE61D222606C300D2219B /* CHeckScript */,
+				2AECE61D222606C300D2219B /* src */,
 				2AECE61C222606C300D2219B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -108,7 +108,7 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		2AECE61D222606C300D2219B /* CHeckScript */ = {
+		2AECE61D222606C300D2219B /* src */ = {
 			isa = PBXGroup;
 			children = (
 				2AEFAF90223D7FB300BBA04F /* structures */,
@@ -119,7 +119,7 @@
 				2AC8FD4B22B8DF840019C9F3 /* compiler */,
 				2AECE61E222606C300D2219B /* main.c */,
 			);
-			path = CHeckScript;
+			path = src;
 			sourceTree = "<group>";
 		};
 		2AEFAF90223D7FB300BBA04F /* structures */ = {
