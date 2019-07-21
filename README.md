@@ -26,11 +26,14 @@ let c = add("hello", "world")
 // the function "add" is compiled for a number and a string
 let d = add(1, "hello")
 
+// the function "add" was already compiled for two string arguments; no need to recompile
+let e = add("foo", "bar")
+
 print(d) // will print "1hello"
 
 ```
 
-The main philosiphy behind Heck is that every piece of code should have equivalent machine code. Other high level languages like JavaScript can't always be converted into machine code, so programs are either slow or partially optimized. This results in a program that is part bytecode, part machine code, which takes up extra resources, and has historically led to security exploits.
+The main philosiphy behind Heck is that every piece of code should have equivalent machine code. Other high level languages like JavaScript can't always be converted into machine code, so programs are either slow or partially optimized. This results in a program that's part bytecode, part machine code, which takes up extra resources, and has historically led to security exploits.
 
 There is nothing wrong with using bytecode by itself, but mixing it with machine code is not ideal. Of course, some implementations of Heck could be compiled into bytecode, but all valid Heck code must be able to be compiled into an executable binary or JITed on the fly with no funny business involved.
 
@@ -171,7 +174,7 @@ As demonstrated by the example above, creating a new variable and modifying a pr
 
 In Heck, the `let` keyword is required to declare new variables, which means it's easier to find where a variable was initially declared, code can be copied with no issues, and debugging is much easier.
 
-Languages like Python are supposed to make it easier to write self-documenting code, and while they often succeed in this task, the lack of separation between declarations and assignment often makes it impossible.
+Languages like Python are supposed to make it easier to write self-documenting code, and while they often succeed in this task, the lack of separation between declarations and assignment can sometimes make it impossible.
 
 In the case where you need to specify the use a global variable, Heck supports the `global` keyword, but it uses it much more intuitively than other languages:
 
@@ -194,6 +197,6 @@ function foo() {
 
 This is currently the only implementation of Heck, and while it's not yet finished, there could be a large variety of compilation targets in the future.
 
-This implementation is written in C, but since Heck is a compiled language, bootstrapping could be possible in the near future. This implementation will continue to be written in C in order to create a C api, and because there is no doubt that Heck is turing complete, there is no reason to rewrite the compiler in itself any time soon.
+This implementation is written in C, but since Heck is a compiled language, bootstrapping could be possible in the near future. This implementation will continue to be written in C in order to create a C api, and because there is no doubt that Heck is turing complete, there is no reason to rewrite the compiler in Heck any time soon.
 
 A bytecode implementation would also be suitable, but there is no reason not to JIT everything. An interactive shell would be compatible with JITed code as long as the syntax tree remains in memory.
