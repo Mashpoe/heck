@@ -71,7 +71,7 @@ function bar(bool a) { // will not compile; this function returns both strings a
 }
 
 // you can make use of more complex generic functions with explicit type arguments:
-let d = add<num, string>(1, 2)
+let d = add<num, string>(1, "2")
 
 function add3<A, B>(A a, B b, num c) {
   return a + b + c
@@ -138,7 +138,7 @@ You can also `import` specific methods, classes, and namespaces from a file like
 
 # Context/Scopes
 
-Some "*people*" believe declaring variables without a special keyword, e.g. `name = input()`, will make things simpler. This is the case for many languages such as Python and PHP, and any advocacy for such practices is **blatantly wrong**.
+Some people believe declaring variables without a special keyword, e.g. `name = input()`, will make things simpler. This is the case for many languages such as Python and PHP, and any advocacy for such practices is **blatantly wrong**.
 
 First of all, it makes things harder for humans to read, which is the opposite of what was intended. Consider the following Python code:
 
@@ -167,11 +167,11 @@ Output:
 5
 2
 ```
-As demonstrated by the example above, creating a new variable and modifying a previously "*declared*" variable have the *exact* same syntax. Of course, any Python programmer would be able to tell the difference, and they would likely tell you to use the `global` keyword, but even an experienced Python programmer will run into issues that they wouldn't face in a language with more strict syntax. For example, if a piece of code was copied into some nested loops and if statements, there could be a duplicate variable name in the nested code, which the programmer wouldn't initially notice. This could be hard to debug, and the fact that declarations and assignment look exactly the same would certainly not help in finding the source of the issue.
+As demonstrated by the example above, creating a new variable and modifying a previously "*declared*" variable have the *exact* same syntax. Of course, any Python programmer would be able to tell the difference, and they would likely tell you to use the `global` keyword, but even an experienced Python programmer will run into issues that they wouldn't face in a language with more strict syntax. For example, if a piece of code was copied into some nested loops and if statements, there could be a duplicate variable name in the nested code, which the programmer wouldn't initially notice. This could be hard to debug, and the fact that declarations and assignment look exactly the same certainly wouldn't help in finding the source of the issue.
 
 In Heck, the `let` keyword is required to declare new variables, which means it's easier to find where a variable was initially declared, code can be copied with no issues, and debugging is much easier.
 
-Languages like Python are supposed to make it easier to write self-documenting code, and while they often succeed in this task, the lack of separation between declarations and assignment often make it impossible.
+Languages like Python are supposed to make it easier to write self-documenting code, and while they often succeed in this task, the lack of separation between declarations and assignment often makes it impossible.
 
 In the case where you need to specify the use a global variable, Heck supports the `global` keyword, but it uses it much more intuitively than other languages:
 
