@@ -110,44 +110,50 @@ heck_idf identifier(parser* p) { // assumes an identifier was just found with ma
 	return idf;
 }
 
+heck_expr* primary_idf(parser* p, bool global) { // assumes an idf was already matched
+	heck_idf name = identifier(p);
+	
+	if (match(p, TK_PAR_L)) { // function call
+		heck_expr* call = create_expr_call(name, global);
+		
+		if (match(p, TK_PAR_R))
+			return call;
+		
+		for (;;) {
+			_vector_add(&((heck_expr_call*)call->expr)->arg_vec, heck_expr*) = expression(p);
+			
+			if (match(p, TK_PAR_R)) {
+				return call;
+			} else if (!match(p, TK_COMMA)) {
+				// TODO: report expected ')'
+				panic_mode(p);
+				break;
+			}
+		}
+		
+		return call;
+		
+	} else { // variable?
+		return create_expr_value(name, global);
+	}
+}
+
 heck_expr* primary(parser* p) {
-	if (match(p, TK_KW_FALSE)) return create_expr_literal(NULL, TK_KW_FALSE);
-	if (match(p, TK_KW_TRUE)) return create_expr_literal(NULL, TK_KW_TRUE);
+	
+	// TODO: move to switch
+	if (match(p, TK_KW_NULL)) return create_expr_literal(NULL, LITERAL_NULL);
+	
+	if (match(p, TK_KW_FALSE)) return create_expr_literal(NULL, LITERAL_FALSE);
+	if (match(p, TK_KW_TRUE)) return create_expr_literal(NULL, LITERAL_TRUE);
 	//if (match(NIL)) return new Expr.Literal(null);
 	
-	if (match(p, TK_NUM) || match(p, TK_STR)) {
-		return create_expr_literal(previous(p)->value, previous(p)->type);
-	}
+	if (match(p, TK_NUM)) return create_expr_literal(previous(p)->value, LITERAL_NUM);
+	if (match(p, TK_STR)) return create_expr_literal(previous(p)->value, LITERAL_STR);
 	
 	// TODO: add support for "global" keyword, e.g. global.xyz = "value"
 	// This is the ONLY place where the global keyword should be used
 	if (match(p, TK_IDF)) {
-		
-		heck_idf name = identifier(p);
-		
-		if (match(p, TK_PAR_L)) { // function call
-			heck_expr* call = create_expr_call(name);
-			
-			if (match(p, TK_PAR_R))
-				return call;
-			
-			for (;;) {
-				_vector_add(&((heck_expr_call*)call->expr)->arg_vec, heck_expr*) = expression(p);
-				
-				if (match(p, TK_PAR_R)) {
-					return call;
-				} else if (!match(p, TK_COMMA)) {
-					// TODO: report expected ')'
-					panic_mode(p);
-					break;
-				}
-			}
-			
-			return call;
-			
-		} else { // variable?
-			return create_expr_value(name);
-		}
+		return primary_idf(p, false);
 	}
 	
 	if (match(p, TK_PAR_L)) { // parentheses grouping
@@ -166,7 +172,8 @@ heck_expr* primary(parser* p) {
 	
 	// TODO: report expected expression
 	panic_mode(p);
-	return create_expr_err();
+	//return create_expr_err();
+	return create_expr_literal("meme", LITERAL_STR);
 }
 
 heck_expr* unary(parser* p) {
@@ -233,7 +240,9 @@ heck_expr* assignment(parser* p) {
 	if (match(p, TK_OP_ASG)) {
 		
 		if (expr->type == EXPR_VALUE) {
-			return create_expr_asg((heck_idf)expr->expr, expression(p));
+			heck_expr* asg = create_expr_asg((heck_expr_value*)expr->expr, expression(p));
+			free(expr);
+			return asg;
 		}
 		
 		// TODO: report invalid assignment target
@@ -271,7 +280,7 @@ heck_expr* expression(parser* p) {
  */
 
 // forward declarations
-heck_stmt* statement(parser* p, heck_scope* scope);
+void statement(parser* p, heck_block* block);
 
 heck_stmt* let_statement(parser* p) {
 	step(p);
@@ -290,29 +299,42 @@ heck_stmt* let_statement(parser* p) {
 	return create_stmt_err();
 }
 
+heck_block* parse_block(parser* p) {
+	step(p);
+	heck_block* block = create_block();
+	
+	for (;;) {
+		if (atEnd(p)) {
+			// TODO report unexpected EOF
+			break;
+		} else if (match(p, TK_BRAC_R)) {
+			break;
+		} else {
+			statement(p, block);
+		}
+	}
+	
+	return block;
+}
+
+heck_stmt* block_statement(parser* p) {
+	return create_stmt_block(parse_block(p));
+}
+
 heck_stmt* if_statement(parser* p, heck_scope* scope) {
 	step(p);
 	
 	// if statements do not need (parentheses) around the condition in heck
 	heck_stmt* s = create_stmt_if(expression(p));
-	if (match(p, TK_BRAC_L)) {
+	if (peek(p)->type == TK_BRAC_L) {
 		
-		for (;;) {
-			if (atEnd(p)) {
-				// TODO report unexpected EOF
-				break;
-			} else if (match(p, TK_BRAC_R)) {
-				break;
-			} else {
-				_vector_add(&((heck_stmt_if*)s->value)->stmt_vec, heck_stmt*) = statement(p, scope);
-			}
-		}
+		((heck_stmt_if*)s->value)->code = parse_block(p);
 		
 	} else {
 		// TODO: report expected '{'
 		
 		// populate if statement with only an error
-		_vector_add(&((heck_stmt_if*)s->value)->stmt_vec, heck_stmt*) = create_stmt_err();
+		//_vector_add(&((heck_stmt_if*)s->value)->stmt_vec, heck_stmt*) = create_stmt_err();
 		
 		panic_mode(p);
 	}
@@ -396,18 +418,9 @@ void func_statement(parser* p, heck_scope* scope) {
 		}
 	}
 	
-	if (match(p, TK_BRAC_L)) {
+	if (peek(p)->type == TK_BRAC_L) {
 		
-		for (;;) {
-			if (atEnd(p)) {
-				// TODO report unexpected EOF
-				break;
-			} else if (match(p, TK_BRAC_R)) {
-				break;
-			} else {
-				_vector_add(&func->stmt_vec, heck_stmt*) = statement(p, child);
-			}
-		}
+		func->code = parse_block(p);
 		
 	} else {
 		// TODO: report expected '{'
@@ -433,26 +446,6 @@ heck_stmt* ret_statement(parser* p) {
 	return create_stmt_ret(expression(p));
 }
 
-heck_stmt* block_statement(parser* p, heck_scope* scope) {
-	step(p);
-	
-	heck_stmt* s = create_stmt_block();
-	heck_stmt_block* block = s->value;
-	
-	for (;;) {
-		if (atEnd(p)) {
-			// TODO report unexpected EOF
-			break;
-		} else if (match(p, TK_BRAC_R)) {
-			break;
-		} else {
-			_vector_add(&block->stmt_vec, heck_stmt*) = statement(p, block->scope);
-		}
-	}
-	
-	return s;
-}
-
 heck_stmt* namespace(parser* p, heck_scope* scope) {
 	
 	// check if namespace is already defined
@@ -460,28 +453,65 @@ heck_stmt* namespace(parser* p, heck_scope* scope) {
 	return NULL;
 }
 
-heck_stmt* statement(parser* p, heck_scope* scope) {
+// for inside blocks of code
+void statement(parser* p, heck_block* block) {
+	
+	heck_stmt* stmt = NULL;
 	
 	switch (peek(p)->type) {
 		case TK_KW_LET:
-			return let_statement(p);
+			stmt = let_statement(p);
 			break;
 		case TK_KW_IF:
-			return if_statement(p, scope);
+			stmt = if_statement(p, block->scope);
+			break;
+		case TK_KW_FUNC:
+			func_statement(p, block->scope);
+			return;
+			break;
+		case TK_KW_RETURN:
+			stmt = ret_statement(p);
+			break;
+		case TK_BRAC_L:
+			stmt = block_statement(p);
+			break;
+		default: {
+			heck_tk_type t = peek(p)->type;
+			stmt = create_stmt_expr(expression(p));
+		}
+	}
+	
+	_vector_add(&block->stmt_vec, heck_stmt*) = stmt;
+	
+}
+
+// adds statements to the global syntax tree
+void global_statement(parser* p, heck_scope* scope) {
+	
+	heck_stmt* stmt = NULL;
+	
+	switch (peek(p)->type) {
+		case TK_KW_LET:
+			stmt = let_statement(p);
+			break;
+		case TK_KW_IF:
+			stmt = if_statement(p, scope);
 			break;
 		case TK_KW_FUNC:
 			func_statement(p, scope);
-			return NULL;
+			return;
 			break;
 		case TK_KW_RETURN:
-			return ret_statement(p);
+			stmt = ret_statement(p);
 			break;
 		case TK_BRAC_L:
-			return block_statement(p, scope);
+			stmt = block_statement(p);
 			break;
 		default:
-			return create_stmt_expr(expression(p));
+			stmt = create_stmt_expr(expression(p));
 	}
+	
+	_vector_add(&p->code->syntax_tree_vec, heck_stmt*) = stmt;
 }
 
 bool heck_parse(heck_code* c) {
@@ -491,31 +521,18 @@ bool heck_parse(heck_code* c) {
 	p->code = c;
 	p->success = true;
 	
-	//heck_namespace* global = create_namespace(NULL);
-	
 	while (!atEnd(p)) {
-		heck_stmt* e = statement(p, c->global);
-//
-//		switch(e->type) {
-//			case STMT_LET:
-//
-//				hashmap_put(global->var_map, ((heck_stmt_let*)e->value)->name, e->value);
-//				break;
-//			case STMT_FUNC: {
-//				hashmap_put(c->global->scope_map, ((heck_stmt_func*)e->value)->name, e->value);
-//				break;
-//			}
-//			default:
-//				break;
-//
-//		}
-		if (e) {
-			print_stmt(e, 0);
-		}
-		//_vector_add(c->syntax_tree_vec, heck_stmt*) = statement(p);
+		
+		global_statement(p, c->global);
+		
 	}
 	
-	print_scope(c->global);
+	print_scope(c->global, 0);
+	
+	unsigned long stmt_count = vector_size(c->syntax_tree_vec);
+	for (int i = 0; i < stmt_count; i++) {
+		print_stmt(c->syntax_tree_vec[i], 0);
+	}
 	
 	return p->success;
 }

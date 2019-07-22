@@ -411,6 +411,15 @@ bool heck_scan(heck_code* c, FILE* f) {
 					} else if (strcmp(token, "return") == 0) {
 						add_token(c, &fp, TK_KW_RETURN, NULL);
 						
+					} else if (strcmp(token, "true") == 0) {
+						add_token(c, &fp, TK_KW_TRUE, NULL);
+						
+					} else if (strcmp(token, "false") == 0) {
+						add_token(c, &fp, TK_KW_FALSE, NULL);
+						
+					} else if (strcmp(token, "null") == 0) {
+						add_token(c, &fp, TK_KW_NULL, NULL);
+						
 					} else { // it is an identifier and not a keyword
 						add_token(c, &fp, TK_IDF, token);
 						continue; // prevent the string from being freed

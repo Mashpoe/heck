@@ -92,6 +92,9 @@ void heck_print_token(heck_token* tk) {
 		case TK_COMMA:
 			printf(", ");
 			break;
+		case TK_OP_DOT:
+			printf(".");
+			break;
 		case TK_SQR_L:
 			printf("[");
 			break;

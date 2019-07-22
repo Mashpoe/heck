@@ -8,8 +8,7 @@
 #ifndef types_h
 #define types_h
 
-typedef enum heck_data_type heck_data_type;
-enum heck_data_type {
+typedef enum heck_data_type {
 	TYPE_NUM = 0,
 	TYPE_STR,
 	TYPE_BOOL,
@@ -19,6 +18,14 @@ enum heck_data_type {
 	
 	TYPE_GEN,		// generic type (type hasn't been deduced by the compiler yet)
 	TYPE_VOID,		// void return value
-};
+} heck_data_type;
+
+typedef enum heck_literal_type {
+	LITERAL_NUM,
+	LITERAL_STR,
+	LITERAL_TRUE,
+	LITERAL_FALSE,
+	LITERAL_NULL
+} heck_literal_type;
 
 #endif /* types_h */

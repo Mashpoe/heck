@@ -15,7 +15,6 @@ typedef enum heck_stmt_type {
 	STMT_EXPR,
 	STMT_LET,
 	STMT_IF,
-	STMT_FUNC,
 	STMT_RET,
 	STMT_CLASS,
 	STMT_BLOCK,
@@ -38,36 +37,28 @@ typedef struct heck_stmt_let {
 } heck_stmt_let;
 heck_stmt* create_stmt_let(string name, heck_expr* value);
 
+// BLOCK
+typedef struct heck_block heck_block;
+heck_stmt* create_stmt_block(heck_block* block);
 
 // IF STATEMENT
 typedef struct heck_stmt_if {
 	heck_expr* condition;
-	heck_stmt** stmt_vec;
+	heck_block* code;
 } heck_stmt_if;
 heck_stmt* create_stmt_if(heck_expr* condition);
 
-// FUNCTION PARAMETER
-typedef struct heck_param {
-	string name; // name of the parameter
-	
-	heck_data_type type;
-	heck_idf obj_type; // NULL unless type == TYPE_OBJ
-	
-	heck_expr* def_val; // default value
-} heck_param;
-heck_param* create_param(string name);
-
 // FUNCTION
-typedef struct heck_stmt_func {
+/*typedef struct heck_stmt_func {
 	heck_param** param_vec;
 	heck_stmt** stmt_vec;
 	
 	heck_data_type return_type;
 } heck_stmt_func;
-heck_stmt* create_stmt_func(void);
+heck_stmt* create_stmt_func(void);*/
 heck_stmt* create_stmt_ret(heck_expr* value);
 // define a function declaration as a vector of overloads for a function of a given name
-typedef heck_stmt_func** heck_func_dec;
+//typedef heck_stmt_func** heck_func_dec;
 
 // CLASS
 typedef struct heck_stmt_class {
@@ -86,17 +77,6 @@ typedef struct heck_stmt_nmsp {
 	heck_stmt** stmt_vec;
 } heck_stmt_nmsp;
 heck_stmt* create_stmt_nmsp(heck_idf name);
-
-// BLOCK/SCOPE
-// not to be confused with idf_scope
-// so statements can be compiled in the right context
-typedef enum { BLOCK_BREAKS, BLOCK_RETURNS, BLOCK_DEFAULT } heck_block_type;
-typedef struct heck_stmt_block {
-	heck_block_type type;
-	struct heck_scope* scope;
-	heck_stmt** stmt_vec;
-} heck_stmt_block;
-heck_stmt* create_stmt_block(void);
 
 // ERROR
 heck_stmt* create_stmt_err(void);

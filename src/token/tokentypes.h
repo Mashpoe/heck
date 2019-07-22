@@ -89,6 +89,7 @@ enum heck_tk_type {
 	
 	TK_KW_TRUE,
 	TK_KW_FALSE,
+	TK_KW_NULL,
 	TK_KW_IF,
 	TK_KW_ELSE,
 	TK_KW_DO,

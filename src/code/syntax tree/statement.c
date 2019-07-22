@@ -34,7 +34,7 @@ heck_stmt* create_stmt_if(heck_expr* condition) {
 	
 	heck_stmt_if* if_stmt = malloc(sizeof(heck_stmt_if));
 	if_stmt->condition = condition;
-	if_stmt->stmt_vec = _vector_create(heck_stmt*);
+	if_stmt->code = create_block();
 	
 	s->value = if_stmt;
 	return s;
@@ -60,7 +60,7 @@ heck_stmt* create_stmt_ret(heck_expr* expr) {
 	return s;
 }
 
-heck_stmt* create_stmt_func() {
+/*heck_stmt* create_stmt_func() {
 	heck_stmt* s = malloc(sizeof(heck_stmt));
 	s->type = STMT_FUNC;
 	
@@ -71,7 +71,7 @@ heck_stmt* create_stmt_func() {
 	
 	s->value = func_stmt;
 	return s;
-}
+}*/
 
 heck_stmt* create_stmt_class(heck_idf name) {
 	heck_stmt* s = malloc(sizeof(heck_stmt));
@@ -86,17 +86,12 @@ heck_stmt* create_stmt_class(heck_idf name) {
 	return s;
 }
 
-heck_stmt* create_stmt_block(void) {
+heck_stmt* create_stmt_block(struct heck_block* block) {
 	
 	heck_stmt* s = malloc(sizeof(heck_stmt));
 	s->type = STMT_BLOCK;
 	
-	heck_stmt_block* block_stmt = malloc(sizeof(heck_stmt_block));
-	block_stmt->stmt_vec = _vector_create(heck_stmt*);
-	block_stmt->scope = create_scope(IDF_NONE);
-	block_stmt->type = BLOCK_DEFAULT;
-	
-	s->value = block_stmt;
+	s->value = block;
 	
 	return s;
 }
@@ -108,8 +103,6 @@ heck_stmt* create_stmt_err(void) {
 	
 	return s;
 }
-
-
 
 void print_stmt(heck_stmt* stmt, int indent) {
 	
@@ -133,13 +126,11 @@ void print_stmt(heck_stmt* stmt, int indent) {
 			heck_stmt_if* if_stmt = stmt->value;
 			printf("if ");
 			print_expr(if_stmt->condition);
-			printf(" {\n");
+			printf(" ");
 			
-			for (int i = 0; i < vector_size(if_stmt->stmt_vec); i++) {
-				print_stmt(if_stmt->stmt_vec[i], indent + 1);
-			}
 			
-			printf("}\n");
+			print_block(if_stmt->code, indent);
+			
 			
 			break;
 		}
@@ -151,7 +142,7 @@ void print_stmt(heck_stmt* stmt, int indent) {
 			printf("\n");
 			break;
 		}
-		case STMT_FUNC: {
+		/*case STMT_FUNC: {
 			heck_stmt_func* func_stmt = stmt->value;
 			printf("function [");
 			//print_idf(func_stmt->name);
@@ -173,7 +164,7 @@ void print_stmt(heck_stmt* stmt, int indent) {
 			printf("}\n");
 			
 			break;
-		}
+		}*/
 		case STMT_CLASS: {
 			break;
 		}
@@ -181,12 +172,13 @@ void print_stmt(heck_stmt* stmt, int indent) {
 			printf("@error\n");
 			break;
 		case STMT_BLOCK: {
-			heck_stmt_block* block = stmt->value;
-			printf("{\n");
-			for (int i = 0; i < vector_size(block->stmt_vec); i++) {
-				print_stmt(((heck_stmt**)block->stmt_vec)[i], indent + 1);
-			}
-			printf("}\n");
+			print_block(stmt->value, indent);
+			//heck_block* block = stmt->value;
+			//printf("{\n");
+			//for (int i = 0; i < vector_size(block->stmt_vec); i++) {
+			//	print_stmt(((heck_stmt**)block->stmt_vec)[i], indent + 1);
+			//}
+			//printf("}\n");
 			break;
 		}
 	}
