@@ -150,12 +150,6 @@ heck_expr* primary(parser* p) {
 	if (match(p, TK_NUM)) return create_expr_literal(previous(p)->value, LITERAL_NUM);
 	if (match(p, TK_STR)) return create_expr_literal(previous(p)->value, LITERAL_STR);
 	
-	// TODO: add support for "global" keyword, e.g. global.xyz = "value"
-	// This is the ONLY place where the global keyword should be used
-	if (match(p, TK_IDF)) {
-		return primary_idf(p, false);
-	}
-	
 	if (match(p, TK_PAR_L)) { // parentheses grouping
 		heck_expr* expr = expression(p);
 		if (match(p, TK_PAR_R)) {
@@ -163,11 +157,20 @@ heck_expr* primary(parser* p) {
 		} else {
 			// TODO: report expected ')'
 		}
-		
-		
-		//Expr expr = expression();
-		//consume(RIGHT_PAREN, "Expect ')' after expression.");
-		//return new Expr.Grouping(expr);
+	}
+	
+	// TODO: add support for "global" keyword, e.g. global.xyz = "value"
+	// This is the ONLY place where the global keyword should be used
+	if (match(p, TK_IDF)) {
+		return primary_idf(p, false);
+	}
+	
+	if (match(p, TK_KW_GLOBAL)) {
+		if (match(p, TK_OP_DOT) && match(p, TK_IDF)) {
+			return primary_idf(p, true);
+		} else {
+			// TODO: report expected identifier
+		}
 	}
 	
 	// TODO: report expected expression
@@ -476,7 +479,6 @@ void statement(parser* p, heck_block* block) {
 			stmt = block_statement(p);
 			break;
 		default: {
-			heck_tk_type t = peek(p)->type;
 			stmt = create_stmt_expr(expression(p));
 		}
 	}

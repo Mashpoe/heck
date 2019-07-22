@@ -41,7 +41,7 @@ heck_expr* create_expr_literal(void* value, heck_literal_type type) {
 	heck_expr* e = malloc(sizeof(heck_expr));
 	e->type = EXPR_LITERAL;
 	
-	heck_expr_literal* literal = malloc(sizeof(heck_expr_unary));
+	heck_expr_literal* literal = malloc(sizeof(heck_expr_literal));
 	literal->value = value;
 	literal->type = type;
 	
@@ -68,9 +68,9 @@ heck_expr* create_expr_call(heck_idf name, bool global) {
 	e->type = EXPR_CALL;
 	
 	heck_expr_call* call = malloc(sizeof(heck_expr_call));
-	call->name = name;
+	call->name.name = name;
+	call->name.global = global;
 	call->arg_vec = _vector_create(heck_expr*);
-	call->global = global;
 	
 	e->expr = call;
 	
@@ -163,6 +163,13 @@ void print_idf(heck_idf idf) {
 	}
 }
 
+void print_expr_value(heck_expr_value* value) {
+	if (value->global) {
+		printf("global.");
+	}
+	print_idf(value->name);
+}
+
 void print_expr(heck_expr* expr) {
 	switch (expr->type) {
 		
@@ -208,18 +215,15 @@ void print_expr(heck_expr* expr) {
 			break;
 		}
 		case EXPR_VALUE: {
-			heck_expr_value* value = expr->expr;
 			printf("[");
-			if (value->global) printf("global.");
-			print_idf(value->name);
+			print_expr_value(expr->expr);
 			printf("]");
 			break;
 		}
 		case EXPR_CALL: {
 			heck_expr_call* call = expr->expr;
 			printf("[");
-			if (call->global) printf("global.");
-			print_idf(call->name);
+			print_expr_value(&call->name);
 			printf("(");
 			for (vec_size i = 0; i < vector_size(call->arg_vec); i++) {
 				print_expr(call->arg_vec[i]);
@@ -233,8 +237,7 @@ void print_expr(heck_expr* expr) {
 		case EXPR_ASG: {
 			heck_expr_asg* asg = expr->expr;
 			printf("[");
-			if (asg->name->global) printf("global.");
-			print_idf(asg->name->name);
+			print_expr_value(asg->name);
 			printf("] = ");
 			print_expr(asg->value);
 			break;

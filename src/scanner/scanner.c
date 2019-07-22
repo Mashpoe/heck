@@ -90,8 +90,10 @@ int scan_step(file_pos* fp) {
 
 // set do_step to true if you want to step past the string if it matches
 // will only match strings in the current line
-bool matchStringAtPos(file_pos* fp, char* s, int l_pos, bool do_step) {
+bool match_str(file_pos* fp, char* s) {
 	int s_pos = 0;
+	
+	int l_pos = fp->ch;
 	
 	while (s[s_pos] != '\0') {
 		if (s[s_pos] != fp->current_line[l_pos]) {
@@ -101,11 +103,7 @@ bool matchStringAtPos(file_pos* fp, char* s, int l_pos, bool do_step) {
 		s_pos++;
 	}
 	
-	if (do_step) {
-		for (int i = s_pos; i-- > 0;) {
-			scan_step(fp);
-		}
-	}
+	fp->ch = l_pos;
 	
 	return true;
 }
@@ -189,7 +187,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 				add_token(c, &fp, TK_BRAC_R, NULL);
 				break;
 			case '=': {
-				if (matchStringAtPos(&fp, "==", fp.ch, true)) {
+				if (match_str(&fp, "==")) {
 					add_token(c, &fp, TK_OP_EQ, NULL);
 					continue;
 				} else {
@@ -207,13 +205,13 @@ bool heck_scan(heck_code* c, FILE* f) {
 				add_token(c, &fp, TK_OP_NOT, NULL);
 				break;
 			case '>': {
-				if (matchStringAtPos(&fp, ">=", fp.ch, true)) {
+				if (match_str(&fp, ">=")) {
 					add_token(c, &fp, TK_OP_GT_EQ, NULL);
 					continue;
-				} else if (matchStringAtPos(&fp, ">>", fp.ch, true)) {
+				} else if (match_str(&fp, ">>")) {
 					add_token(c, &fp, TK_OP_SHFT_R, NULL);
 					continue;
-				} else if (matchStringAtPos(&fp, ">>=", fp.ch, true)) {
+				} else if (match_str(&fp, ">>=")) {
 					add_token(c, &fp, TK_OP_SHFT_R_ASG, NULL);
 					continue;
 				} else {
@@ -222,13 +220,13 @@ bool heck_scan(heck_code* c, FILE* f) {
 				break;
 			}
 			case '<': {
-				if (matchStringAtPos(&fp, "<=", fp.ch, true)) {
+				if (match_str(&fp, "<=")) {
 					add_token(c, &fp, TK_OP_LESS_EQ, NULL);
 					continue;
-				} else if (matchStringAtPos(&fp, "<<", fp.ch, true)) {
+				} else if (match_str(&fp, "<<")) {
 					add_token(c, &fp, TK_OP_SHFT_L, NULL);
 					continue;
-				} else if (matchStringAtPos(&fp, "<<=", fp.ch, true)) {
+				} else if (match_str(&fp, "<<=")) {
 					add_token(c, &fp, TK_OP_SHFT_L_ASG, NULL);
 					continue;
 				} else {
@@ -237,10 +235,10 @@ bool heck_scan(heck_code* c, FILE* f) {
 				break;
 			}
 			case '|': {
-				if (matchStringAtPos(&fp, "|=", fp.ch, true)) {
+				if (match_str(&fp, "|=")) {
 					add_token(c, &fp, TK_OP_BW_OR_ASG, NULL);
 					continue;
-				} else if (matchStringAtPos(&fp, "||", fp.ch, true)) {
+				} else if (match_str(&fp, "||")) {
 					add_token(c, &fp, TK_OP_OR, NULL);
 					continue;
 				} else {
@@ -249,10 +247,10 @@ bool heck_scan(heck_code* c, FILE* f) {
 				break;
 			}
 			case '&':{
-				if (matchStringAtPos(&fp, "&=", fp.ch, true)) {
+				if (match_str(&fp, "&=")) {
 					add_token(c, &fp, TK_OP_BW_AND_ASG, NULL);
 					continue;
-				} else if (matchStringAtPos(&fp, "&&", fp.ch, true)) {
+				} else if (match_str(&fp, "&&")) {
 					add_token(c, &fp, TK_OP_AND, NULL);
 					continue;
 				} else {
@@ -261,9 +259,9 @@ bool heck_scan(heck_code* c, FILE* f) {
 				break;
 			}
 			case '*': {
-				if (matchStringAtPos(&fp, "**", fp.ch, true)) {
+				if (match_str(&fp, "**")) {
 					add_token(c, &fp, TK_OP_EXP, NULL);
-				} if (matchStringAtPos(&fp, "*=", fp.ch, true)) {
+				} if (match_str(&fp, "*=")) {
 					add_token(c, &fp, TK_OP_MULT_ASG, NULL); // multipication assignment
 				} else {
 					add_token(c, &fp, TK_OP_MULT, NULL); // multiplication
@@ -271,7 +269,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 				break;
 			}
 			case '/': { // divide or comment
-				if (matchStringAtPos(&fp, "//", fp.ch, true)) { // single line comment
+				if (match_str(&fp, "//")) { // single line comment
 					
 					while (!is_end(&fp)) {
 						scan_step(&fp);
@@ -279,14 +277,23 @@ bool heck_scan(heck_code* c, FILE* f) {
 					
 					continue; // don't skip over newline or EOF
 					
-				} else if (matchStringAtPos(&fp, "/*", fp.ch, true)) { // multiline comment
-					while (!matchStringAtPos(&fp, "*/", fp.ch, true)) { // look for the closing "*/"
+				} else if (match_str(&fp, "/*")) { // multiline comment
+					
+					bool at_eof = false;
+					
+					while (!match_str(&fp, "*/")) { // look for the closing "*/"
 						// stop if we reach the end of the file
 						if (scan_step(&fp) == EOF) {
+							at_eof = true;
 							break;
 						}
 					}
-				} else if (matchStringAtPos(&fp, "/=", fp.ch, true)) {
+					
+					if (at_eof) {
+						continue;
+					}
+					
+				} else if (match_str(&fp, "/=")) {
 					add_token(c, &fp, TK_OP_DIV_ASG, NULL); // division assignment
 				} else {
 					add_token(c, &fp, TK_OP_DIV, NULL); // division
@@ -294,9 +301,9 @@ bool heck_scan(heck_code* c, FILE* f) {
 				break;
 			}
 			case '+': {
-				if (matchStringAtPos(&fp, "++", fp.ch, true)) {
+				if (match_str(&fp, "++")) {
 					add_token(c, &fp, TK_OP_INCR, NULL); // increment
-				} else if (matchStringAtPos(&fp, "+=", fp.ch, true)) {
+				} else if (match_str(&fp, "+=")) {
 					add_token(c, &fp, TK_OP_ADD_ASG, NULL); // addition assignment
 				} else {
 					add_token(c, &fp, TK_OP_ADD, NULL); // addition
@@ -304,9 +311,9 @@ bool heck_scan(heck_code* c, FILE* f) {
 				break;
 			}
 			case '-': {
-				if (matchStringAtPos(&fp, "--", fp.ch, true)) {
+				if (match_str(&fp, "--")) {
 					add_token(c, &fp, TK_OP_DECR, NULL); // increment
-				} else if (matchStringAtPos(&fp, "-=", fp.ch, true)) {
+				} else if (match_str(&fp, "-=")) {
 					add_token(c, &fp, TK_OP_SUB_ASG, NULL); // subtraction assignment
 				} else {
 					add_token(c, &fp, TK_OP_SUB, NULL); // subtraction
@@ -314,7 +321,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 				break;
 			}
 			case '%': {
-				if (matchStringAtPos(&fp, "+=", fp.ch, true)) {
+				if (match_str(&fp, "+=")) {
 					add_token(c, &fp, TK_OP_MOD_ASG, NULL); // modulus assignment
 				} else {
 					add_token(c, &fp, TK_OP_MOD, NULL); // modulus
@@ -337,7 +344,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 				if (fp.current == '.' || isdigit(fp.current)) { // number token
 					
 					// handle hex number
-					// if (matchStringAtPos(&fp, "0x", fp.ch, true)) {}
+					// if (match_str(&fp, "0x")) {}
 					
 					char* num_start = &fp.current_line[fp.ch];
 					char* num_end = NULL;
@@ -419,6 +426,9 @@ bool heck_scan(heck_code* c, FILE* f) {
 						
 					} else if (strcmp(token, "null") == 0) {
 						add_token(c, &fp, TK_KW_NULL, NULL);
+						
+					} else if (strcmp(token, "global") == 0) {
+						add_token(c, &fp, TK_KW_GLOBAL, NULL);
 						
 					} else { // it is an identifier and not a keyword
 						add_token(c, &fp, TK_IDF, token);

@@ -75,7 +75,7 @@ heck_block* create_block(void) {
 }
 
 heck_func* create_func(void) {
-	heck_func* func = malloc(sizeof(heck_stmt));
+	heck_func* func = malloc(sizeof(heck_func));
 	func->param_vec = _vector_create(heck_param*);
 	func->code = create_block();
 	func->return_type = TYPE_GEN;

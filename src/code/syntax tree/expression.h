@@ -57,9 +57,8 @@ typedef struct heck_expr_value {
 
 // function call
 typedef struct heck_expr_call {
-	heck_idf name;
+	heck_expr_value name;
 	heck_expr** arg_vec; // arguments
-	bool global;
 } heck_expr_call;
 
 typedef struct heck_expr_asg {
