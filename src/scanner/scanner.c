@@ -104,6 +104,7 @@ bool match_str(file_pos* fp, char* s) {
 	}
 	
 	fp->ch = l_pos;
+	fp->current = fp->current_line[fp->ch];
 	
 	return true;
 }
@@ -202,7 +203,12 @@ bool heck_scan(heck_code* c, FILE* f) {
 				add_token(c, &fp, TK_COLON, NULL);
 				break;
 			case '!':
-				add_token(c, &fp, TK_OP_NOT, NULL);
+				if (match_str(&fp, "!=")) {
+					add_token(c, &fp, TK_OP_N_EQ, NULL);
+					continue;
+				} else {
+					add_token(c, &fp, TK_OP_NOT, NULL);
+				}
 				break;
 			case '>': {
 				if (match_str(&fp, ">=")) {
@@ -279,19 +285,13 @@ bool heck_scan(heck_code* c, FILE* f) {
 					
 				} else if (match_str(&fp, "/*")) { // multiline comment
 					
-					bool at_eof = false;
-					
 					while (!match_str(&fp, "*/")) { // look for the closing "*/"
 						// stop if we reach the end of the file
 						if (scan_step(&fp) == EOF) {
-							at_eof = true;
 							break;
 						}
 					}
-					
-					if (at_eof) {
-						continue;
-					}
+					continue;
 					
 				} else if (match_str(&fp, "/=")) {
 					add_token(c, &fp, TK_OP_DIV_ASG, NULL); // division assignment
