@@ -285,19 +285,13 @@ bool heck_scan(heck_code* c, FILE* f) {
 					
 				} else if (match_str(&fp, "/*")) { // multiline comment
 					
-					bool at_eof = false;
-					
 					while (!match_str(&fp, "*/")) { // look for the closing "*/"
 						// stop if we reach the end of the file
 						if (scan_step(&fp) == EOF) {
-							at_eof = true;
 							break;
 						}
 					}
-					
-					if (at_eof) {
-						continue;
-					}
+					continue;
 					
 				} else if (match_str(&fp, "/=")) {
 					add_token(c, &fp, TK_OP_DIV_ASG, NULL); // division assignment
