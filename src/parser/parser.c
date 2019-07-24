@@ -326,8 +326,11 @@ heck_stmt* if_statement(parser* p, heck_scope* scope) {
 	step(p);
 	
 	// if statements do not need (parentheses) around the condition in heck
-	heck_if_node* node = create_if_node(expression(p));
+	heck_if_node* first_node = create_if_node(expression(p));
+	heck_if_node* node = first_node;
 	heck_stmt* s = create_stmt_if(node);
+	
+	heck_block_type type = BLOCK_DEFAULT;
 	
 	// loop over if else ladder (guaranteed to run at least once)
 	bool last = false;
@@ -339,6 +342,21 @@ heck_stmt* if_statement(parser* p, heck_scope* scope) {
 			break;
 		}
 		node->code = parse_block(p);
+		switch (node->code->type) {
+			case BLOCK_RETURNS:
+				if (node == first_node) {
+					type = BLOCK_RETURNS;
+				} else if (type != BLOCK_RETURNS) {
+					type = BLOCK_MAY_RETURN;
+				}
+				break;
+			case BLOCK_MAY_RETURN:
+				type = BLOCK_MAY_RETURN;
+				break;
+			default:
+				if (type == BLOCK_RETURNS) type = BLOCK_MAY_RETURN;
+				break;
+		}
 		
 		if (last || !match(p, TK_KW_ELSE)) {
 			break;
@@ -354,6 +372,8 @@ heck_stmt* if_statement(parser* p, heck_scope* scope) {
 		node = node->next;
 		
 	}
+	
+	((heck_stmt_if*)s->value)->type = type;
 	
 	return s;
 }
@@ -481,7 +501,9 @@ void statement(parser* p, heck_block* block) {
 			break;
 		case TK_KW_IF:
 			stmt = if_statement(p, block->scope);
-			
+			if (block->type < BLOCK_BREAKS && ((heck_stmt_if*)stmt->value)->type != BLOCK_DEFAULT) {
+				block->type = ((heck_stmt_if*)stmt->value)->type;
+			}
 			break;
 		case TK_KW_FUNC:
 			func_statement(p, block->scope);

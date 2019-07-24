@@ -103,8 +103,8 @@ int print_idf_map(char* key, any_t data, any_t item) {
 	
 	switch (((heck_scope*)data)->type) {
 		case IDF_FUNCTION: {
-			printf("function %s() ", key);
 			heck_func* func = ((heck_scope*)data)->value;
+			printf("function %s() -> %i ", key, func->code->type);
 			print_block(func->code, indent);
 			break;
 		}

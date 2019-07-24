@@ -146,6 +146,9 @@ void print_stmt(heck_stmt* stmt, int indent) {
 				}
 					
 				node = node->next;
+				for (int i = 0; i < indent; i++) {
+					printf("\t");
+				}
 				
 				if (node->condition == NULL) {
 					printf("else ");

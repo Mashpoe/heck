@@ -38,8 +38,8 @@ typedef struct heck_stmt_let {
 heck_stmt* create_stmt_let(string name, heck_expr* value);
 
 // BLOCK OF CODE
-// not a child scope, but has its own child scope and is used in functions
-typedef enum { BLOCK_DEFAULT = 0, BLOCK_BREAKS, BLOCK_RETURNS, BLOCK_CAN_RETURN } heck_block_type;
+// block types are ordered from least to greatest precedence; do not change values/order
+typedef enum { BLOCK_DEFAULT = 0, BLOCK_MAY_RETURN = 1, BLOCK_BREAKS = 2, BLOCK_RETURNS = 3 } heck_block_type;
 typedef struct heck_block {
 	heck_block_type type;
 	struct heck_scope* scope;
