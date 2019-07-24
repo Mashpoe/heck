@@ -155,13 +155,13 @@
 		2A50351122E5A2C100AEA530 /* syntax tree */ = {
 			isa = PBXGroup;
 			children = (
-				2A50351222E5A2C100AEA530 /* expression.c */,
 				2A50351322E5A2C100AEA530 /* types.h */,
-				2A50351422E5A2C100AEA530 /* statement.h */,
-				2A50351522E5A2C100AEA530 /* scope.c */,
 				2A50351622E5A2C100AEA530 /* expression.h */,
-				2A50351722E5A2C100AEA530 /* scope.h */,
+				2A50351222E5A2C100AEA530 /* expression.c */,
+				2A50351422E5A2C100AEA530 /* statement.h */,
 				2A50351822E5A2C100AEA530 /* statement.c */,
+				2A50351722E5A2C100AEA530 /* scope.h */,
+				2A50351522E5A2C100AEA530 /* scope.c */,
 			);
 			path = "syntax tree";
 			sourceTree = "<group>";

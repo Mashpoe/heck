@@ -53,17 +53,6 @@ typedef struct heck_param {
 } heck_param;
 heck_param* create_param(string name);
 
-// BLOCK OF CODE
-// not a child scope, but has its own child scope and is used in functions
-typedef enum { BLOCK_BREAKS, BLOCK_RETURNS, BLOCK_DEFAULT } heck_block_type;
-typedef struct heck_block {
-	heck_block_type type;
-	struct heck_scope* scope;
-	heck_stmt** stmt_vec;
-} heck_block;
-heck_block* create_block(void);
-void print_block(heck_block* block, int indent);
-
 // FUNCTION
 typedef struct heck_func {
 	heck_param** param_vec;

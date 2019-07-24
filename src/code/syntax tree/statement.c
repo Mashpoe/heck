@@ -28,13 +28,17 @@ heck_stmt* create_stmt_let(string name, heck_expr* value) {
 	return s;
 }
 
-heck_stmt* create_stmt_if(heck_expr* condition) {
-	heck_stmt* s = malloc(sizeof(heck_stmt));
-	s->type = STMT_IF;
-	
+heck_stmt_if* create_if_struct(heck_expr* condition) {
 	heck_stmt_if* if_stmt = malloc(sizeof(heck_stmt_if));
 	if_stmt->condition = condition;
 	if_stmt->code = create_block();
+	if_stmt->next = NULL;
+	
+	return if_stmt;
+}
+heck_stmt* create_stmt_if(heck_stmt_if* if_stmt) {
+	heck_stmt* s = malloc(sizeof(heck_stmt));
+	s->type = STMT_IF;
 	
 	s->value = if_stmt;
 	return s;
@@ -124,13 +128,30 @@ void print_stmt(heck_stmt* stmt, int indent) {
 		}
 		case STMT_IF: {
 			heck_stmt_if* if_stmt = stmt->value;
+			
 			printf("if ");
 			print_expr(if_stmt->condition);
 			printf(" ");
-			
-			
-			print_block(if_stmt->code, indent);
-			
+			// traverse linked list for if/else ladder
+			for (;;) {
+				
+				print_block(if_stmt->code, indent);
+				
+				if (if_stmt->next == NULL) {
+					break;
+				}
+					
+				if_stmt = if_stmt->next;
+				
+				if (if_stmt->condition == NULL) {
+					printf("else ");
+				} else {
+					printf("else if ");
+					print_expr(if_stmt->condition);
+					printf(" ");
+				}
+				
+			}
 			
 			break;
 		}
@@ -182,4 +203,21 @@ void print_stmt(heck_stmt* stmt, int indent) {
 			break;
 		}
 	}
+}
+
+void print_block(heck_block* block, int indent) {
+	
+	printf("{\n");
+	
+	if (block->scope)
+		print_scope(block->scope, indent + 1);
+	
+	for (int i = 0; i < vector_size(block->stmt_vec); i++) {
+		print_stmt(((heck_stmt**)block->stmt_vec)[i], indent + 1);
+	}
+	
+	for (int i = 0; i < indent; i++) {
+		printf("\t");
+	}
+	printf("}\n");
 }

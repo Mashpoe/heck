@@ -159,7 +159,6 @@ heck_expr* primary(parser* p) {
 		}
 	}
 	
-	// TODO: add support for "global" keyword, e.g. global.xyz = "value"
 	// This is the ONLY place where the global keyword should be used
 	if (match(p, TK_IDF)) {
 		return primary_idf(p, false);
@@ -175,8 +174,7 @@ heck_expr* primary(parser* p) {
 	
 	// TODO: report expected expression
 	panic_mode(p);
-	//return create_expr_err();
-	return create_expr_literal("meme", LITERAL_STR);
+	return create_expr_err();
 }
 
 heck_expr* unary(parser* p) {
@@ -328,19 +326,35 @@ heck_stmt* if_statement(parser* p, heck_scope* scope) {
 	step(p);
 	
 	// if statements do not need (parentheses) around the condition in heck
-	heck_stmt* s = create_stmt_if(expression(p));
-	if (peek(p)->type == TK_BRAC_L) {
+	heck_stmt_if* if_stmt = create_if_struct(expression(p));
+	heck_stmt* s = create_stmt_if(if_stmt);
+	
+	// loop over if else ladder (guaranteed to run at least once)
+	bool last = false;
+	for (;;) {
 		
-		((heck_stmt_if*)s->value)->code = parse_block(p);
+		if (peek(p)->type != TK_BRAC_L) {
+			// TODO: report expected '{'
+			panic_mode(p);
+			break;
+		}
+		if_stmt->code = parse_block(p);
 		
-	} else {
-		// TODO: report expected '{'
+		if (last || !match(p, TK_KW_ELSE)) {
+			break;
+		}
 		
-		// populate if statement with only an error
-		//_vector_add(&((heck_stmt_if*)s->value)->stmt_vec, heck_stmt*) = create_stmt_err();
+		if (match(p, TK_KW_IF)) {
+			if_stmt->next = create_if_struct(expression(p));
+		} else {
+			if_stmt->next = create_if_struct(NULL);
+			last = true;
+		}
 		
-		panic_mode(p);
+		if_stmt = if_stmt->next;
+		
 	}
+	
 	return s;
 }
 
@@ -355,7 +369,7 @@ void func_statement(parser* p, heck_scope* scope) {
 	}
 	
 	heck_func* func = create_func();
-	heck_scope* child = add_func_idf(scope, func, identifier(p));
+	/*heck_scope* child = */add_func_idf(scope, func, identifier(p));
 	
 	if (!match(p, TK_PAR_L)) {
 		// TODO: report expected '('
@@ -467,6 +481,7 @@ void statement(parser* p, heck_block* block) {
 			break;
 		case TK_KW_IF:
 			stmt = if_statement(p, block->scope);
+			
 			break;
 		case TK_KW_FUNC:
 			func_statement(p, block->scope);
@@ -474,9 +489,12 @@ void statement(parser* p, heck_block* block) {
 			break;
 		case TK_KW_RETURN:
 			stmt = ret_statement(p);
+			if (block->type != BLOCK_BREAKS) block->type = BLOCK_RETURNS;
 			break;
 		case TK_BRAC_L:
 			stmt = block_statement(p);
+			if (((heck_block*)stmt->value)->type == BLOCK_RETURNS && block->type != BLOCK_BREAKS)
+				block->type = BLOCK_RETURNS;
 			break;
 		default: {
 			stmt = create_stmt_expr(expression(p));
@@ -530,7 +548,7 @@ bool heck_parse(heck_code* c) {
 	}
 	
 	print_scope(c->global, 0);
-	
+
 	unsigned long stmt_count = vector_size(c->syntax_tree_vec);
 	for (int i = 0; i < stmt_count; i++) {
 		print_stmt(c->syntax_tree_vec[i], 0);

@@ -122,20 +122,3 @@ int print_idf_map(char* key, any_t data, any_t item) {
 void print_scope(heck_scope* scope, int indent) {
 	hashmap_iterate(scope->idf_map, print_idf_map, (any_t)&indent);
 }
-
-void print_block(heck_block* block, int indent) {
-	
-	printf("{\n");
-	
-	if (block->scope)
-		print_scope(block->scope, indent + 1);
-	
-	for (int i = 0; i < vector_size(block->stmt_vec); i++) {
-		print_stmt(((heck_stmt**)block->stmt_vec)[i], indent + 1);
-	}
-	
-	for (int i = 0; i < indent; i++) {
-		printf("\t");
-	}
-	printf("}\n");
-}
