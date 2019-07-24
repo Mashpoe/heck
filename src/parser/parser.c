@@ -326,8 +326,8 @@ heck_stmt* if_statement(parser* p, heck_scope* scope) {
 	step(p);
 	
 	// if statements do not need (parentheses) around the condition in heck
-	heck_stmt_if* if_stmt = create_if_struct(expression(p));
-	heck_stmt* s = create_stmt_if(if_stmt);
+	heck_if_node* node = create_if_node(expression(p));
+	heck_stmt* s = create_stmt_if(node);
 	
 	// loop over if else ladder (guaranteed to run at least once)
 	bool last = false;
@@ -338,20 +338,20 @@ heck_stmt* if_statement(parser* p, heck_scope* scope) {
 			panic_mode(p);
 			break;
 		}
-		if_stmt->code = parse_block(p);
+		node->code = parse_block(p);
 		
 		if (last || !match(p, TK_KW_ELSE)) {
 			break;
 		}
 		
 		if (match(p, TK_KW_IF)) {
-			if_stmt->next = create_if_struct(expression(p));
+			node->next = create_if_node(expression(p));
 		} else {
-			if_stmt->next = create_if_struct(NULL);
+			node->next = create_if_node(NULL);
 			last = true;
 		}
 		
-		if_stmt = if_stmt->next;
+		node = node->next;
 		
 	}
 	

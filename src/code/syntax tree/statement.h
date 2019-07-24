@@ -49,14 +49,18 @@ heck_block* create_block(void);
 heck_stmt* create_stmt_block(heck_block* block);
 
 // IF STATEMENT
-typedef struct heck_stmt_if {
-	heck_block_type type;
+typedef struct heck_if_node {
 	heck_expr* condition; // null if this is an "else" block
 	heck_block* code;
-	struct heck_stmt_if* next; // linked list for if/else ladder
+	struct heck_if_node* next; // next node in linked list for if/else ladder
+} heck_if_node;
+heck_if_node* create_if_node(heck_expr* condition);
+
+typedef struct heck_stmt_if {
+	heck_block_type type;
+	heck_if_node* contents; // linked list for if/else ladder
 } heck_stmt_if;
-heck_stmt_if* create_if_struct(heck_expr* condition);
-heck_stmt* create_stmt_if(heck_stmt_if* if_stmt);
+heck_stmt* create_stmt_if(heck_if_node* contents);
 
 // FUNCTION
 /*typedef struct heck_stmt_func {
