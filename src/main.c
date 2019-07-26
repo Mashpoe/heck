@@ -10,6 +10,7 @@
 #include "vec.h"
 #include "scanner.h"
 #include "parser.h"
+#include "compiler.h"
 
 #include "hashmap.h"
 
@@ -24,36 +25,13 @@ function run() {
 	return a
 }*/
 
-typedef struct intval {
-	string key;
-	int* val;
-} intval;
-
-intval** add_val(intval** arr, int* len, int* alloc, intval* val) {
-	
-	// reallocate if necessary
-	if (*len == *alloc) {
-		*alloc = *len * 2;
-		arr = realloc(arr, sizeof(intval*) * (*alloc));
-	}
-	
-	// add val
-	arr[(*len)++] = val;
-	
-	return arr;
-}
-
-int* get_val(intval** arr, int* len, string key) {
-	for (int i = *len; i-- > 0;) {
-		if (strcmp(arr[i]->key, key) == 0) {
-			return arr[i]->val;
-		}
-	}
-	return NULL;
-}
-
 int main(int argc, const char * argv[]) {
 	// insert code here...
+	
+	if (argc == 2 && strcmp(argv[1], "--version") == 0) {
+		printf("0.0.1\n");
+		return 0;
+	}
 	
 	clock_t begin = clock();
 
@@ -67,7 +45,9 @@ int main(int argc, const char * argv[]) {
 		//heck_print_tokens(c);
 		heck_parse(c);
 		//printf("done.\n");
-
+		heck_compile(c);
+		//printf("press ENTER to continue...");
+		//getchar();
 		heck_free(c);
 	}
 

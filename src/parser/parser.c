@@ -143,8 +143,9 @@ heck_expr* primary(parser* p) {
 	// TODO: move to switch
 	if (match(p, TK_KW_NULL)) return create_expr_literal(NULL, LITERAL_NULL);
 	
-	if (match(p, TK_KW_FALSE)) return create_expr_literal(NULL, LITERAL_FALSE);
-	if (match(p, TK_KW_TRUE)) return create_expr_literal(NULL, LITERAL_TRUE);
+	// pointer address of 0x0 = false, pointer address of 0x1 = true. sue me.
+	if (match(p, TK_KW_FALSE)) return create_expr_literal((void*)0x0, LITERAL_BOOL);
+	if (match(p, TK_KW_TRUE)) return create_expr_literal((void*)0x1, LITERAL_BOOL);
 	//if (match(NIL)) return new Expr.Literal(null);
 	
 	if (match(p, TK_NUM)) return create_expr_literal(previous(p)->value, LITERAL_NUM);
@@ -458,6 +459,10 @@ void func_statement(parser* p, heck_scope* scope) {
 	if (peek(p)->type == TK_BRAC_L) {
 		
 		func->code = parse_block(p);
+		
+		if (func->code->type == BLOCK_MAY_RETURN) {
+			// TODO: report function does not return in all cases
+		}
 		
 	} else {
 		// TODO: report expected '{'

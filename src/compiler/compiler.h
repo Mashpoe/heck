@@ -10,6 +10,6 @@
 
 #include "code.h"
 
-bool compile(heck_code* c);
+bool heck_compile(heck_code* c);
 
 #endif /* compiler_h */

@@ -92,7 +92,7 @@ heck_expr* create_expr_asg(heck_expr_value* name, heck_expr* value) {
 
 heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b) {
 	heck_expr* e = malloc(sizeof(heck_expr));
-	e->type = EXPR_TER;
+	e->type = EXPR_TERNARY;
 	
 	heck_expr_ternary* ternary = malloc(sizeof(heck_expr_ternary));
 	ternary->condition = condition;
@@ -140,7 +140,7 @@ void free_expr(heck_expr* expr) {
 			free((void*)asg->name);
 			break;
 		}
-		case EXPR_TER:
+		case EXPR_TERNARY:
 			free_expr(((heck_expr_ternary*)expr)->condition);
 			free_expr(((heck_expr_ternary*)expr)->value_a);
 			free_expr(((heck_expr_ternary*)expr)->value_b);
@@ -199,11 +199,12 @@ void print_expr(heck_expr* expr) {
 				case LITERAL_NUM:
 					printf("#%Lf", *(long double*)literal->value);
 					break;
-				case LITERAL_TRUE:
-					printf("true");
-					break;
-				case LITERAL_FALSE:
-					printf("false");
+				case LITERAL_BOOL:
+					if (literal->value) {
+						printf("true");
+					} else {
+						printf("false");
+					}
 					break;
 				case LITERAL_NULL:
 					printf("null");
@@ -242,7 +243,7 @@ void print_expr(heck_expr* expr) {
 			print_expr(asg->value);
 			break;
 		}
-		case EXPR_TER: {
+		case EXPR_TERNARY: {
 			heck_expr_ternary* ternary = expr->expr;
 			printf("[");
 			print_expr(ternary->condition);

@@ -21,7 +21,7 @@ enum heck_expr_type {
 	EXPR_VALUE,		// value of a variable
 	EXPR_CALL,
 	EXPR_ASG,
-	EXPR_TER,
+	EXPR_TERNARY,
 	EXPR_ERR		// error parsing
 };
 
@@ -44,7 +44,7 @@ typedef struct heck_expr_unary {
 heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator);
 
 typedef struct heck_expr_literal {
-	heck_literal_type type;
+	heck_data_type type;
 	void* value;
 } heck_expr_literal;
 heck_expr* create_expr_literal(void* value, heck_literal_type type);
