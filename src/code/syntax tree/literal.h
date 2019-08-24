@@ -3,7 +3,6 @@
 //  Heck
 //
 //  Created by Mashpoe on 8/24/19.
-//  Copyright © 2019 Mashpoe. All rights reserved.
 //
 
 #ifndef literal_h
