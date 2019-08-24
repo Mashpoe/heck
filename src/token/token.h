@@ -9,14 +9,21 @@
 #define token_h
 
 #include "tokentypes.h"
+#include "literal.h"
+#include <stdbool.h>
 
 typedef struct heck_token heck_token;
 
+typedef union heck_token_value {
+	string str_value; // for identifiers & errors only, string literals are stored in literal_value
+	heck_literal* literal_value;
+	heck_type_name prim_type;
+} heck_token_value;
 struct heck_token {
 	int ln;
 	int ch;
 	enum heck_tk_type type;
-	void* value;
+	heck_token_value value;
 };
 
 void heck_free_token_data(heck_token* tk);

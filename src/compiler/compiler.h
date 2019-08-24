@@ -10,6 +10,10 @@
 
 #include "code.h"
 
+
+// resolves & compiles everything.
+// if the syntax tree becomes too simple, resolving can be moved elsewhere
+
 bool heck_compile(heck_code* c);
 
 #endif /* compiler_h */

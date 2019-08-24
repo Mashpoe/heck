@@ -7,6 +7,7 @@
 
 #include "scanner.h"
 #include "code_impl.h"
+#include "literal.h"
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
@@ -88,6 +89,10 @@ int scan_step(file_pos* fp) {
 	}
 }
 
+int scan_peek_next(file_pos* fp) {
+	return fp->current_line[fp->ch+1];
+}
+
 // set do_step to true if you want to step past the string if it matches
 // will only match strings in the current line
 bool match_str(file_pos* fp, char* s) {
@@ -126,17 +131,57 @@ bool is_space_line_end(file_pos* fp) {
 	return is_space(fp) || fp->current == '\n' || fp->current == '\r';
 }
 
-void add_token(heck_code* c, file_pos* fp, enum heck_tk_type type, void* value) {
+heck_token* add_token(heck_code* c, file_pos* fp, enum heck_tk_type type) {
 	heck_token* tk = malloc(sizeof(heck_token));
 	tk->ln = fp->ln; // ln is already 1 indexed
 	tk->ch = fp->ch + 1; // make ch 1 indexed
 	tk->type = type;
-	tk->value = value;
 	
-	_vector_add(&c->token_vec, heck_token*) = tk;
+	vector_add(&c->token_vec, heck_token*) = tk;
+	
+	return tk;
 }
 
+void add_token_int(heck_code* c, file_pos* fp, int value) {
+	heck_token* tk = add_token(c, fp, TK_LITERAL);
+	tk->value.literal_value = create_literal_int(value);
+}
+
+void add_token_float(heck_code* c, file_pos* fp, float value) {
+	heck_token* tk = add_token(c, fp, TK_LITERAL);
+	tk->value.literal_value = create_literal_float(value);
+}
+
+void add_token_bool(heck_code* c, file_pos* fp, bool value) {
+	heck_token* tk = add_token(c, fp, TK_LITERAL);
+	tk->value.literal_value = create_literal_bool(value);
+}
+
+void add_token_string(heck_code* c, file_pos* fp, string value) {
+	heck_token* tk = add_token(c, fp, TK_LITERAL);
+	tk->value.literal_value = create_literal_string(value);
+}
+
+void add_token_prim(heck_code* c, file_pos* fp, heck_type_name type) {
+	heck_token* tk = add_token(c, fp, TK_PRIM_TYPE);
+	tk->value.prim_type = type;
+}
+
+void add_token_idf(heck_code* c, file_pos* fp, string value) {
+	heck_token* tk = add_token(c, fp, TK_IDF);
+	tk->value.str_value = value;
+}
+
+void add_token_err(heck_code* c, file_pos* fp, string value) {
+	heck_token* tk = add_token(c, fp, TK_ERR);
+	tk->value.str_value = value;
+}
+
+// forward declarations
 bool parse_string(heck_code* c, file_pos* fp);
+void parse_number(heck_code* c, file_pos* fp);
+// returns a float rather than adding it to the token list
+float parse_float(heck_code* c, file_pos* fp);
 
 bool heck_scan(heck_code* c, FILE* f) {
 	
@@ -164,113 +209,113 @@ bool heck_scan(heck_code* c, FILE* f) {
 				//break;
 			}
 			case ';': // semicolons and newlines can separate statements
-				add_token(c, &fp, TK_SEMI, NULL);
+				add_token(c, &fp, TK_SEMI);
 				break;
 			case ',':
-				add_token(c, &fp, TK_COMMA, NULL);
+				add_token(c, &fp, TK_COMMA);
 				break;
 			case '(':
-				add_token(c, &fp, TK_PAR_L, NULL);
+				add_token(c, &fp, TK_PAR_L);
 				break;
 			case ')':
-				add_token(c, &fp, TK_PAR_R, NULL);
+				add_token(c, &fp, TK_PAR_R);
 				break;
 			case '[':
-				add_token(c, &fp, TK_SQR_L, NULL);
+				add_token(c, &fp, TK_SQR_L);
 				break;
 			case ']':
-				add_token(c, &fp, TK_SQR_R, NULL);
+				add_token(c, &fp, TK_SQR_R);
 				break;
 			case '{':
-				add_token(c, &fp, TK_BRAC_L, NULL);
+				add_token(c, &fp, TK_BRAC_L);
 				break;
 			case '}':
-				add_token(c, &fp, TK_BRAC_R, NULL);
+				add_token(c, &fp, TK_BRAC_R);
 				break;
 			case '=': {
 				if (match_str(&fp, "==")) {
-					add_token(c, &fp, TK_OP_EQ, NULL);
+					add_token(c, &fp, TK_OP_EQ);
 					continue;
 				} else {
-					add_token(c, &fp, TK_OP_ASG, NULL);
+					add_token(c, &fp, TK_OP_ASG);
 				}
 				break;
 			}
 			case '?':
-				add_token(c, &fp, TK_Q_MARK, NULL);
+				add_token(c, &fp, TK_Q_MARK);
 				break;
 			case ':':
-				add_token(c, &fp, TK_COLON, NULL);
+				add_token(c, &fp, TK_COLON);
 				break;
 			case '!':
 				if (match_str(&fp, "!=")) {
-					add_token(c, &fp, TK_OP_N_EQ, NULL);
+					add_token(c, &fp, TK_OP_N_EQ);
 					continue;
 				} else {
-					add_token(c, &fp, TK_OP_NOT, NULL);
+					add_token(c, &fp, TK_OP_NOT);
 				}
 				break;
 			case '>': {
 				if (match_str(&fp, ">=")) {
-					add_token(c, &fp, TK_OP_GT_EQ, NULL);
+					add_token(c, &fp, TK_OP_GT_EQ);
 					continue;
 				} else if (match_str(&fp, ">>")) {
-					add_token(c, &fp, TK_OP_SHFT_R, NULL);
+					add_token(c, &fp, TK_OP_SHFT_R);
 					continue;
 				} else if (match_str(&fp, ">>=")) {
-					add_token(c, &fp, TK_OP_SHFT_R_ASG, NULL);
+					add_token(c, &fp, TK_OP_SHFT_R_ASG);
 					continue;
 				} else {
-					add_token(c, &fp, TK_OP_GT, NULL);
+					add_token(c, &fp, TK_OP_GT);
 				}
 				break;
 			}
 			case '<': {
 				if (match_str(&fp, "<=")) {
-					add_token(c, &fp, TK_OP_LESS_EQ, NULL);
+					add_token(c, &fp, TK_OP_LESS_EQ);
 					continue;
 				} else if (match_str(&fp, "<<")) {
-					add_token(c, &fp, TK_OP_SHFT_L, NULL);
+					add_token(c, &fp, TK_OP_SHFT_L);
 					continue;
 				} else if (match_str(&fp, "<<=")) {
-					add_token(c, &fp, TK_OP_SHFT_L_ASG, NULL);
+					add_token(c, &fp, TK_OP_SHFT_L_ASG);
 					continue;
 				} else {
-					add_token(c, &fp, TK_OP_LESS, NULL);
+					add_token(c, &fp, TK_OP_LESS);
 				}
 				break;
 			}
 			case '|': {
 				if (match_str(&fp, "|=")) {
-					add_token(c, &fp, TK_OP_BW_OR_ASG, NULL);
+					add_token(c, &fp, TK_OP_BW_OR_ASG);
 					continue;
 				} else if (match_str(&fp, "||")) {
-					add_token(c, &fp, TK_OP_OR, NULL);
+					add_token(c, &fp, TK_OP_OR);
 					continue;
 				} else {
-					add_token(c, &fp, TK_OP_BW_OR, NULL);
+					add_token(c, &fp, TK_OP_BW_OR);
 				}
 				break;
 			}
 			case '&':{
 				if (match_str(&fp, "&=")) {
-					add_token(c, &fp, TK_OP_BW_AND_ASG, NULL);
+					add_token(c, &fp, TK_OP_BW_AND_ASG);
 					continue;
 				} else if (match_str(&fp, "&&")) {
-					add_token(c, &fp, TK_OP_AND, NULL);
+					add_token(c, &fp, TK_OP_AND);
 					continue;
 				} else {
-					add_token(c, &fp, TK_OP_BW_AND, NULL);
+					add_token(c, &fp, TK_OP_BW_AND);
 				}
 				break;
 			}
 			case '*': {
 				if (match_str(&fp, "**")) {
-					add_token(c, &fp, TK_OP_EXP, NULL);
+					add_token(c, &fp, TK_OP_EXP);
 				} if (match_str(&fp, "*=")) {
-					add_token(c, &fp, TK_OP_MULT_ASG, NULL); // multipication assignment
+					add_token(c, &fp, TK_OP_MULT_ASG); // multipication assignment
 				} else {
-					add_token(c, &fp, TK_OP_MULT, NULL); // multiplication
+					add_token(c, &fp, TK_OP_MULT); // multiplication
 				}
 				break;
 			}
@@ -294,43 +339,43 @@ bool heck_scan(heck_code* c, FILE* f) {
 					continue;
 					
 				} else if (match_str(&fp, "/=")) {
-					add_token(c, &fp, TK_OP_DIV_ASG, NULL); // division assignment
+					add_token(c, &fp, TK_OP_DIV_ASG); // division assignment
 				} else {
-					add_token(c, &fp, TK_OP_DIV, NULL); // division
+					add_token(c, &fp, TK_OP_DIV); // division
 				}
 				break;
 			}
 			case '+': {
 				if (match_str(&fp, "++")) {
-					add_token(c, &fp, TK_OP_INCR, NULL); // increment
+					add_token(c, &fp, TK_OP_INCR); // increment
 				} else if (match_str(&fp, "+=")) {
-					add_token(c, &fp, TK_OP_ADD_ASG, NULL); // addition assignment
+					add_token(c, &fp, TK_OP_ADD_ASG); // addition assignment
 				} else {
-					add_token(c, &fp, TK_OP_ADD, NULL); // addition
+					add_token(c, &fp, TK_OP_ADD); // addition
 				}
 				break;
 			}
 			case '-': {
 				if (match_str(&fp, "--")) {
-					add_token(c, &fp, TK_OP_DECR, NULL); // increment
+					add_token(c, &fp, TK_OP_DECR); // increment
 				} else if (match_str(&fp, "-=")) {
-					add_token(c, &fp, TK_OP_SUB_ASG, NULL); // subtraction assignment
+					add_token(c, &fp, TK_OP_SUB_ASG); // subtraction assignment
 				} else {
-					add_token(c, &fp, TK_OP_SUB, NULL); // subtraction
+					add_token(c, &fp, TK_OP_SUB); // subtraction
 				}
 				break;
 			}
 			case '%': {
 				if (match_str(&fp, "+=")) {
-					add_token(c, &fp, TK_OP_MOD_ASG, NULL); // modulus assignment
+					add_token(c, &fp, TK_OP_MOD_ASG); // modulus assignment
 				} else {
-					add_token(c, &fp, TK_OP_MOD, NULL); // modulus
+					add_token(c, &fp, TK_OP_MOD); // modulus
 				}
 				break;
 			}
 			case '\\': // escape sequences outside of strings, comments, and line endings
 				// AFAIK escape sequences don't belong here
-				add_token(c, &fp, TK_ERR, str_copy("unexpected escape sequence"));
+				add_token_err(c, &fp, str_copy("unexpected escape sequence"));
 				break;
 			case '\'': // single quote
 			case '"': { // double quote
@@ -338,24 +383,39 @@ bool heck_scan(heck_code* c, FILE* f) {
 				if (!parse_string(c, &fp)) {
 					continue; // avoid the step at the end of the loop
 				}
-
+				break;
+			}
+			case '.': {
+				
+				// if there's a digit, parse a float
+				if (isdigit(scan_peek_next(&fp))) {
+					scan_step(&fp);
+					add_token_float(c, &fp, parse_float(c, &fp));
+					continue;
+				}
+				
+				// if this isn't a digit, parse it as a member access/dot operator
+				add_token(c, &fp, TK_OP_DOT);
+				
+				break;
 			}
 			default: {
-				if (fp.current == '.' || isdigit(fp.current)) { // number token
+				if (isdigit(fp.current)) { // number token
 					
-					// handle hex number
-					// if (match_str(&fp, "0x")) {}
+					parse_number(c, &fp);
+					continue;
 					
+					/*
 					char* num_start = &fp.current_line[fp.ch];
 					char* num_end = NULL;
-					long double ld = strtold(num_start, &num_end);
+					float ld = strtof(num_start, &num_end);
 					
 					if (num_end == num_start) { // unable to parse a number
 						
 						if (fp.current == '.') {
-							add_token(c, &fp, TK_OP_DOT, NULL);
+							add_token(c, &fp, TK_OP_DOT);
 						} else {
-							add_token(c, &fp, TK_ERR, str_copy("unable to parse number"));
+							add_token_value(c, &fp, TK_ERR, (heck_token_value)str_copy("unable to parse number"));
 							do {
 								scan_step(&fp); // seek to the end of the invalid token
 							} while (!is_space_end(&fp));
@@ -366,13 +426,12 @@ bool heck_scan(heck_code* c, FILE* f) {
 							scan_step(&fp); // seek to the end of the double
 						} while (&fp.current_line[fp.ch] != num_end && fp.current != EOF);
 						
-						long double* num = malloc(sizeof(long double)); // num will be freed during token cleanup
-						*num = ld;
-						add_token(c, &fp, TK_NUM, num);
+						add_token_value(c, &fp, TK_FLOAT, (heck_token_value)ld);
 						
 						continue; // avoid step at the end so we don't skip a char
 						
 					}
+					 */
 					
 				} else if (isalpha(fp.current) || fp.current == '_' ||	// identifiers can start with 'A'-'z' or '_'
 						   (unsigned char)fp.current >= 0xC0)			// start of unicode character
@@ -389,49 +448,61 @@ bool heck_scan(heck_code* c, FILE* f) {
 					
 					// check for keywords
 					if (strcmp(token, "if") == 0) {
-						add_token(c, &fp, TK_KW_IF, NULL);
+						add_token(c, &fp, TK_KW_IF);
 						
 					} else if (strcmp(token, "else") == 0) {
-						add_token(c, &fp, TK_KW_ELSE, NULL);
+						add_token(c, &fp, TK_KW_ELSE);
 						
 					} else if (strcmp(token, "do") == 0) {
-						add_token(c, &fp, TK_KW_DO, NULL);
+						add_token(c, &fp, TK_KW_DO);
 						
 					} else if (strcmp(token, "while") == 0) {
-						add_token(c, &fp, TK_KW_WHILE, NULL);
+						add_token(c, &fp, TK_KW_WHILE);
 						
 					} else if (strcmp(token, "for") == 0) {
-						add_token(c, &fp, TK_KW_FOR, NULL);
+						add_token(c, &fp, TK_KW_FOR);
 						
 					} else if (strcmp(token, "switch") == 0) {
-						add_token(c, &fp, TK_KW_SWITCH, NULL);
+						add_token(c, &fp, TK_KW_SWITCH);
 						
 					} else if (strcmp(token, "case") == 0) {
-						add_token(c, &fp, TK_KW_CASE, NULL);
+						add_token(c, &fp, TK_KW_CASE);
 						
 					} else if (strcmp(token, "let") == 0) {
-						add_token(c, &fp, TK_KW_LET, NULL);
+						add_token(c, &fp, TK_KW_LET);
 						
 					} else if (strcmp(token, "function") == 0) {
-						add_token(c, &fp, TK_KW_FUNC, NULL);
+						add_token(c, &fp, TK_KW_FUNC);
 						
 					} else if (strcmp(token, "return") == 0) {
-						add_token(c, &fp, TK_KW_RETURN, NULL);
+						add_token(c, &fp, TK_KW_RETURN);
 						
 					} else if (strcmp(token, "true") == 0) {
-						add_token(c, &fp, TK_KW_TRUE, NULL);
+						add_token_bool(c, &fp, true);
 						
 					} else if (strcmp(token, "false") == 0) {
-						add_token(c, &fp, TK_KW_FALSE, NULL);
+						add_token_bool(c, &fp, true);
 						
 					} else if (strcmp(token, "null") == 0) {
-						add_token(c, &fp, TK_KW_NULL, NULL);
+						add_token(c, &fp, TK_KW_NULL);
 						
 					} else if (strcmp(token, "global") == 0) {
-						add_token(c, &fp, TK_KW_GLOBAL, NULL);
+						add_token(c, &fp, TK_KW_GLOBAL);
+						
+					} else if (strcmp(token, "int") == 0) {
+						add_token_prim(c, &fp, TYPE_INT);
+						
+					} else if (strcmp(token, "float") == 0) {
+						add_token_prim(c, &fp, TYPE_FLOAT);
+						
+					} else if (strcmp(token, "bool") == 0) {
+						add_token_prim(c, &fp, TYPE_BOOL);
+						
+					} else if (strcmp(token, "string") == 0) {
+						add_token_prim(c, &fp, TYPE_STRING);
 						
 					} else { // it is an identifier and not a keyword
-						add_token(c, &fp, TK_IDF, token);
+						add_token_idf(c, &fp, token);
 						continue; // prevent the string from being freed
 					}
 					
@@ -456,7 +527,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 	}
 	
 	// add the end token
-	add_token(c, &fp, TK_EOF, NULL);
+	add_token(c, &fp, TK_EOF);
 	
 	return true;
 }
@@ -473,7 +544,7 @@ bool parse_string(heck_code* c, file_pos* fp) {
 	while (scan_step(fp) != quote || ch_escaped) {
 		
 		if (is_end(fp)) {
-			add_token(c, fp, TK_ERR, str_copy("expected terminating quote"));
+			add_token_err(c, fp, str_copy("expected terminating quote"));
 			
 			// free the invalid string
 			free(str);
@@ -512,7 +583,7 @@ bool parse_string(heck_code* c, file_pos* fp) {
 					string err_str = str_create(&len, &alloc, "invalid escape sequence: ");
 					// TODO: format certain character values
 					err_str = str_add_char(err_str, &len, &alloc, fp->current);
-					add_token(c, fp, TK_ERR, err_str); // report error
+					add_token_err(c, fp, err_str); // report error
 					
 					// seek to the end of the string or line, whichever comes first
 					do {
@@ -545,6 +616,56 @@ bool parse_string(heck_code* c, file_pos* fp) {
 	}
 	
 	// nothing went wrong, add the string token and return
-	add_token(c, fp, TK_STR, str);
+	add_token_string(c, fp, str);
 	return true;
+}
+
+//bool parse_base(heck_code* c, file_pos* fp, int base);
+int parse_hex(heck_code* c, file_pos* fp) {
+	return 0x0;
+}
+
+float parse_float(heck_code* c, file_pos* fp) {
+	
+	// do arithmetic on an int for more precise values, move decimal places later
+	int val = fp->current - '0';
+	
+	// 10ths place
+	float dec_place = 0.1f;
+	
+	while (isdigit(scan_step(fp))) {
+		val *= 10;
+		val += fp->current - '0';
+		dec_place /= 10.0f;
+	}
+	
+	return (float)val * dec_place;
+}
+
+void parse_number(heck_code* c, file_pos* fp) {
+	
+	if (match_str(fp, "0x")) {
+		add_token_int(c, fp, parse_hex(c, fp));
+		return;
+	}
+	
+	// c standard guarantees '0'-'9' are contiguous, this is portable
+	// https://stackoverflow.com/a/628766/4885160
+	// not that heck supports any encodings that don't include ascii (mainly just ascii & unicode)
+	int val = fp->current - '0';
+	
+	while (isdigit(scan_step(fp))) {
+		val *= 10;
+		val += fp->current - '0';
+	}
+	
+	if (fp->current == '.') { // number contains a decimal point and is a float
+		scan_step(fp);
+		float fval = (float)val + parse_float(c, fp);
+		add_token_float(c, fp, fval);
+	} else {
+		add_token_int(c, fp, val);
+	}
+	
+	
 }

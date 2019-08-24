@@ -13,9 +13,9 @@
 
 heck_code* heck_create() {
 	heck_code* c = malloc(sizeof(heck_code));
-	c->token_vec = vector_create(sizeof(heck_token*));
+	c->token_vec = vector_create();
 	c->global = create_nmsp();
-	c->syntax_tree_vec = _vector_create(heck_stmt*);
+	c->syntax_tree_vec = vector_create();
 	return c;
 }
 
@@ -69,7 +69,7 @@ void heck_print_tokens(heck_code* c) {
 
 bool heck_add_token(heck_code* c, heck_token* tk) {
 	
-	_vector_add(&c->token_vec, heck_token*) = tk;
+	vector_add(&c->token_vec, heck_token*) = tk;
 	
 	return true;
 }

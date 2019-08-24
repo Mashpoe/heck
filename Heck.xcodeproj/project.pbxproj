@@ -19,6 +19,10 @@
 		2A50353022E5A2C100AEA530 /* compiler.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A50352122E5A2C100AEA530 /* compiler.c */; };
 		2A50353122E5A2C100AEA530 /* parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A50352422E5A2C100AEA530 /* parser.c */; };
 		2A50353222E5A2C100AEA530 /* scanner.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A50352622E5A2C100AEA530 /* scanner.c */; };
+		2A5F23A022F236A400439CA5 /* function.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A5F239F22F236A400439CA5 /* function.c */; };
+		2A5F23B622F73B6D00439CA5 /* identifier.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A5F23B522F73B6D00439CA5 /* identifier.c */; };
+		2A82AAF02300BB9100175C2A /* types.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A82AAEF2300BB9100175C2A /* types.c */; };
+		2AA9ECAB2311A88D004F8420 /* literal.c in Sources */ = {isa = PBXBuildFile; fileRef = 2AA9ECAA2311A88D004F8420 /* literal.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -61,6 +65,13 @@
 		2A50352422E5A2C100AEA530 /* parser.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = parser.c; sourceTree = "<group>"; };
 		2A50352622E5A2C100AEA530 /* scanner.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = scanner.c; sourceTree = "<group>"; };
 		2A50352722E5A2C100AEA530 /* scanner.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = scanner.h; sourceTree = "<group>"; };
+		2A5F239E22F236A300439CA5 /* function.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = function.h; sourceTree = "<group>"; };
+		2A5F239F22F236A400439CA5 /* function.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = function.c; sourceTree = "<group>"; };
+		2A5F23B422F73B6D00439CA5 /* identifier.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = identifier.h; sourceTree = "<group>"; };
+		2A5F23B522F73B6D00439CA5 /* identifier.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = identifier.c; sourceTree = "<group>"; };
+		2A82AAEF2300BB9100175C2A /* types.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = types.c; sourceTree = "<group>"; };
+		2AA9ECA92311A88D004F8420 /* literal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = literal.h; sourceTree = "<group>"; };
+		2AA9ECAA2311A88D004F8420 /* literal.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = literal.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -155,13 +166,20 @@
 		2A50351122E5A2C100AEA530 /* syntax tree */ = {
 			isa = PBXGroup;
 			children = (
+				2A5F23B422F73B6D00439CA5 /* identifier.h */,
+				2A5F23B522F73B6D00439CA5 /* identifier.c */,
 				2A50351322E5A2C100AEA530 /* types.h */,
+				2A82AAEF2300BB9100175C2A /* types.c */,
+				2AA9ECA92311A88D004F8420 /* literal.h */,
+				2AA9ECAA2311A88D004F8420 /* literal.c */,
 				2A50351622E5A2C100AEA530 /* expression.h */,
 				2A50351222E5A2C100AEA530 /* expression.c */,
 				2A50351422E5A2C100AEA530 /* statement.h */,
 				2A50351822E5A2C100AEA530 /* statement.c */,
 				2A50351722E5A2C100AEA530 /* scope.h */,
 				2A50351522E5A2C100AEA530 /* scope.c */,
+				2A5F239E22F236A300439CA5 /* function.h */,
+				2A5F239F22F236A400439CA5 /* function.c */,
 			);
 			path = "syntax tree";
 			sourceTree = "<group>";
@@ -262,14 +280,18 @@
 				2A50352F22E5A2C100AEA530 /* token.c in Sources */,
 				2A50352C22E5A2C100AEA530 /* scope.c in Sources */,
 				2A50353122E5A2C100AEA530 /* parser.c in Sources */,
+				2A82AAF02300BB9100175C2A /* types.c in Sources */,
+				2A5F23A022F236A400439CA5 /* function.c in Sources */,
 				2A50352B22E5A2C100AEA530 /* expression.c in Sources */,
 				2A50353222E5A2C100AEA530 /* scanner.c in Sources */,
+				2AA9ECAB2311A88D004F8420 /* literal.c in Sources */,
 				2A50352E22E5A2C100AEA530 /* code.c in Sources */,
 				2A50353022E5A2C100AEA530 /* compiler.c in Sources */,
 				2A50352A22E5A2C100AEA530 /* vec.c in Sources */,
 				2A50352922E5A2C100AEA530 /* str.c in Sources */,
 				2A50352822E5A2C100AEA530 /* hashmap.c in Sources */,
 				2A5034FF22E5A20100AEA530 /* main.c in Sources */,
+				2A5F23B622F73B6D00439CA5 /* identifier.c in Sources */,
 				2A50352D22E5A2C100AEA530 /* statement.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

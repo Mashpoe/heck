@@ -7,6 +7,7 @@
 
 #include <stdlib.h>
 #include "token.h"
+#include "literal.h"
 #include "str.h"
 #include "vec.h"
 #include <stdio.h>
@@ -15,14 +16,13 @@ void heck_free_token_data(heck_token* tk) {
 	switch (tk->type) {
 		case TK_KW:
 		case TK_OP:
-		case TK_NUM:
-			free(tk->value);
 			break;
 		case TK_ERR: // fallthrough
-		case TK_STR:
 		case TK_IDF:
-			free((char*)tk->value);
+			free((char*)tk->value.str_value);
 			break;
+		case TK_LITERAL:
+			free_literal(tk->value.literal_value);
 		default:
 			break;
 			
@@ -33,16 +33,12 @@ void heck_print_token(heck_token* tk) {
 	
 	switch (tk->type) {
 		case TK_IDF:
-			printf("[%s]", (char*)tk->value);
+			printf("[%s]", (char*)tk->value.str_value);
 			break;
-		case TK_NUM:
-			printf("#%Lf", *(long double*)tk->value);
-			break;
-		case TK_STR:
-			printf("\"%s\"", (char*)tk->value);
-			break;
+		case TK_LITERAL:
+			print_literal(tk->value.literal_value);
 		case TK_ERR:
-			printf("\nerr: ln %i ch %i - %s\n", tk->ln, tk->ch, (char*)tk->value);
+			printf("\nerr: ln %i ch %i - %s\n", tk->ln, tk->ch, (char*)tk->value.str_value);
 			break;
 		case TK_KW_IF:
 			printf("if ");

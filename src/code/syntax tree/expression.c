@@ -37,15 +37,22 @@ heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator) {
 	return e;
 }
 
-heck_expr* create_expr_literal(void* value, heck_literal_type type) {
+heck_expr* create_expr_literal(heck_literal* value/*literal_value value, heck_literal_type type*/) {
+	/*
 	heck_expr* e = malloc(sizeof(heck_expr));
 	e->type = EXPR_LITERAL;
 	
 	heck_expr_literal* literal = malloc(sizeof(heck_expr_literal));
-	literal->value = value;
 	literal->type = type;
+	literal->value = value;
 	
 	e->expr = literal;
+	
+	return e;*/
+	
+	heck_expr* e = malloc(sizeof(heck_expr));
+	e->type = EXPR_LITERAL;
+	e->expr = value;
 	
 	return e;
 }
@@ -70,7 +77,7 @@ heck_expr* create_expr_call(heck_idf name, bool global) {
 	heck_expr_call* call = malloc(sizeof(heck_expr_call));
 	call->name.name = name;
 	call->name.global = global;
-	call->arg_vec = _vector_create(heck_expr*);
+	call->arg_vec = vector_create();
 	
 	e->expr = call;
 	
@@ -150,19 +157,6 @@ void free_expr(heck_expr* expr) {
 	free(expr);
 }
 
-void print_idf(heck_idf idf) {
-	
-	// print first element
-	printf("%s", idf[0]);
-	
-	// print extra elements if any exist
-	int i = 1;
-	while (idf[i] != NULL) {
-		printf(".");
-		printf("%s", idf[i++]);
-	}
-}
-
 void print_expr_value(heck_expr_value* value) {
 	if (value->global) {
 		printf("global.");
@@ -191,28 +185,7 @@ void print_expr(heck_expr* expr) {
 			break;
 		}
 		case EXPR_LITERAL: {
-			heck_expr_literal* literal = expr->expr;
-			switch (literal->type) {
-				case LITERAL_STR:
-					printf("\"%s\"", (string)literal->value);
-					break;
-				case LITERAL_NUM:
-					printf("#%Lf", *(long double*)literal->value);
-					break;
-				case LITERAL_BOOL:
-					if (literal->value) {
-						printf("true");
-					} else {
-						printf("false");
-					}
-					break;
-				case LITERAL_NULL:
-					printf("null");
-					break;
-				default:
-					printf(" @error ");
-					break;
-			}
+			print_literal(expr->expr);
 			break;
 		}
 		case EXPR_VALUE: {

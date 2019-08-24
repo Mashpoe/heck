@@ -7,6 +7,7 @@
 
 #include "statement.h"
 #include "scope.h"
+#include "function.h"
 #include <stdio.h>
 
 heck_stmt* create_stmt_expr(heck_expr* expr) {
@@ -53,7 +54,7 @@ heck_param* create_param(string name) {
 	
 	param->name = name;
 	param->def_val = NULL;
-	param->type = TYPE_GEN;
+	param->type = NULL;
 	param->obj_type = NULL;
 	
 	return param;

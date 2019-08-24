@@ -8,9 +8,10 @@
 #ifndef tokentypes_h
 #define tokentypes_h
 
+#include "types.h"
+
 // comments indicate the appropriate associated data type
-typedef enum heck_tk_type heck_tk_type;
-enum heck_tk_type {
+typedef enum heck_tk_type {
 	TK_IDF = 0,		// library string (identifier)
 	TK_KW,			// NULL (reserved keyword)
 	TK_OP,			// operartor_type (operator)
@@ -23,8 +24,9 @@ enum heck_tk_type {
 	//TK_AGL_L,		// NULL (angle brackets)
 	//TK_AGL_R,		// NULL
 	TK_COMMA,		// NULL
-	TK_NUM,			// long double (number)
-	TK_STR,			// library string (string)
+	
+	TK_LITERAL,		// heck_literal*
+	
 	TK_SEMI,		// NULL (semicolon)
 	
 	// NULL (newline/end of a line) ((((just check the line number between token in the rare case newlines matter))))
@@ -114,10 +116,11 @@ enum heck_tk_type {
 	TK_TP_BOOL,
 	
 	TK_TP_OBJ,			// pointer to class declaration in syntax tree (do not free on token cleanup)
-};
+	
+	TK_PRIM_TYPE,		// primitive data type (heck_prim_type)
+} heck_tk_type;
 
-typedef enum heck_kw_type heck_kw_type;
-enum heck_kw_type {
+typedef enum heck_kw_type {
 	KW_IF,
 	KW_ELSE,
 	KW_DO,
@@ -131,12 +134,11 @@ enum heck_kw_type {
 	KW_CLASS,
 	KW_PUBLIC,
 	KW_PRIVATE
-};
+} heck_kw_type;
 
 // anything that can be used in an expression, in order of precedence (further down = lower precedence)
 // https://en.wikipedia.org/wiki/Operators_in_C_and_C%2B%2B#Operator_precedence
-typedef enum heck_op_type heck_op_type;
-enum heck_op_type {
+typedef enum heck_op_type {
 	OP_INCR,		// ++
 	OP_DECR,		// --
 	OP_NOT,			// !
@@ -168,7 +170,6 @@ enum heck_op_type {
 	OP_GT_EQ,		// >=
 	OP_EQ,			// ==
 	OP_N_EQ,		// !=
-	OP_VAL,			// evaluate function call or variable
 	OP_ASG,			// =
 	OP_MULT_ASG,	// *=
 	OP_DIV_ASG,		// /=
@@ -182,6 +183,6 @@ enum heck_op_type {
 	OP_SHFT_L_ASG,	// <<=
 	OP_SHFT_R_ASG,	// >>=
 	OP_DOT			// .
-};
+} heck_op_type;
 
 #endif /* tokentypes_h */

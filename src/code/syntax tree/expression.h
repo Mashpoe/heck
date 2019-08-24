@@ -9,9 +9,11 @@
 #define expression_h
 
 #include "types.h"
-#include "tokentypes.h"
+#include "token.h"
+#include "identifier.h"
 #include "str.h"
 #include "vec.h"
+#include <stdbool.h>
 
 typedef enum heck_expr_type heck_expr_type;
 enum heck_expr_type {
@@ -43,18 +45,23 @@ typedef struct heck_expr_unary {
 } heck_expr_unary;
 heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator);
 
-typedef struct heck_expr_literal {
-	heck_data_type type;
+/*
+typedef union {
 	void* value;
-} heck_expr_literal;
-heck_expr* create_expr_literal(void* value, heck_literal_type type);
-
-// vector of consecutive identifiers separated by '.'
-typedef const string* heck_idf;
+	bool bool_value;
+	long double num_value;
+	char* str_value;
+} literal_value;
+typedef struct heck_expr_literal {
+	heck_type_name type;
+	heck_token_value value;
+} heck_expr_literal;*/
+heck_expr* create_expr_literal(heck_literal* value);
 
 // variable/variable value
 typedef struct heck_expr_value {
 	heck_idf name;
+	// TODO: replace "bool global" with an enum for global.val, this.val, and val
 	bool global;
 } heck_expr_value;
 heck_expr* create_expr_value(heck_idf name, bool global);
@@ -83,8 +90,6 @@ heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_ex
 heck_expr* create_expr_err(void);
 
 void free_expr(heck_expr* expr);
-
-void print_idf(heck_idf idf);
 
 void print_expr(heck_expr* expr);
 
