@@ -13,7 +13,7 @@ Here is an example of some code written in Heck:
 ```javascript
 
 let a = 6
-let num b = 4 // explicit type declaration
+let int b = 4 // explicit type declaration
 
 // generic argument types; will be recompiled when different argument types are passed in
 function add(a, b) {
@@ -47,7 +47,7 @@ function add(a, b) {
 }
 
 // type-specific override
-function add(num a, num b) -> string {
+function add(int a, int b) -> string {
   return "" + (a + b)
 }
 
@@ -74,9 +74,9 @@ function bar(bool a) { // will not compile; this function returns both strings a
 }
 
 // you can make use of more complex generic functions with explicit type arguments:
-let d = add<num, string>(1, "2")
+let d = add<int, string>(1, "2")
 
-function add3<A, B>(A a, B b, num c) {
+function add3<A, B>(A a, B b, int c) {
   return a + b + c
 }
 
@@ -97,9 +97,9 @@ namespace foo.bar {
   
   class baz {
     
-    num a
+    int a
     
-    num b
+    int b
     
     private function random() // forward declaration
     
@@ -107,13 +107,13 @@ namespace foo.bar {
     
   private:
     
-    num e
+    int e
     
     // overrides the "private:" so public methods/variables can be associated with any private counterparts
-    public function add(num val) {
+    public function add(int val) {
       addCounter++
     }
-    num addCounter = 0
+    int addCounter = 0
     
   }
   
