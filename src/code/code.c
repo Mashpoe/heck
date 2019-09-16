@@ -16,6 +16,7 @@ heck_code* heck_create() {
 	c->token_vec = vector_create();
 	c->global = create_nmsp();
 	c->syntax_tree_vec = vector_create();
+	c->strings = str_table_create();
 	return c;
 }
 

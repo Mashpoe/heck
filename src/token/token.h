@@ -15,7 +15,7 @@
 typedef struct heck_token heck_token;
 
 typedef union heck_token_value {
-	string str_value; // for identifiers & errors only, string literals are stored in literal_value
+	str_entry str_value; // for identifiers & errors only, string literals are stored in literal_value
 	heck_literal* literal_value;
 	heck_type_name prim_type;
 } heck_token_value;

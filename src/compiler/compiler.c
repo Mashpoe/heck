@@ -4,13 +4,14 @@
 //
 //  Created by Mashpoe on 6/18/19.
 //
-
+/*
 #include "compiler.h"
 #include "types.h"
 #include "scope.h"
 #include "function.h"
 #include "statement.h"
 #include "code_impl.h"
+#include "wasm_code.h"
 #include <stdio.h>
 
 // forward declaration
@@ -29,7 +30,10 @@ heck_data_type* compile_expr(heck_code* c, heck_expr* expr) {
 			break;
 		case EXPR_TERNARY: {
 			heck_data_type* type = compile_expr(c, ((heck_expr_ternary*)expr->expr)->value_a);
-			if (type && type == compile_expr(c, ((heck_expr_ternary*)expr->expr)->value_b)) {
+			if (type == NULL)
+				return create_data_type(TYPE_ERR);
+			
+			if (data_type_cmp(type, compile_expr(c, ((heck_expr_ternary*)expr->expr)->value_b))) {
 				return type;
 			} else {
 				return create_data_type(TYPE_ERR);
@@ -38,7 +42,10 @@ heck_data_type* compile_expr(heck_code* c, heck_expr* expr) {
 		}
 		case EXPR_BINARY: {
 			heck_data_type* type = compile_expr(c, ((heck_expr_binary*)expr->expr)->left);
-			if (type && type == compile_expr(c, ((heck_expr_binary*)expr->expr)->right)) {
+			if (type == NULL)
+				return create_data_type(TYPE_ERR);
+			
+			if (data_type_cmp(type, compile_expr(c, ((heck_expr_binary*)expr->expr)->right))) {
 				return type;
 			} else {
 				return create_data_type(TYPE_ERR);
@@ -73,15 +80,16 @@ heck_data_type* compile_func_call(heck_code* c, heck_expr_call* call) {
 		
 		heck_func* f = s->value;
 		
-		if (f->return_type == 0) {
-			return create_data_type(TYPE_VOID);
+		if (f->code->type == BLOCK_MAY_RETURN) {
+			fprintf(stderr, "error: function only returns in some cases\n");
+			return create_data_type(TYPE_ERR);
 		}
 		
-		if (f->return_type == 3) {
+		if (f->code->type != BLOCK_RETURNS) // block doesn't return
+			return create_data_type(TYPE_VOID);
+		
+		// begin traversing child scopes 
 			
-			return create_data_type(TYPE_BOOL);
-			
-		}
 		
 	}
 	
@@ -91,11 +99,18 @@ heck_data_type* compile_func_call(heck_code* c, heck_expr_call* call) {
 
 bool heck_compile(heck_code* c) {
 	
+	wasm_code* code = wasm_code_create();
+	
+	$wasm(code, $magic, $version);
+	
 	unsigned long num_stmts = vector_size(c->syntax_tree_vec);
 	for (unsigned long i = 0; i < num_stmts; i++) {
-		//if (c->syntax_tree_vec[i]->type == STMT_EXPR)
-		//	printf("%i\n", compile_expr(c, c->syntax_tree_vec[i]->value));
+		if (c->syntax_tree_vec[i]->type == STMT_EXPR) {
+			print_data_type(compile_expr(c, c->syntax_tree_vec[i]->value));
+			printf("\n");
+		}
+		
 	}
 	
 	return true;
-}
+}*/

@@ -9,7 +9,7 @@
 #define statement_h
 
 #include "expression.h"
-#include "hashmap.h"
+#include "idf_map.h"
 
 typedef enum heck_stmt_type {
 	STMT_EXPR,
@@ -32,10 +32,10 @@ heck_stmt* create_stmt_expr(heck_expr* expr);
 
 // LET STATEMENT
 typedef struct heck_stmt_let {
-	string name;
+	str_entry name;
 	heck_expr* value;
 } heck_stmt_let;
-heck_stmt* create_stmt_let(string name, heck_expr* value);
+heck_stmt* create_stmt_let(str_entry name, heck_expr* value);
 
 // BLOCK OF CODE
 // block types are ordered from least to greatest precedence; do not change values/order
@@ -79,7 +79,7 @@ typedef struct heck_stmt_class {
 	heck_idf name;
 	
 	// private & public variables
-	map_t vars;
+	idf_map* vars;
 } heck_stmt_class;
 heck_stmt* create_stmt_class(heck_idf name);
 

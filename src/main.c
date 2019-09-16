@@ -12,8 +12,6 @@
 #include "parser.h"
 #include "compiler.h"
 
-#include "hashmap.h"
-
 #include <time.h>
 #include <string.h>
 
@@ -35,7 +33,7 @@ int main(int argc, const char * argv[]) {
 	
 	clock_t begin = clock();
 
-	FILE* f = fopen("frick.js", "r");
+	FILE* f = fopen("frick.js", "rb");
 
 	if (f) {
 
@@ -45,7 +43,7 @@ int main(int argc, const char * argv[]) {
 		//heck_print_tokens(c);
 		heck_parse(c);
 		//printf("done.\n");
-		heck_compile(c);
+		//heck_compile(c);
 		//printf("press ENTER to continue...");
 		//getchar();
 		heck_free(c);

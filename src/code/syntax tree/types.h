@@ -26,7 +26,8 @@ typedef enum heck_type_name {
 	TYPE_BOOL,
 	TYPE_STRING,
 	
-	TYPE_GEN,		// generic type (type hasn't been deduced by the compiler yet)
+	TYPE_UNKNOWN,	// type hasn't been deduced by the compiler yet
+	TYPE_GEN,		// generic type; may have different types depending on argument types
 	TYPE_VOID,		// void return value
 	
 	// instance of a specific class, store alongside a heck_idf (may be a child class e.g. ClassA.ClassB)

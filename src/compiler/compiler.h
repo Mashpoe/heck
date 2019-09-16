@@ -12,7 +12,7 @@
 
 
 // resolves & compiles everything.
-// if the syntax tree becomes too simple, resolving can be moved elsewhere
+// if the syntax tree ends up being too simple for compiling, resolving can be moved elsewhere
 
 bool heck_compile(heck_code* c);
 

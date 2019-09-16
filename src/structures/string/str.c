@@ -6,8 +6,17 @@
 //
 
 #include "str.h"
+#include "table.h"
 #include <stdlib.h>
 #include <string.h>
+
+str_entry create_str_entry(const char* value, size_t size) {
+	struct str_obj* s = malloc(sizeof(struct str_obj));
+	s->value = value;
+	s->size = size;
+	s->hash = hash_data(value, size);
+	return s;
+}
 
 char* str_create(int* len, int* alloc, const char* val) {
 	char* str;
@@ -62,8 +71,15 @@ char* str_add_str(char* str, int* len, int* alloc, const char* val) {
 	return str;
 }
 
-char* str_copy(const char* val) {
-	char* str = malloc(sizeof(char) * strlen(val) + 1);
+char* str_copy(const char* val, int* len) {
+	/*	it's ok to use an int instead of unsigned long,
+	 	this is for error messages, and this isn't C++ */
+	int val_len = strlen(val);
+	char* str = malloc(sizeof(char) * val_len + 1);
 	strcpy(str, val);
+	
+	if (len != NULL)
+		*len = val_len;
+	
 	return str;
 }

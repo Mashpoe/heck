@@ -10,7 +10,7 @@
 
 #include "types.h"
 #include "token.h"
-#include "identifier.h"
+//#include "identifier.h"
 #include "str.h"
 #include "vec.h"
 #include <stdbool.h>
@@ -29,6 +29,7 @@ enum heck_expr_type {
 
 typedef struct heck_expr {
 	heck_expr_type type;
+	heck_data_type data_type;
 	void* expr;
 } heck_expr;
 
@@ -92,5 +93,7 @@ heck_expr* create_expr_err(void);
 void free_expr(heck_expr* expr);
 
 void print_expr(heck_expr* expr);
+
+heck_expr* create_expr(heck_expr_type expr_type);
 
 #endif /* expression_h */

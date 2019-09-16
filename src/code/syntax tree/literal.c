@@ -35,7 +35,7 @@ heck_literal* create_literal_bool(bool val) {
 	return literal;
 }
 
-heck_literal* create_literal_string(char* val) {
+heck_literal* create_literal_string(str_entry val) {
 	heck_literal* literal = malloc(sizeof(heck_literal));
 	
 	literal->type = TYPE_STRING;
@@ -60,7 +60,7 @@ void print_literal(heck_literal* literal) {
 			}
 			break;
 		case TYPE_STRING:
-			printf("\"%s\"", (char*)literal->value.str_value);
+			printf("\"%s\"", (char*)literal->value.str_value->value);
 			break;
 		default:
 			break;
@@ -68,8 +68,10 @@ void print_literal(heck_literal* literal) {
 }
 
 void free_literal(heck_literal* literal) {
-	if (literal->type == TYPE_STRING) {
+	/*if (literal->type == TYPE_STRING) {
 		free(literal->value.str_value);
-	}
+	}*/
+	
+	// string literals will be freed when the str_table is freed
 	free(literal);
 }

@@ -16,11 +16,16 @@
 #include "statement.h"
 #include "scope.h"
 #include "vec.h"
+#include "str_table.h"
 
 struct heck_code {
 	heck_token** token_vec; // token vector
 	heck_stmt** syntax_tree_vec; // syntax tree
 	heck_scope* global;
+	
+	// these tables could be joined technically, but it might be better to separate them
+	str_table* types; // all unique data types
+	str_table* strings; // all unique strings and identifiers
 };
 
 #endif /* code_impl_h */

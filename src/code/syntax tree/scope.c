@@ -12,7 +12,7 @@
 heck_scope* create_scope(heck_idf_type type) {
 	
 	heck_scope* scope = malloc(sizeof(heck_scope));
-	scope->idf_map = hashmap_new();
+	scope->map = idf_map_create();
 	scope->type = type;
 	scope->value = NULL;
 	
@@ -34,12 +34,12 @@ heck_scope* get_scope_child(heck_scope* scope, heck_idf name) {
 		}
 		
 		heck_scope* child;
-		if (hashmap_get(scope->idf_map, name[i], (any_t)&child) == MAP_MISSING) {
+		if (!idf_map_get(scope->map, name[i], (void*)&child)) {
 			
 			// if a scope doesn't exist, create it
 			do {
 				child = create_scope(IDF_UNDECLARED);
-				hashmap_put(scope->idf_map, name[i], child);
+				idf_map_set(scope->map, name[i], child);
 				scope = child;
 			} while (name[++i] != NULL);
 			break;
@@ -79,48 +79,28 @@ heck_block* create_block(void) {
 	return block_stmt;
 }
 
-int print_idf_map(char* key, any_t data, any_t item) {
+void print_idf_map(str_entry key, void* value, void* user_ptr) {
 	
-	int indent = *(int*)item;
+	int indent = *(int*)user_ptr;
 	
 	for (int i = 0; i < indent; i++) {
 		printf("\t");
 	}
 	
-	heck_scope* scope = (heck_scope*)data;
+	heck_scope* scope = (heck_scope*)value;
 	switch (scope->type) {
-		case IDF_FUNCTION: {
-			vec_size num_defs = vector_size(scope->value);
-			for (vec_size i = 0; i < num_defs; i++) {
-				heck_func* func = ((heck_func**)scope->value)[i];
-				if (!func->declared)
-					printf("undeclared ");
-				printf("function %s(", key);
-				
-				vec_size num_params = vector_size(func->param_vec);
-				for (int i = 0; i < num_params; i++) {
-					print_data_type(func->param_vec[i]->type);
-					printf(" %s", func->param_vec[i]->name);
-					if (i < num_params - 1)
-						printf(", ");
-				}
-				
-				printf(") -> %i ", func->code->type);
-				print_block(func->code, indent);
-			}
+		case IDF_FUNCTION:
+			print_func_defs(scope, key, indent);
 			break;
-		}
 		default:
-			printf("%s:\n", key);
+			printf("%s:\n", key->value);
 	}
 	
 	
 	indent++;
-	hashmap_iterate(((heck_scope*)data)->idf_map, print_idf_map, &indent);
-	
-	return MAP_OK;
+	idf_map_iterate(((heck_scope*)value)->map, print_idf_map, (void*)&indent);
 }
 
 void print_scope(heck_scope* scope, int indent) {
-	hashmap_iterate(scope->idf_map, print_idf_map, (any_t)&indent);
+	idf_map_iterate(scope->map, print_idf_map, (void*)&indent);
 }

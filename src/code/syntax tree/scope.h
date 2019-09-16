@@ -8,7 +8,7 @@
 #ifndef scope_h
 #define scope_h
 
-#include "hashmap.h"
+#include "idf_map.h"
 #include "statement.h"
 
 typedef enum heck_idf_type heck_idf_type;
@@ -26,7 +26,7 @@ typedef struct heck_scope {
 	heck_idf_type type;
 	
 	// identifier map
-	map_t idf_map;
+	idf_map* map;
 	
 	void* value;
 } heck_scope;

@@ -5,7 +5,7 @@
 //  Created by Mashpoe on 6/11/19.
 //
 
-#include "statement.h"
+//#include "statement.h"
 #include "scope.h"
 #include "function.h"
 #include <stdio.h>
@@ -17,7 +17,7 @@ heck_stmt* create_stmt_expr(heck_expr* expr) {
 	return s;
 }
 
-heck_stmt* create_stmt_let(string name, heck_expr* value) {
+heck_stmt* create_stmt_let(str_entry name, heck_expr* value) {
 	heck_stmt* s = malloc(sizeof(heck_stmt));
 	s->type = STMT_LET;
 	
@@ -49,7 +49,7 @@ heck_stmt* create_stmt_if(heck_if_node* contents) {
 	return s;
 }
 
-heck_param* create_param(string name) {
+heck_param* create_param(str_entry name) {
 	heck_param* param = malloc(sizeof(heck_param));
 	
 	param->name = name;
@@ -89,7 +89,7 @@ heck_stmt* create_stmt_class(heck_idf name) {
 	heck_stmt_class* class_stmt = malloc(sizeof(heck_stmt_class));
 	class_stmt->name = name;
 	
-	class_stmt->vars = hashmap_new();
+	class_stmt->vars = idf_map_create();
 	
 	s->value = class_stmt;
 	return s;

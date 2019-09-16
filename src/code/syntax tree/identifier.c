@@ -10,8 +10,17 @@
 
 bool idf_cmp(heck_idf a, heck_idf b) {
 	int pos = 0;
-	while (a[pos] != NULL) {
+	/*while (a[pos] != NULL) {
 		if (strcmp(a[pos], b[pos]) != 0) return false;
+		pos++;
+	}*/
+	
+	while (a[pos] != NULL) {
+		/*	our str_table ensures that str_obj address will be the same for matching strings
+		 	so we can compare addresses with '!=' */
+		if (a[pos] != b[pos])
+			return false;
+		
 		pos++;
 	}
 	

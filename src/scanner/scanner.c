@@ -14,7 +14,7 @@
 #include "str.h"
 
 typedef struct file_pos file_pos;
-
+/*
 struct file_pos {
 	FILE* f;
 	int ln;
@@ -87,10 +87,59 @@ int scan_step(file_pos* fp) {
 	} else {
 		return scan_step_line(fp);
 	}
+}*/
+
+struct file_pos {
+	int ln;
+	int ch;
+	size_t size;
+	size_t pos;
+	const char* file;
+	int current; // current char
+};
+
+// handles '\n', '\r', and 'r\n' line endings. It doesn't care if they're mixed
+bool match_newline(file_pos* fp) {
+	if (fp->file[fp->pos] == '\n') {
+		fp->pos++; // advance past the newline character
+		fp->ln++;
+		fp->ch = 0;
+		return true;
+	} else if (fp->file[fp->pos] == '\r') {
+		fp->pos++;
+		if (fp->file[fp->pos] == '\n')
+			fp->pos++;
+		fp->ln++;
+		fp->ch = 0;
+		return true;
+	}
+	return false;
+}
+
+int scan_step(file_pos* fp) {
+	
+	fp->pos++;
+	fp->ch++;
+	
+	// ignore escaped newlines, otherwise return the backslash like a normal character
+	if (fp->file[fp->pos] == '\\') {
+		fp->pos++; // advance a character (possibly temporary)
+		fp->ch++;
+		if (!match_newline(fp)) {
+			// go back a character and return the backslash
+			fp->pos--;
+			fp->ch--;
+		}
+		
+	}
+	
+	fp->current = fp->file[fp->pos];
+	
+	return fp->current;
 }
 
 int scan_peek_next(file_pos* fp) {
-	return fp->current_line[fp->ch+1];
+	return fp->file[fp->pos+1];
 }
 
 // set do_step to true if you want to step past the string if it matches
@@ -98,18 +147,43 @@ int scan_peek_next(file_pos* fp) {
 bool match_str(file_pos* fp, char* s) {
 	int s_pos = 0;
 	
-	int l_pos = fp->ch;
+	size_t l_pos = fp->pos;
+	
+	// how many escaped newlines have we passed while matching the string?
+	//int escaped_newlines = 0;
 	
 	while (s[s_pos] != '\0') {
-		if (s[s_pos] != fp->current_line[l_pos]) {
+		if (s[s_pos] != fp->file[l_pos]) {
+			// check for escaped newline
+			if (fp->file[l_pos] == '\\') {
+				
+				l_pos++;
+				
+				/*
+				if (fp->file[l_pos] == '\n') {
+					escaped_newlines++;
+					l_pos += 2; // advance past the
+					continue;
+				} else if (fp->file[l_pos] == '\r') {
+					escaped_newlines++;
+					l_pos += 2;
+					if (fp->file[l_pos] == '\n')
+						l_pos++;
+					continue;
+				}*/
+				
+			}
 			return false;
 		}
 		l_pos++;
 		s_pos++;
 	}
 	
-	fp->ch = l_pos;
-	fp->current = fp->current_line[fp->ch];
+	// if you ever add support for escaped newlines (by uncommenting the code above),
+	// you need to properly update fp->ln and fp->ch (which can't be l_pos)
+	fp->ch += s_pos;
+	fp->pos = l_pos;
+	fp->current = fp->file[fp->pos];
 	
 	return true;
 }
@@ -157,7 +231,7 @@ void add_token_bool(heck_code* c, file_pos* fp, bool value) {
 	tk->value.literal_value = create_literal_bool(value);
 }
 
-void add_token_string(heck_code* c, file_pos* fp, string value) {
+void add_token_string(heck_code* c, file_pos* fp, str_entry value) {
 	heck_token* tk = add_token(c, fp, TK_LITERAL);
 	tk->value.literal_value = create_literal_string(value);
 }
@@ -167,12 +241,12 @@ void add_token_prim(heck_code* c, file_pos* fp, heck_type_name type) {
 	tk->value.prim_type = type;
 }
 
-void add_token_idf(heck_code* c, file_pos* fp, string value) {
+void add_token_idf(heck_code* c, file_pos* fp, str_entry value) {
 	heck_token* tk = add_token(c, fp, TK_IDF);
 	tk->value.str_value = value;
 }
 
-void add_token_err(heck_code* c, file_pos* fp, string value) {
+void add_token_err(heck_code* c, file_pos* fp, str_entry value) {
 	heck_token* tk = add_token(c, fp, TK_ERR);
 	tk->value.str_value = value;
 }
@@ -185,10 +259,24 @@ float parse_float(heck_code* c, file_pos* fp);
 
 bool heck_scan(heck_code* c, FILE* f) {
 	
-	file_pos fp = {f,0,0,0,0,NULL,'\0'};
+	file_pos fp = {0,0,0,0,NULL,'\0'};
+	
+	// load the file into memory
+	fseek(f, 0, SEEK_END);
+	fp.size = ftell(f);
+	rewind(f);
+	
+	char* buffer = (char*)malloc(fp.size + 1);
+	fread(buffer, sizeof(char), fp.size, f);
+	buffer[fp.size] = '\0';
+	
+	fp.file = buffer;
+	buffer = NULL;
+	
+	fp.current = fp.file[0]; // initialize fp.current
 	
 	// get the first line and first character
-	scan_step_line(&fp); // will set the fp.ln to 1
+	//scan_step_line(&fp); // will set the fp.ln to 1
 	
 	while (fp.current != EOF) {
 		
@@ -373,10 +461,27 @@ bool heck_scan(heck_code* c, FILE* f) {
 				}
 				break;
 			}
-			case '\\': // escape sequences outside of strings, comments, and line endings
+			case '\\': { // escape sequences outside of strings, comments, and line endings
 				// AFAIK escape sequences don't belong here
-				add_token_err(c, &fp, str_copy("unexpected escape sequence"));
+				
+				/* why do we copy a literal only to enter it into
+				 a hashmap and delete the duplicate value?
+				 
+				 because some messages DO have to be dynamically allocated and freed,
+				 and I don't want to make things more compilcated than they have to be.
+				 
+				 Just hope your code doesn't have too many errors! */
+				
+				int str_len;
+				char* err_str = str_copy("unexpected escape sequence", &str_len);
+				
+				// TODO: good error reporting
+				str_entry err_entry = create_str_entry(err_str, str_len);
+				err_str = NULL;
+				
+				add_token_err(c, &fp, err_entry);
 				break;
+			}
 			case '\'': // single quote
 			case '"': { // double quote
 				
@@ -502,6 +607,8 @@ bool heck_scan(heck_code* c, FILE* f) {
 						add_token_prim(c, &fp, TYPE_STRING);
 						
 					} else { // it is an identifier and not a keyword
+						
+						
 						add_token_idf(c, &fp, token);
 						continue; // prevent the string from being freed
 					}
@@ -522,9 +629,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 		
 	}
 	
-	if (fp.current_line != NULL) {
-		free(fp.current_line);
-	}
+	free((void*)fp.file); // clean up the file we loaded into memory
 	
 	// add the end token
 	add_token(c, &fp, TK_EOF);
@@ -544,7 +649,15 @@ bool parse_string(heck_code* c, file_pos* fp) {
 	while (scan_step(fp) != quote || ch_escaped) {
 		
 		if (is_end(fp)) {
-			add_token_err(c, fp, str_copy("expected terminating quote"));
+			
+			int str_len;
+			char* err_str = str_copy("expected terminating quote", &str_len);
+			
+			// TODO: good error reporting
+			str_entry err_entry = create_str_entry(err_str, str_len);
+			err_str = NULL;
+			
+			add_token_err(c, fp, err_entry);
 			
 			// free the invalid string
 			free(str);
@@ -580,10 +693,14 @@ bool parse_string(heck_code* c, file_pos* fp) {
 				default: {
 					// string will be freed during token cleanup
 					int len, alloc;
-					string err_str = str_create(&len, &alloc, "invalid escape sequence: ");
+					char* err_str = str_create(&len, &alloc, "invalid escape sequence: ");
 					// TODO: format certain character values
 					err_str = str_add_char(err_str, &len, &alloc, fp->current);
-					add_token_err(c, fp, err_str); // report error
+					
+					str_entry err_entry = create_str_entry(err_str, len);
+					err_str = NULL; // take ownership
+					
+					add_token_err(c, fp, err_entry); // report error
 					
 					// seek to the end of the string or line, whichever comes first
 					do {
@@ -616,7 +733,15 @@ bool parse_string(heck_code* c, file_pos* fp) {
 	}
 	
 	// nothing went wrong, add the string token and return
-	add_token_string(c, fp, str);
+	
+	// create str_obj
+	str_entry s = create_str_entry(str, len);
+	str = NULL; // give sole ownership to the str_obj
+	
+	// enter the string into the str_table
+	s = str_table_get_entry(c->strings, s);
+	
+	add_token_string(c, fp, s);
 	return true;
 }
 

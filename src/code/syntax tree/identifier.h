@@ -13,7 +13,7 @@
 #include <stdbool.h>
 
 // array of consecutive identifiers separated by '.'
-typedef const string* heck_idf;
+typedef str_entry* heck_idf;
 bool idf_cmp(heck_idf a, heck_idf b);
 
 void print_idf(heck_idf idf);

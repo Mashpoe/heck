@@ -91,14 +91,14 @@ heck_expr* expression(parser* p);
 heck_idf identifier(parser* p) { // assumes an identifier was just found with match(p)
 	
 	int len = 0, alloc = 1;
-	string* idf = malloc(sizeof(string) * (alloc + 1));
+	str_entry* idf = malloc(sizeof(str_entry) * (alloc + 1));
 	
 	do {
 		// add string to identifier chain
 		idf[len++] = previous(p)->value.str_value;
 		// reallocate if necessary
 		if (len == alloc) {
-			idf = realloc(idf, sizeof(string) * (++alloc + 1));
+			idf = realloc(idf, sizeof(str_entry) * (++alloc + 1));
 		}
 
 		if (!match(p, TK_OP_DOT))
@@ -229,6 +229,7 @@ heck_expr* equality(parser* p) {
 		heck_tk_type operator = previous(p)->type;
 		heck_expr* right = comparison(p);
 		expr = create_expr_binary(expr, operator, right);
+		expr->data_type.type_name = TYPE_BOOL; // equality returns a bool
 	}
 	
 	return expr;
@@ -241,6 +242,7 @@ heck_expr* assignment(parser* p) {
 		
 		if (expr->type == EXPR_VALUE) {
 			heck_expr* asg = create_expr_asg((heck_expr_value*)expr->expr, expression(p));
+			asg->data_type = expr->data_type;
 			free(expr);
 			return asg;
 		}
@@ -281,6 +283,7 @@ heck_expr* expression(parser* p) {
 
 // forward declarations
 void statement(parser* p, heck_block* block);
+void global_statement(parser* p, heck_scope* scope);
 
 heck_data_type* parse_type(parser* p) {
 	step(p);
@@ -329,7 +332,7 @@ heck_stmt* let_statement(parser* p) {
 	step(p);
 	
 	if (match(p, TK_IDF)) {
-		string name = previous(p)->value.str_value;
+		str_entry name = previous(p)->value.str_value;
 		if (match(p, TK_OP_ASG)) { // =
 			return create_stmt_let(name, expression(p));
 		} else {
@@ -341,6 +344,27 @@ heck_stmt* let_statement(parser* p) {
 	}
 	panic_mode(p);
 	return create_stmt_err();
+}
+
+heck_block* global_parse_block(parser* p) {
+	step(p);
+	heck_block* block = create_block();
+	
+	for (;;) {
+		if (atEnd(p)) {
+			// TODO report unexpected EOF
+			break;
+		} else if (match(p, TK_BRAC_R)) {
+			break;
+		} else {
+			global_statement(p, block->scope);
+		}
+	}
+	
+	return block;
+}
+heck_stmt* global_block_statement(parser* p) {
+	return create_stmt_block(global_parse_block(p));
 }
 
 heck_block* parse_block(parser* p) {
@@ -360,12 +384,12 @@ heck_block* parse_block(parser* p) {
 	
 	return block;
 }
-
 heck_stmt* block_statement(parser* p) {
 	return create_stmt_block(parse_block(p));
 }
 
-heck_stmt* if_statement(parser* p, heck_scope* scope) {
+// block parser is a callback
+heck_stmt* if_statement(parser* p, heck_scope* scope, bool in_func) {
 	step(p);
 	
 	// if statements do not need (parentheses) around the condition in heck
@@ -384,21 +408,29 @@ heck_stmt* if_statement(parser* p, heck_scope* scope) {
 			panic_mode(p);
 			break;
 		}
-		node->code = parse_block(p);
-		switch (node->code->type) {
-			case BLOCK_RETURNS:
-				if (node == first_node) {
-					type = BLOCK_RETURNS;
-				} else if (type != BLOCK_RETURNS) {
+		
+		// parse code block; handle returns if we are in a function
+		if (in_func) {
+			
+			node->code = parse_block(p);
+			switch (node->code->type) {
+				case BLOCK_RETURNS:
+					if (node == first_node) {
+						type = BLOCK_RETURNS;
+					} else if (type != BLOCK_RETURNS) {
+						type = BLOCK_MAY_RETURN;
+					}
+					break;
+				case BLOCK_MAY_RETURN:
 					type = BLOCK_MAY_RETURN;
-				}
-				break;
-			case BLOCK_MAY_RETURN:
-				type = BLOCK_MAY_RETURN;
-				break;
-			default:
-				if (type == BLOCK_RETURNS) type = BLOCK_MAY_RETURN;
-				break;
+					break;
+				default:
+					if (type == BLOCK_RETURNS) type = BLOCK_MAY_RETURN;
+					break;
+			}
+			
+		} else {
+			node->code = global_parse_block(p);
 		}
 		
 		if (last || !match(p, TK_KW_ELSE)) {
@@ -441,7 +473,7 @@ void func_statement(parser* p, heck_scope* scope) {
 	}
 	
 	if (!match(p, TK_PAR_L)) {
-		fprintf(stderr, "error: expected )");
+		fprintf(stderr, "error: expected )\n");
 		panic_mode(p);
 		return;
 	}
@@ -481,7 +513,7 @@ void func_statement(parser* p, heck_scope* scope) {
 			
 			if (param_name[1] != NULL) { // if element[1] is null than the identifier has one value
 				// TODO: report invalid parameter name (must not contain '.' separated values)
-				fprintf(stderr, "error: invalid parameter name (must not contain '.' separated values)");
+				fprintf(stderr, "error: invalid parameter name (must not contain '.' separated values)\n");
 				
 				if (param_type != NULL) {
 					free((void*)param_type);
@@ -560,7 +592,7 @@ heck_stmt* namespace(parser* p, heck_scope* scope) {
 	return NULL;
 }
 
-// for inside blocks of code
+// for statements inside of functions
 void statement(parser* p, heck_block* block) {
 	
 	heck_stmt* stmt = NULL;
@@ -570,7 +602,7 @@ void statement(parser* p, heck_block* block) {
 			stmt = let_statement(p);
 			break;
 		case TK_KW_IF:
-			stmt = if_statement(p, block->scope);
+			stmt = if_statement(p, block->scope, true);
 			if (block->type < BLOCK_BREAKS && ((heck_stmt_if*)stmt->value)->type != BLOCK_DEFAULT) {
 				block->type = ((heck_stmt_if*)stmt->value)->type;
 			}
@@ -597,7 +629,7 @@ void statement(parser* p, heck_block* block) {
 	
 }
 
-// adds statements to the global syntax tree
+// for statements outside of functions
 void global_statement(parser* p, heck_scope* scope) {
 	
 	heck_stmt* stmt = NULL;
@@ -607,17 +639,20 @@ void global_statement(parser* p, heck_scope* scope) {
 			stmt = let_statement(p);
 			break;
 		case TK_KW_IF:
-			stmt = if_statement(p, scope);
+			stmt = if_statement(p, scope, false);
 			break;
 		case TK_KW_FUNC:
 			func_statement(p, scope);
 			return;
 			break;
 		case TK_KW_RETURN:
-			stmt = ret_statement(p);
+			//stmt = ret_statement(p);
+			fprintf(stderr, "error: return statement outside function\n");
+			panic_mode(p);
+			return;
 			break;
 		case TK_BRAC_L:
-			stmt = block_statement(p);
+			stmt = global_block_statement(p);
 			break;
 		default:
 			stmt = create_stmt_expr(expression(p));

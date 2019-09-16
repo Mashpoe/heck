@@ -6,6 +6,7 @@
 //
 
 #include "function.h"
+#include "scope.h"
 
 heck_func* create_func(bool declared) {
 	heck_func* func = malloc(sizeof(heck_func));
@@ -29,7 +30,7 @@ heck_scope* add_scope_func(heck_scope* scope, heck_func* func, heck_idf name) {
 	if (child_scope->type == IDF_UNDECLARED) {
 		
 		// functions cannot have children
-		if (hashmap_length(child_scope->idf_map) > 0) {
+		if (idf_map_size(child_scope->map) > 0) {
 			fprintf(stderr, "error: unable to create child scope for a function: ");
 			fprint_idf(stderr, name);
 			fprintf(stderr, "\n");
@@ -82,4 +83,25 @@ bool func_def_exists(heck_scope* scope, heck_func* func) {
 	}
 	
 	return false;
+}
+
+void print_func_defs(heck_scope* scope, str_entry name, int indent) {
+	vec_size num_defs = vector_size(scope->value);
+	for (vec_size i = 0; i < num_defs; i++) {
+		heck_func* func = ((heck_func**)scope->value)[i];
+		if (!func->declared)
+			printf("undeclared ");
+		printf("function %s(", name->value);
+		
+		vec_size num_params = vector_size(func->param_vec);
+		for (int i = 0; i < num_params; i++) {
+			print_data_type(func->param_vec[i]->type);
+			printf(" %s", func->param_vec[i]->name->value);
+			if (i < num_params - 1)
+				printf(", ");
+		}
+		
+		printf(") -> %i ", func->code->type);
+		print_block(func->code, indent);
+	}
 }

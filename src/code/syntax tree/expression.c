@@ -10,9 +10,14 @@
 
 #include <stdio.h>
 
-heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr* right) {
+inline heck_expr* create_expr(heck_expr_type expr_type) {
 	heck_expr* e = malloc(sizeof(heck_expr));
-	e->type = EXPR_BINARY;
+	e->type = expr_type;
+	return e;
+}
+
+heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr* right) {
+	heck_expr* e = create_expr(EXPR_BINARY);
 	
 	heck_expr_binary* binary = malloc(sizeof(heck_expr_binary));
 	binary->left = left;
@@ -25,8 +30,7 @@ heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr*
 }
 
 heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator) {
-	heck_expr* e = malloc(sizeof(heck_expr));
-	e->type = EXPR_UNARY;
+	heck_expr* e = create_expr(EXPR_UNARY);
 	
 	heck_expr_unary* unary = malloc(sizeof(heck_expr_unary));
 	unary->expr = expr;
@@ -50,16 +54,14 @@ heck_expr* create_expr_literal(heck_literal* value/*literal_value value, heck_li
 	
 	return e;*/
 	
-	heck_expr* e = malloc(sizeof(heck_expr));
-	e->type = EXPR_LITERAL;
+	heck_expr* e = create_expr(EXPR_LITERAL);
 	e->expr = value;
 	
 	return e;
 }
 
 heck_expr* create_expr_value(heck_idf name, bool global) {
-	heck_expr* e = malloc(sizeof(heck_expr));
-	e->type = EXPR_VALUE;
+	heck_expr* e = create_expr(EXPR_VALUE);
 	
 	heck_expr_value* value = malloc(sizeof(heck_expr_value));
 	value->name = name;
@@ -71,8 +73,7 @@ heck_expr* create_expr_value(heck_idf name, bool global) {
 }
 
 heck_expr* create_expr_call(heck_idf name, bool global) {
-	heck_expr* e = malloc(sizeof(heck_expr));
-	e->type = EXPR_CALL;
+	heck_expr* e = create_expr(EXPR_CALL);
 	
 	heck_expr_call* call = malloc(sizeof(heck_expr_call));
 	call->name.name = name;
@@ -85,8 +86,7 @@ heck_expr* create_expr_call(heck_idf name, bool global) {
 }
 
 heck_expr* create_expr_asg(heck_expr_value* name, heck_expr* value) {
-	heck_expr* e = malloc(sizeof(heck_expr));
-	e->type = EXPR_ASG;
+	heck_expr* e = create_expr(EXPR_ASG);
 	
 	heck_expr_asg* asg = malloc(sizeof(heck_expr_asg));
 	asg->name = name;
@@ -98,8 +98,7 @@ heck_expr* create_expr_asg(heck_expr_value* name, heck_expr* value) {
 }
 
 heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b) {
-	heck_expr* e = malloc(sizeof(heck_expr));
-	e->type = EXPR_TERNARY;
+	heck_expr* e = create_expr(EXPR_TERNARY);
 	
 	heck_expr_ternary* ternary = malloc(sizeof(heck_expr_ternary));
 	ternary->condition = condition;
@@ -112,8 +111,7 @@ heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_ex
 }
 
 heck_expr* create_expr_err() {
-	heck_expr* e = malloc(sizeof(heck_expr));
-	e->type = EXPR_ERR;
+	heck_expr* e = create_expr(EXPR_ERR);
 	
 	e->expr = NULL;
 	

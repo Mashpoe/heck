@@ -12,7 +12,7 @@
 
 typedef union heck_literal_value {
 	void* obj_value; // can objects be literals?
-	char* str_value;
+	str_entry str_value;
 	int int_value;
 	float float_value;
 	bool bool_value;
@@ -28,7 +28,7 @@ heck_literal* create_literal_float(float val);
 
 heck_literal* create_literal_bool(bool val);
 
-heck_literal* create_literal_string(char* val);
+heck_literal* create_literal_string(str_entry val);
 
 void print_literal(heck_literal* value);
 
