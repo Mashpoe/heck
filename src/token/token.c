@@ -19,7 +19,7 @@ void heck_free_token_data(heck_token* tk) {
 			break;
 		case TK_ERR: // fallthrough
 		case TK_IDF:
-			free((char*)tk->value.str_value);
+			//free((char*)tk->value.str_value);
 			break;
 		case TK_LITERAL:
 			free_literal(tk->value.literal_value);

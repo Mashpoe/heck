@@ -71,7 +71,7 @@ static void str_table_resize(str_table* t) {
 	
 	for (int i = 0; i < old_capacity; i++) {
 		str_entry old_bucket = old_buckets[i];
-		if (old_bucket->value == NULL) continue;
+		if (old_bucket == NULL) continue;
 		
 		resize_entry(t, old_bucket);
 	}

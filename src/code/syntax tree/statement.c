@@ -126,7 +126,7 @@ void print_stmt(heck_stmt* stmt, int indent) {
 			break;
 		case STMT_LET: {
 			heck_stmt_let* let_stmt = stmt->value;
-			printf("let [%s] = ", let_stmt->name);
+			printf("let [%s] = ", let_stmt->name->value);
 			print_expr(let_stmt->value);
 			printf("\n");
 			break;

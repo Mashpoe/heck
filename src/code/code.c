@@ -17,6 +17,7 @@ heck_code* heck_create() {
 	c->global = create_nmsp();
 	c->syntax_tree_vec = vector_create();
 	c->strings = str_table_create();
+	c->types = type_table_create();
 	return c;
 }
 
@@ -31,6 +32,8 @@ void free_tokens(heck_code* c) {
 void heck_free(heck_code* c) {
 	free_tokens(c);
 	vector_free(c->token_vec);
+	str_table_free(c->strings);
+	type_table_free(c->types);
 	free(c);
 }
 

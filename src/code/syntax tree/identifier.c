@@ -34,12 +34,12 @@ void print_idf(heck_idf idf) {
 void fprint_idf(FILE* f, heck_idf idf) {
 	
 	// print first element
-	fprintf(f, "%s", idf[0]);
+	fprintf(f, "%s", idf[0]->value);
 	
 	// print extra elements if any exist
 	int i = 1;
 	while (idf[i] != NULL) {
 		fprintf(f, ".");
-		fprintf(f, "%s", idf[i++]);
+		fprintf(f, "%s", idf[i++]->value);
 	}
 }
