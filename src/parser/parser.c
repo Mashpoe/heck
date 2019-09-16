@@ -320,6 +320,8 @@ heck_data_type* parse_type(parser* p) {
 		
 	}
 	
+	t = type_table_get_entry(p->code->types, t);
+	
 	return t;
 	
 }

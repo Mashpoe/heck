@@ -608,8 +608,12 @@ bool heck_scan(heck_code* c, FILE* f) {
 						
 					} else { // it is an identifier and not a keyword
 						
+						str_entry idf_str = create_str_entry(token, len);
+						token = NULL;
 						
-						add_token_idf(c, &fp, token);
+						idf_str = str_table_get_entry(c->strings, idf_str);
+						add_token_idf(c, &fp, idf_str);
+						
 						continue; // prevent the string from being freed
 					}
 					

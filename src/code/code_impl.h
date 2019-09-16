@@ -17,6 +17,7 @@
 #include "scope.h"
 #include "vec.h"
 #include "str_table.h"
+#include "type_table.h"
 
 struct heck_code {
 	heck_token** token_vec; // token vector
@@ -24,7 +25,7 @@ struct heck_code {
 	heck_scope* global;
 	
 	// these tables could be joined technically, but it might be better to separate them
-	str_table* types; // all unique data types
+	type_table* types; // all unique data types
 	str_table* strings; // all unique strings and identifiers
 };
 
