@@ -27,11 +27,16 @@ enum heck_expr_type {
 	EXPR_ERR		// error parsing
 };
 
+// heck_expr is a polymorphic structure with a "vtable"
+typedef struct expr_vtable expr_vtable;
 typedef struct heck_expr {
 	heck_expr_type type;
 	heck_data_type data_type;
+	expr_vtable* vtable; // resolve callback
 	void* expr;
 } heck_expr;
+
+heck_expr* create_expr_literal(heck_literal* value);
 
 typedef struct heck_expr_binary {
 	heck_expr* left;
@@ -45,19 +50,6 @@ typedef struct heck_expr_unary {
 	heck_tk_type operator;
 } heck_expr_unary;
 heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator);
-
-/*
-typedef union {
-	void* value;
-	bool bool_value;
-	long double num_value;
-	char* str_value;
-} literal_value;
-typedef struct heck_expr_literal {
-	heck_type_name type;
-	heck_token_value value;
-} heck_expr_literal;*/
-heck_expr* create_expr_literal(heck_literal* value);
 
 // variable/variable value
 typedef struct heck_expr_value {
@@ -93,6 +85,6 @@ void free_expr(heck_expr* expr);
 
 void print_expr(heck_expr* expr);
 
-heck_expr* create_expr(heck_expr_type expr_type);
+heck_expr* create_expr(heck_expr_type expr_type, expr_vtable* vtable);
 
 #endif /* expression_h */

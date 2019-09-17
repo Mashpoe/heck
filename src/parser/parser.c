@@ -128,6 +128,8 @@ heck_expr* primary_idf(parser* p, bool global) { // assumes an idf was already m
 				return call;
 			} else if (!match(p, TK_COMMA)) {
 				// TODO: report expected ')'
+				heck_token* t = peek(p);
+				fprintf(stderr, "error: expected ')', ln %i ch %i\n", t->ln, t->ch);
 				panic_mode(p);
 				break;
 			}
@@ -229,7 +231,7 @@ heck_expr* equality(parser* p) {
 		heck_tk_type operator = previous(p)->type;
 		heck_expr* right = comparison(p);
 		expr = create_expr_binary(expr, operator, right);
-		expr->data_type.type_name = TYPE_BOOL; // equality returns a bool
+		//expr->data_type.type_name = TYPE_BOOL; // equality returns a bool
 	}
 	
 	return expr;
@@ -637,7 +639,8 @@ void global_statement(parser* p, heck_scope* scope) {
 	
 	heck_stmt* stmt = NULL;
 	
-	switch (peek(p)->type) {
+	heck_token* t = peek(p);
+	switch (t->type) {
 		case TK_KW_LET:
 			stmt = let_statement(p);
 			break;
@@ -650,7 +653,7 @@ void global_statement(parser* p, heck_scope* scope) {
 			break;
 		case TK_KW_RETURN:
 			//stmt = ret_statement(p);
-			fprintf(stderr, "error: return statement outside function\n");
+			fprintf(stderr, "error: return statement outside function, ln %i ch %i\n", t->ln, t->ch);
 			panic_mode(p);
 			return;
 			break;
