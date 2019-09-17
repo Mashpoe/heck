@@ -339,7 +339,8 @@ heck_stmt* let_statement(parser* p) {
 			return create_stmt_let(name, expression(p));
 		} else {
 			// TODO: report expected '='
-			fprintf(stderr, "error: expected '='\n");
+			heck_token* err_token = peek(p);
+			fprintf(stderr, "error: expected '=', ln %i ch %i\n", err_token->ln, err_token->ch);
 		}
 	} else {
 		// TODO: report expected identifier

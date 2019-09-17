@@ -4,7 +4,7 @@
 //
 //  Created by Mashpoe on 6/18/19.
 //
-/*
+
 #include "compiler.h"
 #include "types.h"
 #include "scope.h"
@@ -75,7 +75,7 @@ heck_data_type* compile_expr(heck_code* c, heck_expr* expr) {
 heck_data_type* compile_func_call(heck_code* c, heck_expr_call* call) {
 	// find function in syntax tree
 	heck_scope* s;
-	hashmap_get(c->global->idf_map, call->name.name[0], (any_t*)&s);
+	idf_map_get(c->global->map, call->name.name[0], (void*)&s);
 	if (s && s->type == IDF_FUNCTION) {
 		
 		heck_func* f = s->value;
@@ -113,4 +113,4 @@ bool heck_compile(heck_code* c) {
 	}
 	
 	return true;
-}*/
+}

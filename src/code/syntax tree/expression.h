@@ -87,7 +87,6 @@ typedef struct heck_expr_ternary {
 } heck_expr_ternary;
 heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b);
 
-
 heck_expr* create_expr_err(void);
 
 void free_expr(heck_expr* expr);
