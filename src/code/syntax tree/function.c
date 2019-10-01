@@ -6,61 +6,72 @@
 //
 
 #include "function.h"
-#include "scope.h"
+#include "nmsp.h"
 
-heck_func* create_func(bool declared) {
+heck_func* create_func(heck_scope* parent, bool declared) {
 	heck_func* func = malloc(sizeof(heck_func));
 	func->declared = declared;
 	func->param_vec = vector_create();
-	func->code = create_block();
+	func->code = create_block(parent);
 	func->return_type = NULL; // unknown
 	
 	return func;
 }
 
-heck_scope* add_scope_func(heck_scope* scope, heck_func* func, heck_idf name) {
+heck_nmsp* scope_add_func(heck_scope* nmsp, heck_func* func, heck_idf name) {
 	
 	// create a child, populate it with the function
-	heck_scope* child_scope = get_scope_child(scope, name);
+	heck_nmsp* child_nmsp = scope_get_child(nmsp, name);
 	
-	if (child_scope == NULL)
+	if (child_nmsp == NULL)
 		return NULL;
 	
 	
-	if (child_scope->type == IDF_UNDECLARED) {
+	if (child_nmsp->type == IDF_UNDECLARED) {
 		
-		// functions cannot have children
-		if (idf_map_size(child_scope->map) > 0) {
-			fprintf(stderr, "error: unable to create child scope for a function: ");
-			fprint_idf(stderr, name);
-			fprintf(stderr, "\n");
-			return NULL;
+		if (child_nmsp->scope != NULL) {
+			
+			// functions cannot have child identifiers
+			if (idf_map_size(child_nmsp->scope->map) == 0) {
+				idf_map_free(child_nmsp->scope->map);
+				child_nmsp->scope = NULL;
+			} else {
+				fprintf(stderr, "error: unable to create child nmsp for a function: ");
+				fprint_idf(stderr, name);
+				fprintf(stderr, "\n");
+				return NULL;
+			}
+			
 		}
 		
-		child_scope->type = IDF_FUNCTION;
-		child_scope->value = vector_create(); // create vector to store overloads/definitions
-		vector_add(&child_scope->value, heck_func*) = func;
+		child_nmsp->type = IDF_FUNCTION;
+		child_nmsp->value = vector_create(); // create vector to store overloads/definitions
+		vector_add(&child_nmsp->value, heck_func*) = func;
 		
-	} else if (child_scope->type == IDF_FUNCTION) {
+	} else if (child_nmsp->type == IDF_FUNCTION) {
 		
 		// check if this is a unique overload
-		if (func_def_exists(child_scope, func)) {
+		if (func_def_exists(child_nmsp, func)) {
 			fprintf(stderr, "error: function has already been declared with the same parameters: ");
 			fprint_idf(stderr, name);
 			fprintf(stderr, "\n");
 			return NULL;
 		}
 		
-		vector_add(&child_scope->value, heck_func*) = func;
+		vector_add(&child_nmsp->value, heck_func*) = func;
 		
+	} else {
+		fputs("error: unable to create a function: ", stderr);
+		fprint_idf(stderr, name);
+		fputc('\n', stderr);
 	}
 	
-	return child_scope;
+	return child_nmsp;
 	
 }
 
-bool func_def_exists(heck_scope* scope, heck_func* func) {
-	heck_func** def_vec = scope->value;
+bool func_def_exists(heck_nmsp* nmsp, heck_func* func) {
+	heck_func** def_vec = nmsp->value;
 	vec_size def_count = vector_size(def_vec);
 	vec_size param_count = vector_size(func->param_vec);
 	
@@ -85,10 +96,14 @@ bool func_def_exists(heck_scope* scope, heck_func* func) {
 	return false;
 }
 
-void print_func_defs(heck_scope* scope, str_entry name, int indent) {
-	vec_size num_defs = vector_size(scope->value);
+void print_func_defs(heck_nmsp* nmsp, str_entry name, int indent) {
+	vec_size num_defs = vector_size(nmsp->value);
 	for (vec_size i = 0; i < num_defs; i++) {
-		heck_func* func = ((heck_func**)scope->value)[i];
+		heck_func* func = ((heck_func**)nmsp->value)[i];
+		
+		for (int j = 0; j < indent; j++)
+			putchar('\t');
+		
 		if (!func->declared)
 			printf("undeclared ");
 		printf("function %s(", name->value);

@@ -26,6 +26,6 @@ str_entry str_table_get_entry(str_table* t, str_entry value);
 
 // like realloc, it frees the old, unused value and returns the new one
 // use like realloc:
-// str = str_table_get_entry(table, str);
+// str = str_table_get_entry(table, str);@
 
 #endif /* str_table_h */

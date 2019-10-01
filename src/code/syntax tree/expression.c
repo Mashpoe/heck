@@ -9,14 +9,7 @@
 #include <stdlib.h>
 
 #include <stdio.h>
-
-// TODO: maybe make these callbacks take void*s instead
-typedef bool (*expr_resolve)(heck_expr*);
-typedef void (*expr_print)(heck_expr*);
-struct expr_vtable {
-	expr_resolve resolve;
-	expr_print print;
-};
+#include "scope.h"
 
 inline heck_expr* create_expr(heck_expr_type expr_type, expr_vtable* vtable) {
 	heck_expr* e = malloc(sizeof(heck_expr));
@@ -25,7 +18,7 @@ inline heck_expr* create_expr(heck_expr_type expr_type, expr_vtable* vtable) {
 	return e;
 }
 
-bool resolve_expr_literal(heck_expr* expr) { return true; }
+bool resolve_expr_literal(heck_expr* expr, heck_scope* scope) { return true; }
 void print_expr_literal(heck_expr* expr);
 expr_vtable expr_literal_vtable = {resolve_expr_literal, print_expr_literal};
 heck_expr* create_expr_literal(heck_literal* value) {
@@ -35,10 +28,10 @@ heck_expr* create_expr_literal(heck_literal* value) {
 	return e;
 }
 
-bool resolve_expr_binary(heck_expr* expr);
+bool resolve_expr_binary(heck_expr* expr, heck_scope* scope);
 void print_expr_binary(heck_expr* expr);
 expr_vtable expr_binary_vtable = {resolve_expr_binary, print_expr_binary};
-heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr* right) {
+heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr* right, const expr_vtable* vtable) {
 	heck_expr* e = create_expr(EXPR_BINARY, &expr_binary_vtable);
 	
 	heck_expr_binary* binary = malloc(sizeof(heck_expr_binary));
@@ -51,10 +44,26 @@ heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr*
 	return e;
 }
 
-bool resolve_expr_unary(heck_expr* expr);
+bool resolve_expr_comparison(heck_expr* expr, heck_scope* scope);
+void print_expr_comparison(heck_expr* expr);
+expr_vtable expr_comparison_vtable = {resolve_expr_binary, print_expr_binary};
+heck_expr* create_expr_comparison(heck_expr* left, heck_tk_type operator, heck_expr* right) {
+	heck_expr* e = create_expr(EXPR_BINARY, &expr_comparison_vtable);
+	
+	heck_expr_binary* binary = malloc(sizeof(heck_expr_binary));
+	binary->left = left;
+	binary->operator = operator;
+	binary->right = right;
+	
+	e->expr = binary;
+	
+	return e;
+}
+
+bool resolve_expr_unary(heck_expr* expr, heck_scope* scope);
 void print_expr_unary(heck_expr* expr);
 expr_vtable expr_unary_vtable = {resolve_expr_unary, print_expr_unary};
-heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator) {
+heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator, const expr_vtable* vtable) {
 	heck_expr* e = create_expr(EXPR_UNARY, &expr_unary_vtable);
 	
 	heck_expr_unary* unary = malloc(sizeof(heck_expr_unary));
@@ -66,7 +75,7 @@ heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator) {
 	return e;
 }
 
-bool resolve_expr_value(heck_expr* expr);
+bool resolve_expr_value(heck_expr* expr, heck_scope* scope);
 void print_expr_value(heck_expr* expr);
 expr_vtable expr_value_vtable = {resolve_expr_value, print_expr_value};
 heck_expr* create_expr_value(heck_idf name, bool global) {
@@ -80,9 +89,8 @@ heck_expr* create_expr_value(heck_idf name, bool global) {
 	
 	return e;
 }
-bool resolve_expr_value(heck_expr* expr);
 
-bool resolve_expr_call(heck_expr* expr);
+bool resolve_expr_call(heck_expr* expr, heck_scope* scope);
 void print_expr_call(heck_expr* expr);
 expr_vtable expr_call_vtable = {resolve_expr_call, print_expr_call};
 heck_expr* create_expr_call(heck_idf name, bool global) {
@@ -98,7 +106,7 @@ heck_expr* create_expr_call(heck_idf name, bool global) {
 	return e;
 }
 
-bool resolve_expr_asg(heck_expr* expr);
+bool resolve_expr_asg(heck_expr* expr, heck_scope* scope);
 void print_expr_asg(heck_expr* expr);
 expr_vtable expr_asg_vtable = {resolve_expr_asg, print_expr_asg};
 heck_expr* create_expr_asg(heck_expr_value* name, heck_expr* value) {
@@ -113,7 +121,7 @@ heck_expr* create_expr_asg(heck_expr_value* name, heck_expr* value) {
 	return e;
 }
 
-bool resolve_expr_ternary(heck_expr* expr);
+bool resolve_expr_ternary(heck_expr* expr, heck_scope* scope);
 void print_expr_ternary(heck_expr* expr);
 expr_vtable expr_ternary_vtable = {resolve_expr_ternary, print_expr_ternary};
 heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b) {
@@ -129,7 +137,7 @@ heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_ex
 	return e;
 }
 
-bool resolve_expr_err(heck_expr* expr) { return false; }
+bool resolve_expr_err(heck_expr* expr, heck_scope* scope) { return false; }
 void print_expr_err(heck_expr* expr);
 expr_vtable expr_err_vtable = {resolve_expr_err, print_expr_err};
 heck_expr* create_expr_err() {
@@ -183,12 +191,275 @@ void print_expr(heck_expr* expr) {
 //
 // resolve function definitions
 //
-bool resolve_expr_binary(heck_expr* expr) { return true; }
-bool resolve_expr_unary(heck_expr* expr) { return true; }
-bool resolve_expr_value(heck_expr* expr) { return true; }
-bool resolve_expr_call(heck_expr* expr) { return true; }
-bool resolve_expr_asg(heck_expr* expr) { return true; }
-bool resolve_expr_ternary(heck_expr* expr) { return true; }
+bool resolve_expr_binary(heck_expr* expr, heck_scope* scope) {
+	heck_expr_binary* binary = expr->expr;
+	if (!(
+		  binary->left->vtable->resolve(binary->left, scope) &&
+		  binary->right->vtable->resolve(binary->right, scope)
+	)) return false;
+	
+	// TODO: check for operator overloading between the two types (if they are class types)
+	expr->data_type = binary->left->data_type; // temporary solution
+	
+	return true;
+}
+
+/************************
+ * all vtable definitions
+ ************************/
+
+/*
+ * precedence 1
+ */
+
+// postfix increment
+bool resolve_expr_post_incr(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_post_incr = { resolve_expr_post_incr, print_expr_unary };
+
+// postfix decrement
+bool resolve_expr_post_decr(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_post_decr = { resolve_expr_post_decr, print_expr_unary };
+
+// type cast
+//bool resolve_expr_cast(heck_expr* expr, heck_scope* scope);
+//const expr_vtable expr_vtable_cast = { resolve_expr_cast, };
+
+// function call
+//const expr_vtable expr_vtable_call= {};
+// array access
+
+bool resolve_expr_arr_access(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_arr_access = { resolve_expr_arr_access, print_expr_unary };
+// TODO: maybe treat . as an operator, only benefit would be overloading
+
+/*
+ * precedence 2
+ */
+
+// prefix increment
+bool resolve_expr_pre_incr(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_pre_incr = { resolve_expr_pre_incr, print_expr_unary };
+
+// prefix decrement
+bool resolve_expr_pre_decr(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_pre_decr = { resolve_expr_pre_decr, print_expr_unary };
+
+// unary minus
+bool resolve_expr_unary_minus(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_unary_minus = { resolve_expr_unary_minus, print_expr_unary };
+
+// logical not
+bool resolve_expr_not(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_not = { resolve_expr_not, print_expr_unary };
+
+// bitwise not
+bool resolve_expr_bw_not(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_bw_not = { resolve_expr_bw_not, print_expr_unary };
+
+/*
+ * precedence 3
+ */
+
+// multiplication
+bool resolve_expr_mult(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_mult = { resolve_expr_mult, print_expr_binary };
+
+// division
+bool resolve_expr_div(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_div = { resolve_expr_div, print_expr_binary };
+
+// modulo
+bool resolve_expr_mod(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_mod = { resolve_expr_mod, print_expr_binary };
+
+/*
+ * precedence 4
+ */
+
+// addition
+bool resolve_expr_add(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_add = { resolve_expr_add, print_expr_binary };
+
+// subtraction
+bool resolve_expr_sub(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_sub = { resolve_expr_sub, print_expr_binary };
+
+/*
+ * precedence 5
+ */
+
+// bitwise left shift
+bool resolve_expr_shift_l(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_shift_l = { resolve_expr_shift_l, print_expr_binary };
+
+// bitwise right shift
+bool resolve_expr_shift_r(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_shift_r = { resolve_expr_shift_r, print_expr_binary };
+
+/*
+ * precedence 6
+ */
+
+// bitwise and
+bool resolve_expr_bw_and(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_bw_and = { resolve_expr_bw_and, print_expr_binary };
+
+/*
+ * precedence 7
+ */
+
+// bitwise xor
+bool resolve_expr_bw_xor(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_bw_xor = { resolve_expr_bw_xor, print_expr_binary };
+
+/*
+ * precedence 8
+ */
+
+// bitwise or
+bool resolve_expr_bw_or(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_bw_or = { resolve_expr_bw_or, print_expr_binary };
+
+/*
+ * precedence 9
+ */
+
+// less than
+bool resolve_expr_less(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_less = { resolve_expr_less, print_expr_binary };
+
+// less than or equal to
+bool resolve_expr_less_eq(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_less_eq = { resolve_expr_less_eq, print_expr_binary };
+
+// greater than
+bool resolve_expr_gtr(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_gtr = { resolve_expr_gtr, print_expr_binary };
+
+// greater than or equal to
+bool resolve_expr_gtr_eq(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_gtr_eq = { resolve_expr_gtr_eq, print_expr_binary };
+
+/*
+ * precedence 10
+ */
+
+// equal to
+bool resolve_expr_eq(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_eq = { resolve_expr_eq, print_expr_binary };
+
+// not equal to
+bool resolve_expr_n_eq(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_n_eq = { resolve_expr_n_eq, print_expr_binary };
+
+/*
+ * precedence 11
+ */
+
+// logical and
+bool resolve_expr_and(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_and = { resolve_expr_and, print_expr_binary };
+
+/*
+ * precedence 12
+ */
+
+// logical xor
+bool resolve_expr_xor(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_xor = { resolve_expr_xor, print_expr_binary };
+
+/*
+ * precedence 13
+ */
+
+// logical or
+bool resolve_expr_or(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_or = { resolve_expr_or, print_expr_binary };
+
+/*
+ * precedence 14
+ */
+
+// ternary
+//bool resolve_expr_ternary(heck_expr* expr, heck_scope* scope);
+const expr_vtable expr_vtable_ternary = { resolve_expr_ternary, print_expr_ternary };
+
+
+
+bool resolve_expr_unary(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_value(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_call(heck_expr* expr, heck_scope* scope) {
+	
+	// locate correct overload
+	
+	
+	return true;
+	
+}
+bool resolve_expr_asg(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_ternary(heck_expr* expr, heck_scope* scope) { return true; }
+
+
+// precedence 1
+bool resolve_expr_post_incr(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_post_decr(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_cast(heck_expr* expr, heck_scope* scope) { return true; }
+//bool resolve_expr_call(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_arr_access(heck_expr* expr, heck_scope* scope) { return true; }
+// TODO: maybe treat . as an operator, only benefit would be overloading
+
+// precedence 2
+bool resolve_expr_pre_incr(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_pre_decr(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_unary_minus(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_not(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_bw_not(heck_expr* expr, heck_scope* scope) { return true; }
+
+// precedence 3
+bool resolve_expr_mult(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_div(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_mod(heck_expr* expr, heck_scope* scope) { return true; }
+
+// precedence 4
+bool resolve_expr_add(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_sub(heck_expr* expr, heck_scope* scope) { return true; }
+
+// precedence 5
+bool resolve_expr_shift_l(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_shift_r(heck_expr* expr, heck_scope* scope) { return true; }
+
+// precedence 6
+bool resolve_expr_bw_and(heck_expr* expr, heck_scope* scope) { return true; }
+
+// precedence 7
+bool resolve_expr_bw_xor(heck_expr* expr, heck_scope* scope) { return true; }
+
+// precedence 8
+bool resolve_expr_bw_or(heck_expr* expr, heck_scope* scope) { return true; }
+
+// precedence 9
+bool resolve_expr_less(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_less_eq(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_gtr(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_gtr_eq(heck_expr* expr, heck_scope* scope) { return true; }
+
+// precedence 10
+bool resolve_expr_eq(heck_expr* expr, heck_scope* scope) { return true; }
+bool resolve_expr_n_eq(heck_expr* expr, heck_scope* scope) { return true; }
+
+// precedence 11
+bool resolve_expr_and(heck_expr* expr, heck_scope* scope) { return true; }
+
+// precedence 12
+bool resolve_expr_xor(heck_expr* expr, heck_scope* scope) { return true; }
+
+// precedence 13
+bool resolve_expr_or(heck_expr* expr, heck_scope* scope) { return true; }
+
+// precedence 14
+//bool resolve_expr_ternary(heck_expr* expr, heck_scope* scope) { return true; }
+
+
 
 
 //

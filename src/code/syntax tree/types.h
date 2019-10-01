@@ -50,7 +50,18 @@ struct heck_data_type {
 
 heck_data_type* create_data_type(heck_type_name name);
 
-bool data_type_cmp(heck_data_type* a, heck_data_type* b);
+// these will be referenced when creating objects with primitive types
+// it saves resources because they don't have to be entered into the type table
+extern const heck_data_type val_prim_type_int;//		= { TYPE_INT,	NULL };
+extern const heck_data_type val_prim_type_float;//	= { TYPE_FLOAT,	NULL };
+extern const heck_data_type val_prim_type_bool;//		= { TYPE_BOOL,	NULL };
+extern const heck_data_type val_prim_type_string;//	= { TYPE_BOOL,	NULL };
+#define prim_type_int		&val_prim_type_int
+#define prim_type_float		&val_prim_type_float
+#define prim_type_bool		&val_prim_type_bool
+#define prim_type_string	&val_prim_type_string
+
+bool data_type_cmp(const heck_data_type* a, const heck_data_type* b);
 /*
 typedef enum heck_literal_type {
 	LITERAL_INT = PRIM_INT,
@@ -60,6 +71,6 @@ typedef enum heck_literal_type {
 	LITERAL_NULL
 } heck_literal_type;*/
 
-void print_data_type(heck_data_type* type);
+void print_data_type(const heck_data_type* type);
 
 #endif /* types_h */

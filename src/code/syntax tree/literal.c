@@ -11,7 +11,7 @@
 heck_literal* create_literal_int(int val) {
 	heck_literal* literal = malloc(sizeof(heck_literal));
 	
-	literal->type = TYPE_INT;
+	literal->type = prim_type_int;
 	literal->value.int_value = val;
 	
 	return literal;
@@ -20,7 +20,7 @@ heck_literal* create_literal_int(int val) {
 heck_literal* create_literal_float(float val) {
 	heck_literal* literal = malloc(sizeof(heck_literal));
 	
-	literal->type = TYPE_FLOAT;
+	literal->type = prim_type_float;
 	literal->value.float_value = val;
 	
 	return literal;
@@ -29,7 +29,7 @@ heck_literal* create_literal_float(float val) {
 heck_literal* create_literal_bool(bool val) {
 	heck_literal* literal = malloc(sizeof(heck_literal));
 	
-	literal->type = TYPE_BOOL;
+	literal->type = prim_type_bool;
 	literal->value.bool_value = val;
 	
 	return literal;
@@ -38,14 +38,14 @@ heck_literal* create_literal_bool(bool val) {
 heck_literal* create_literal_string(str_entry val) {
 	heck_literal* literal = malloc(sizeof(heck_literal));
 	
-	literal->type = TYPE_STRING;
+	literal->type = prim_type_string;
 	literal->value.str_value = val;
 	
 	return literal;
 }
 
 void print_literal(heck_literal* literal) {
-	switch (literal->type) {
+	switch (literal->type->type_name) {
 		case TYPE_INT:
 			printf("#%i", (int)literal->value.int_value);
 			break;

@@ -6,7 +6,7 @@
 //
 
 //#include "statement.h"
-#include "scope.h"
+#include "nmsp.h"
 #include "function.h"
 #include <stdio.h>
 
@@ -29,10 +29,10 @@ heck_stmt* create_stmt_let(str_entry name, heck_expr* value) {
 	return s;
 }
 
-heck_if_node* create_if_node(heck_expr* condition) {
+heck_if_node* create_if_node(heck_expr* condition, heck_scope* scope) {
 	heck_if_node* node = malloc(sizeof(heck_if_node));
 	node->condition = condition;
-	node->code = create_block();
+	node->code = create_block(scope);
 	node->next = NULL;
 	
 	return node;
@@ -81,19 +81,6 @@ heck_stmt* create_stmt_ret(heck_expr* expr) {
 	s->value = func_stmt;
 	return s;
 }*/
-
-heck_stmt* create_stmt_class(heck_idf name) {
-	heck_stmt* s = malloc(sizeof(heck_stmt));
-	s->type = STMT_CLASS;
-	
-	heck_stmt_class* class_stmt = malloc(sizeof(heck_stmt_class));
-	class_stmt->name = name;
-	
-	class_stmt->vars = idf_map_create();
-	
-	s->value = class_stmt;
-	return s;
-}
 
 heck_stmt* create_stmt_block(struct heck_block* block) {
 	
@@ -219,8 +206,10 @@ void print_block(heck_block* block, int indent) {
 	
 	if (block->scope)
 		print_scope(block->scope, indent + 1);
+		//print_nmsp(block->scope, indent + 1);
 	
-	for (int i = 0; i < vector_size(block->stmt_vec); i++) {
+	vec_size block_size = vector_size(block->stmt_vec);
+	for (int i = 0; i < block_size; i++) {
 		print_stmt(((heck_stmt**)block->stmt_vec)[i], indent + 1);
 	}
 	

@@ -10,9 +10,11 @@
 #include "tokentypes.h"
 #include "expression.h"
 #include "statement.h"
-#include "scope.h"
+#include "nmsp.h"
 #include "function.h"
+#include "class.h"
 #include "types.h"
+#include "scope.h"
 
 #include <stdio.h>
 
@@ -179,10 +181,13 @@ heck_expr* primary(parser* p) {
 }
 
 heck_expr* unary(parser* p) {
-	if (match(p, TK_OP_NOT) || match(p, TK_OP_SUB)) {
-		heck_tk_type operator = previous(p)->type;
-		heck_expr* expr = unary(p);
-		return create_expr_unary(expr, operator);
+	
+	// TODO: this but better (for all operators)
+	if (match(p, TK_OP_NOT)) {
+		return create_expr_unary(unary(p), TK_OP_NOT, &expr_vtable_not);
+		
+	} else if (match(p, TK_OP_SUB)) {
+		return create_expr_unary(unary(p), TK_OP_NOT, &expr_vtable_unary_minus);
 	}
 	
 	return primary(p);
@@ -191,11 +196,22 @@ heck_expr* unary(parser* p) {
 heck_expr* multiplication(parser* p) {
 	heck_expr* expr = unary(p);
 	
-	while (match(p, TK_OP_MULT) || match(p, TK_OP_DIV) || match(p, TK_OP_MOD)) {
-		heck_tk_type operator = previous(p)->type;
-		heck_expr* right = unary(p);
-		expr = create_expr_binary(expr, operator, right);
+	for (;;) {
+		if (match(p, TK_OP_MULT)) {
+			expr = create_expr_binary(expr, TK_OP_MULT, unary(p), &expr_vtable_mult);
+		} else if (match(p, TK_OP_DIV)) {
+			expr = create_expr_binary(expr, TK_OP_DIV, unary(p), &expr_vtable_div);
+		} else if (match(p, TK_OP_MOD)) {
+			expr = create_expr_binary(expr, TK_OP_MOD, unary(p), &expr_vtable_mod);
+		} else {
+			break;
+		}
 	}
+//	while (match(p, TK_OP_MULT) || match(p, TK_OP_DIV) || match(p, TK_OP_MOD)) {
+//		heck_tk_type operator = previous(p)->type;
+//		heck_expr* right = unary(p);
+//		expr = create_expr_binary(expr, operator, right);
+//	}
 	
 	return expr;
 }
@@ -203,11 +219,21 @@ heck_expr* multiplication(parser* p) {
 heck_expr* addition(parser* p) {
 	heck_expr* expr = multiplication(p);
 	
-	while (match(p, TK_OP_ADD) || match(p, TK_OP_SUB)) {
-		heck_tk_type operator = previous(p)->type;
-		heck_expr* right = multiplication(p);
-		expr = create_expr_binary(expr, operator, right);
+	for (;;) {
+		if (match(p, TK_OP_ADD)) {
+			expr = create_expr_binary(expr, TK_OP_ADD, multiplication(p), &expr_vtable_add);
+		} else if (match(p, TK_OP_SUB)) {
+			expr = create_expr_binary(expr, TK_OP_SUB, multiplication(p), &expr_vtable_sub);
+		} else {
+			break;
+		}
 	}
+	
+//	while (match(p, TK_OP_ADD) || match(p, TK_OP_SUB)) {
+//		heck_tk_type operator = previous(p)->type;
+//		heck_expr* right = multiplication(p);
+//		expr = create_expr_binary(expr, operator, right);
+//	}
 	
 	return expr;
 }
@@ -215,11 +241,11 @@ heck_expr* addition(parser* p) {
 heck_expr* comparison(parser* p) {
 	heck_expr* expr = addition(p);
 	
-	while (match(p, TK_OP_GT) || match(p, TK_OP_GT_EQ) || match(p, TK_OP_LESS) || match(p, TK_OP_LESS_EQ)) {
-		heck_tk_type operator = previous(p)->type;
-		heck_expr* right = addition(p);
-		expr = create_expr_binary(expr, operator, right);
-	}
+//	while (match(p, TK_OP_GTR) || match(p, TK_OP_GTR_EQ) || match(p, TK_OP_LESS) || match(p, TK_OP_LESS_EQ)) {
+//		heck_tk_type operator = previous(p)->type;
+//		heck_expr* right = addition(p);
+//		expr = create_expr_binary(expr, operator, right);
+//	}
 	
 	return expr;
 }
@@ -227,12 +253,12 @@ heck_expr* comparison(parser* p) {
 heck_expr* equality(parser* p) {
 	heck_expr* expr = comparison(p);
 	
-	while (match(p, TK_OP_EQ) || match(p, TK_OP_N_EQ)) {
-		heck_tk_type operator = previous(p)->type;
-		heck_expr* right = comparison(p);
-		expr = create_expr_binary(expr, operator, right);
-		//expr->data_type.type_name = TYPE_BOOL; // equality returns a bool
-	}
+//	while (match(p, TK_OP_EQ) || match(p, TK_OP_N_EQ)) {
+//		heck_tk_type operator = previous(p)->type;
+//		heck_expr* right = comparison(p);
+//		expr = create_expr_binary(expr, operator, right);
+//		//expr->data_type.type_name = TYPE_BOOL; // equality returns a bool
+//	}
 	
 	return expr;
 }
@@ -285,7 +311,7 @@ heck_expr* expression(parser* p) {
 
 // forward declarations
 void statement(parser* p, heck_block* block);
-void global_statement(parser* p, heck_scope* scope);
+void global_statement(parser* p, heck_block* block);
 
 heck_data_type* parse_type(parser* p) {
 	step(p);
@@ -351,9 +377,10 @@ heck_stmt* let_statement(parser* p) {
 	return create_stmt_err();
 }
 
-heck_block* global_parse_block(parser* p) {
+heck_block* global_parse_block(parser* p, heck_scope* nmsp) {
 	step(p);
-	heck_block* block = create_block();
+	heck_block* block = create_block(nmsp);
+	//block->scope = create_nmsp(IDF_NONE, nmsp);
 	
 	for (;;) {
 		if (atEnd(p)) {
@@ -362,19 +389,19 @@ heck_block* global_parse_block(parser* p) {
 		} else if (match(p, TK_BRAC_R)) {
 			break;
 		} else {
-			global_statement(p, block->scope);
+			global_statement(p, block);
 		}
 	}
 	
 	return block;
 }
-heck_stmt* global_block_statement(parser* p) {
-	return create_stmt_block(global_parse_block(p));
+heck_stmt* global_block_statement(parser* p, heck_scope* nmsp) {
+	return create_stmt_block(global_parse_block(p, nmsp));
 }
 
-heck_block* parse_block(parser* p) {
+heck_block* parse_block(parser* p, heck_scope* nmsp) {
 	step(p);
-	heck_block* block = create_block();
+	heck_block* block = create_block(nmsp);
 	
 	for (;;) {
 		if (atEnd(p)) {
@@ -389,8 +416,8 @@ heck_block* parse_block(parser* p) {
 	
 	return block;
 }
-heck_stmt* block_statement(parser* p) {
-	return create_stmt_block(parse_block(p));
+heck_stmt* block_statement(parser* p, heck_scope* nmsp) {
+	return create_stmt_block(parse_block(p, nmsp));
 }
 
 // block parser is a callback
@@ -398,7 +425,7 @@ heck_stmt* if_statement(parser* p, heck_scope* scope, bool in_func) {
 	step(p);
 	
 	// if statements do not need (parentheses) around the condition in heck
-	heck_if_node* first_node = create_if_node(expression(p));
+	heck_if_node* first_node = create_if_node(expression(p), scope);
 	heck_if_node* node = first_node;
 	heck_stmt* s = create_stmt_if(node);
 	
@@ -417,7 +444,7 @@ heck_stmt* if_statement(parser* p, heck_scope* scope, bool in_func) {
 		// parse code block; handle returns if we are in a function
 		if (in_func) {
 			
-			node->code = parse_block(p);
+			node->code = parse_block(p, scope);
 			switch (node->code->type) {
 				case BLOCK_RETURNS:
 					if (node == first_node) {
@@ -435,7 +462,7 @@ heck_stmt* if_statement(parser* p, heck_scope* scope, bool in_func) {
 			}
 			
 		} else {
-			node->code = global_parse_block(p);
+			node->code = global_parse_block(p, scope);
 		}
 		
 		if (last || !match(p, TK_KW_ELSE)) {
@@ -443,9 +470,9 @@ heck_stmt* if_statement(parser* p, heck_scope* scope, bool in_func) {
 		}
 		
 		if (match(p, TK_KW_IF)) {
-			node->next = create_if_node(expression(p));
+			node->next = create_if_node(expression(p), scope);
 		} else {
-			node->next = create_if_node(NULL);
+			node->next = create_if_node(NULL, scope);
 			last = true;
 		}
 		
@@ -459,7 +486,7 @@ heck_stmt* if_statement(parser* p, heck_scope* scope, bool in_func) {
 }
 
 // TODO: error if there are any duplicate parameter names
-void func_statement(parser* p, heck_scope* scope) {
+void func_decl(parser* p, heck_scope* scope) {
 	step(p);
 	
 	if (!match(p, TK_IDF)) {
@@ -470,7 +497,7 @@ void func_statement(parser* p, heck_scope* scope) {
 	
 	heck_idf func_idf = identifier(p);
 	
-	heck_func* func = create_func(func_idf[1] == '\0');
+	heck_func* func = create_func(scope, func_idf[1] == NULL);
 	
 	if (func == NULL) {
 		panic_mode(p);
@@ -478,7 +505,7 @@ void func_statement(parser* p, heck_scope* scope) {
 	}
 	
 	if (!match(p, TK_PAR_L)) {
-		fprintf(stderr, "error: expected )\n");
+		fprintf(stderr, "error: expected (\n");
 		panic_mode(p);
 		return;
 	}
@@ -549,6 +576,8 @@ void func_statement(parser* p, heck_scope* scope) {
 				if (match(p, TK_PAR_R)) {
 					break; // stop the loop
 				}
+				
+				fprintf(stderr, "error: expected ')'\n");
 				// TODO: report expected ')'
 				panic_mode(p);
 				return;
@@ -556,11 +585,11 @@ void func_statement(parser* p, heck_scope* scope) {
 		}
 	}
 	
-	/*heck_scope* child = */add_scope_func(scope, func, func_idf);
+	/*heck_nmsp* child = */scope_add_func(scope, func, func_idf);
 	
 	if (peek(p)->type == TK_BRAC_L) {
 		
-		func->code = parse_block(p);
+		func->code = parse_block(p, scope);
 		
 		if (func->code->type == BLOCK_MAY_RETURN) {
 			// TODO: report function does not return in all cases
@@ -590,7 +619,49 @@ heck_stmt* ret_statement(parser* p) {
 	return create_stmt_ret(expression(p));
 }
 
-heck_stmt* namespace(parser* p, heck_scope* scope) {
+void class_decl(parser* p, heck_scope* scope) {
+	step(p);
+	
+	
+	if (!match(p, TK_IDF)) {
+		// TODO: report expected identifier
+		panic_mode(p);
+		return;
+	}
+	
+	heck_idf class_idf = identifier(p);
+	
+	heck_nmsp* class_nmsp = create_class(class_idf, scope);
+	
+	if (class_nmsp == NULL) {
+		panic_mode(p);
+		return;
+	}
+	
+	if (!match(p, TK_BRAC_L)) {
+		fprintf(stderr, "error: expected {\n");
+		panic_mode(p);
+		return;
+	}
+	
+	// parse child classes, variables, and functions
+	heck_token* current = peek(p);
+	switch (current->type) {
+		case TK_KW_LET:
+			
+			break;
+		case TK_KW_FUNC:
+			break;
+		case TK_KW_CLASS:
+			break;
+		default:
+			fprintf(stderr, "error: unexpected token ln %i ch %i\n", current->ln, current->ch);
+			break;
+	}
+	
+}
+
+heck_stmt* namespace(parser* p, heck_scope* nmsp) {
 	
 	// check if namespace is already defined
 	
@@ -613,7 +684,7 @@ void statement(parser* p, heck_block* block) {
 			}
 			break;
 		case TK_KW_FUNC:
-			func_statement(p, block->scope);
+			func_decl(p, block->scope);
 			return;
 			break;
 		case TK_KW_RETURN:
@@ -621,7 +692,7 @@ void statement(parser* p, heck_block* block) {
 			if (block->type != BLOCK_BREAKS) block->type = BLOCK_RETURNS;
 			break;
 		case TK_BRAC_L:
-			stmt = block_statement(p);
+			stmt = block_statement(p, block->scope);
 			if (((heck_block*)stmt->value)->type == BLOCK_RETURNS && block->type != BLOCK_BREAKS)
 				block->type = BLOCK_RETURNS;
 			break;
@@ -635,7 +706,7 @@ void statement(parser* p, heck_block* block) {
 }
 
 // for statements outside of functions
-void global_statement(parser* p, heck_scope* scope) {
+void global_statement(parser* p, heck_block* block) {
 	
 	heck_stmt* stmt = NULL;
 	
@@ -645,10 +716,10 @@ void global_statement(parser* p, heck_scope* scope) {
 			stmt = let_statement(p);
 			break;
 		case TK_KW_IF:
-			stmt = if_statement(p, scope, false);
+			stmt = if_statement(p, block->scope, false);
 			break;
 		case TK_KW_FUNC:
-			func_statement(p, scope);
+			func_decl(p, block->scope);
 			return;
 			break;
 		case TK_KW_RETURN:
@@ -658,13 +729,13 @@ void global_statement(parser* p, heck_scope* scope) {
 			return;
 			break;
 		case TK_BRAC_L:
-			stmt = global_block_statement(p);
+			stmt = global_block_statement(p, block->scope);
 			break;
 		default:
 			stmt = create_stmt_expr(expression(p));
 	}
 	
-	vector_add(&p->code->syntax_tree_vec, heck_stmt*) = stmt;
+	vector_add(&block->stmt_vec, heck_stmt*) = stmt;
 }
 
 bool heck_parse(heck_code* c) {
@@ -680,12 +751,8 @@ bool heck_parse(heck_code* c) {
 		
 	}
 	
-	print_scope(c->global, 0);
-
-	unsigned long stmt_count = vector_size(c->syntax_tree_vec);
-	for (int i = 0; i < stmt_count; i++) {
-		print_stmt(c->syntax_tree_vec[i], 0);
-	}
+	printf("global ");
+	print_block(c->global, 0);
 	
 	return p->success;
 }

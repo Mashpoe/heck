@@ -7,7 +7,7 @@
 
 #include "resolver.h"
 #include "types.h"
-#include "scope.h"
+#include "nmsp.h"
 #include "function.h"
 #include "statement.h"
 #include "code_impl.h"

@@ -68,8 +68,8 @@ typedef enum heck_tk_type {
 	TK_OP_OR,			// ||
 	TK_OP_LESS,			// <
 	TK_OP_LESS_EQ,		// <=
-	TK_OP_GT,			// >
-	TK_OP_GT_EQ,		// >=
+	TK_OP_GTR,			// >
+	TK_OP_GTR_EQ,		// >=
 	TK_OP_EQ,			// ==
 	TK_OP_N_EQ,			// !=
 	TK_OP_VAL,			// evaluate function call or variable

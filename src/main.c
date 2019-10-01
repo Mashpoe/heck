@@ -43,7 +43,7 @@ int main(int argc, const char * argv[]) {
 		//heck_print_tokens(c);
 		heck_parse(c);
 		//printf("done.\n");
-		heck_compile(c);
+		//heck_compile(c);
 		//printf("press ENTER to continue...");
 		//getchar();
 		heck_free(c);

@@ -198,7 +198,7 @@ bool is_space(file_pos* fp) {
 }
 
 bool is_end(file_pos* fp) {
-	return fp->current == '\n' || fp->current == '\r' || fp->current == EOF;
+	return fp->current == '\n' || fp->current == '\r' || fp->current == '\0';
 }
 
 bool is_space_end(file_pos* fp) {
@@ -292,7 +292,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 	// get the first line and first character
 	//scan_step_line(&fp); // will set the fp.ln to 1
 	
-	while (fp.current != EOF) {
+	while (fp.current != '\0') {
 		
 		// make copies of ln and ch so we know where the token begins
 		fp.tk_ln = fp.ln;
@@ -363,7 +363,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 				break;
 			case '>': {
 				if (match_str(&fp, ">=")) {
-					add_token(c, &fp, TK_OP_GT_EQ);
+					add_token(c, &fp, TK_OP_GTR_EQ);
 					continue;
 				} else if (match_str(&fp, ">>")) {
 					add_token(c, &fp, TK_OP_SHFT_R);
@@ -372,7 +372,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 					add_token(c, &fp, TK_OP_SHFT_R_ASG);
 					continue;
 				} else {
-					add_token(c, &fp, TK_OP_GT);
+					add_token(c, &fp, TK_OP_GTR);
 				}
 				break;
 			}
@@ -438,7 +438,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 					
 					while (!match_str(&fp, "*/")) { // look for the closing "*/"
 						// stop if we reach the end of the file
-						if (scan_step(&fp) == EOF) {
+						if (scan_step(&fp) == '\0') {
 							break;
 						}
 					}
@@ -540,7 +540,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 					} else {
 						do {
 							scan_step(&fp); // seek to the end of the double
-						} while (&fp.current_line[fp.ch] != num_end && fp.current != EOF);
+						} while (&fp.current_line[fp.ch] != num_end && fp.current != '\0');
 						
 						add_token_value(c, &fp, TK_FLOAT, (heck_token_value)ld);
 						
@@ -558,7 +558,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 					do {
 						token = str_add_char(token, &len, &alloc, fp.current);
 						scan_step(&fp);
-					} while(fp.current != EOF &&
+					} while(fp.current != '\0' &&
 							(isalnum(fp.current) || fp.current == '_' ||	// identifiers can start with 'A'-'z' or '_'
 							(unsigned char)fp.current >= 0x80));			// start or body of unicode character
 					

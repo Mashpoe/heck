@@ -109,7 +109,11 @@ void idf_map_set(idf_map* m, str_entry key, void* input_val) {
 		idf_map_resize(m);
 	}
 	
-	find_entry(m, key)->value = input_val;
+	idf_entry* entry = find_entry(m, key);
+	entry->key = key;
+	entry->value = input_val;
+	
+	m->count++;
 	
 }
 
@@ -118,11 +122,18 @@ int idf_map_size(idf_map* m) {
 }
 
 void idf_map_iterate(idf_map* m, map_callback callback, void* user_ptr) {
+	int count = m->count;
 	for (int i = 0; i < m->capacity; i++) {
+		
+		// stop when we've gone through all entries
+		if (count == 0)
+			return;
 		
 		idf_entry* entry = &m->buckets[i];
 		
 		if (entry->key != NULL) {
+			count--;
+			//printf("ree");
 			callback(entry->key, entry->value, user_ptr);
 		}
 	}

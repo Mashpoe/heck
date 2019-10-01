@@ -11,11 +11,13 @@
 		2A117952232F43F400DDEF31 /* type_table.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A117951232F43F400DDEF31 /* type_table.c */; };
 		2A117958232F4E7500DDEF31 /* idf_map.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A117957232F4E7500DDEF31 /* idf_map.c */; };
 		2A1AD58A232DD2BD009D9B4C /* str_table.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A1AD588232DD2BC009D9B4C /* str_table.c */; };
+		2A4BB4D6233D8CF800898CE5 /* class.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A4BB4D5233D8CF800898CE5 /* class.c */; };
+		2A4C3F8C2342CB79006C5A9D /* scope.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A4C3F8B2342CB79006C5A9D /* scope.c */; };
 		2A5034FF22E5A20100AEA530 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A5034FE22E5A20100AEA530 /* main.c */; };
 		2A50352922E5A2C100AEA530 /* str.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A50350A22E5A2A500AEA530 /* str.c */; };
 		2A50352A22E5A2C100AEA530 /* vec.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A50350E22E5A2A500AEA530 /* vec.c */; };
 		2A50352B22E5A2C100AEA530 /* expression.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A50351222E5A2C100AEA530 /* expression.c */; };
-		2A50352C22E5A2C100AEA530 /* scope.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A50351522E5A2C100AEA530 /* scope.c */; };
+		2A50352C22E5A2C100AEA530 /* nmsp.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A50351522E5A2C100AEA530 /* nmsp.c */; };
 		2A50352D22E5A2C100AEA530 /* statement.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A50351822E5A2C100AEA530 /* statement.c */; };
 		2A50352E22E5A2C100AEA530 /* code.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A50351A22E5A2C100AEA530 /* code.c */; };
 		2A50352F22E5A2C100AEA530 /* token.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A50351C22E5A2C100AEA530 /* token.c */; };
@@ -51,6 +53,11 @@
 		2A1AD588232DD2BC009D9B4C /* str_table.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = str_table.c; sourceTree = "<group>"; };
 		2A1AD589232DD2BC009D9B4C /* str_table.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = str_table.h; sourceTree = "<group>"; };
 		2A1AD58F232E9928009D9B4C /* table.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = table.h; sourceTree = "<group>"; };
+		2A4BB4D4233D8CF800898CE5 /* class.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = class.h; sourceTree = "<group>"; };
+		2A4BB4D5233D8CF800898CE5 /* class.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = class.c; sourceTree = "<group>"; };
+		2A4BB4D7233D8EBA00898CE5 /* declarations.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = declarations.h; sourceTree = "<group>"; };
+		2A4C3F8A2342838F006C5A9D /* scope.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = scope.h; sourceTree = "<group>"; };
+		2A4C3F8B2342CB79006C5A9D /* scope.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = scope.c; sourceTree = "<group>"; };
 		2A5034FB22E5A20100AEA530 /* Heck */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Heck; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A5034FE22E5A20100AEA530 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		2A50350A22E5A2A500AEA530 /* str.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = str.c; sourceTree = "<group>"; };
@@ -61,9 +68,9 @@
 		2A50351222E5A2C100AEA530 /* expression.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = expression.c; sourceTree = "<group>"; };
 		2A50351322E5A2C100AEA530 /* types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = types.h; sourceTree = "<group>"; };
 		2A50351422E5A2C100AEA530 /* statement.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = statement.h; sourceTree = "<group>"; };
-		2A50351522E5A2C100AEA530 /* scope.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = scope.c; sourceTree = "<group>"; };
+		2A50351522E5A2C100AEA530 /* nmsp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nmsp.c; sourceTree = "<group>"; };
 		2A50351622E5A2C100AEA530 /* expression.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = expression.h; sourceTree = "<group>"; };
-		2A50351722E5A2C100AEA530 /* scope.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = scope.h; sourceTree = "<group>"; };
+		2A50351722E5A2C100AEA530 /* nmsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nmsp.h; sourceTree = "<group>"; };
 		2A50351822E5A2C100AEA530 /* statement.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = statement.c; sourceTree = "<group>"; };
 		2A50351922E5A2C100AEA530 /* code_impl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = code_impl.h; sourceTree = "<group>"; };
 		2A50351A22E5A2C100AEA530 /* code.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = code.c; sourceTree = "<group>"; };
@@ -189,6 +196,7 @@
 		2A50351122E5A2C100AEA530 /* syntax tree */ = {
 			isa = PBXGroup;
 			children = (
+				2A4BB4D7233D8EBA00898CE5 /* declarations.h */,
 				2A5F23B422F73B6D00439CA5 /* identifier.h */,
 				2A5F23B522F73B6D00439CA5 /* identifier.c */,
 				2A50351322E5A2C100AEA530 /* types.h */,
@@ -199,10 +207,14 @@
 				2A50351222E5A2C100AEA530 /* expression.c */,
 				2A50351422E5A2C100AEA530 /* statement.h */,
 				2A50351822E5A2C100AEA530 /* statement.c */,
-				2A50351722E5A2C100AEA530 /* scope.h */,
-				2A50351522E5A2C100AEA530 /* scope.c */,
+				2A4C3F8A2342838F006C5A9D /* scope.h */,
+				2A4C3F8B2342CB79006C5A9D /* scope.c */,
+				2A50351722E5A2C100AEA530 /* nmsp.h */,
+				2A50351522E5A2C100AEA530 /* nmsp.c */,
 				2A5F239E22F236A300439CA5 /* function.h */,
 				2A5F239F22F236A400439CA5 /* function.c */,
+				2A4BB4D4233D8CF800898CE5 /* class.h */,
+				2A4BB4D5233D8CF800898CE5 /* class.c */,
 			);
 			path = "syntax tree";
 			sourceTree = "<group>";
@@ -290,7 +302,7 @@
 		2A5034F322E5A20100AEA530 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 1020;
+				LastUpgradeCheck = 1100;
 				ORGANIZATIONNAME = "";
 				TargetAttributes = {
 					2A5034FA22E5A20100AEA530 = {
@@ -304,6 +316,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = 2A5034F222E5A20100AEA530;
 			productRefGroup = 2A5034FC22E5A20100AEA530 /* Products */;
@@ -322,7 +335,7 @@
 			files = (
 				2A117952232F43F400DDEF31 /* type_table.c in Sources */,
 				2A50352F22E5A2C100AEA530 /* token.c in Sources */,
-				2A50352C22E5A2C100AEA530 /* scope.c in Sources */,
+				2A50352C22E5A2C100AEA530 /* nmsp.c in Sources */,
 				2A50353122E5A2C100AEA530 /* parser.c in Sources */,
 				2A82AAF02300BB9100175C2A /* types.c in Sources */,
 				2A5F23A022F236A400439CA5 /* function.c in Sources */,
@@ -332,7 +345,9 @@
 				2A50352E22E5A2C100AEA530 /* code.c in Sources */,
 				2A11794F232EB3BC00DDEF31 /* table.c in Sources */,
 				2A1AD58A232DD2BD009D9B4C /* str_table.c in Sources */,
+				2A4BB4D6233D8CF800898CE5 /* class.c in Sources */,
 				2A50353022E5A2C100AEA530 /* compiler.c in Sources */,
+				2A4C3F8C2342CB79006C5A9D /* scope.c in Sources */,
 				2A50352A22E5A2C100AEA530 /* vec.c in Sources */,
 				2AAF94FC231A3228009FDCB3 /* resolver.c in Sources */,
 				2A50352922E5A2C100AEA530 /* str.c in Sources */,
@@ -461,6 +476,7 @@
 		2A50350322E5A20100AEA530 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -469,6 +485,7 @@
 		2A50350422E5A20100AEA530 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
