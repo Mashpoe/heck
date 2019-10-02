@@ -11,9 +11,6 @@
 #include "expression.h"
 #include "idf_map.h"
 
-#include "declarations.h"
-#include "scope.h"
-
 typedef enum heck_stmt_type {
 	STMT_EXPR,
 	STMT_LET,
@@ -45,10 +42,10 @@ heck_stmt* create_stmt_let(str_entry name, heck_expr* value);
 typedef enum { BLOCK_DEFAULT = 0, BLOCK_MAY_RETURN = 1, BLOCK_BREAKS = 2, BLOCK_RETURNS = 3 } heck_block_type;
 typedef struct heck_block {
 	heck_block_type type;
-	heck_scope* scope;
+	struct heck_scope* scope;
 	heck_stmt** stmt_vec;
 } heck_block;
-heck_block* create_block(heck_scope* parent);
+heck_block* block_create(heck_scope* parent);
 heck_stmt* create_stmt_block(heck_block* block);
 
 // IF STATEMENT
@@ -57,7 +54,7 @@ typedef struct heck_if_node {
 	heck_block* code;
 	struct heck_if_node* next; // next node in linked list for if/else ladder
 } heck_if_node;
-heck_if_node* create_if_node(heck_expr* condition, heck_scope* scope);
+heck_if_node* create_if_node(heck_expr* condition, heck_scope* parent);
 
 typedef struct heck_stmt_if {
 	heck_block_type type;
@@ -78,9 +75,16 @@ heck_stmt* create_stmt_ret(heck_expr* value);
 //typedef heck_stmt_func** heck_func_dec;
 
 // CLASS
+typedef struct heck_stmt_class {
+	heck_idf name;
+	
+	// private & public variables
+	idf_map* vars;
+} heck_stmt_class;
+heck_stmt* create_stmt_class(heck_idf name);
 
 // NAMESPACE
-// not to be confused with the nmsp namespace, heck_nmsp.
+// not to be confused with the scope namespace, heck_scope.
 // stores a name so statements can be compiled in the right context
 typedef struct heck_stmt_nmsp {
 	heck_idf name;

@@ -7,17 +7,17 @@
 
 #include "compiler.h"
 #include "types.h"
-#include "nmsp.h"
+#include "scope.h"
 #include "function.h"
 #include "statement.h"
 #include "code_impl.h"
 #include "wasm_code.h"
 #include <stdio.h>
-
+/*
 // forward declaration
-/*heck_data_type* compile_func_call(heck_code* c, heck_expr_call* call);
+heck_data_type* compile_func_call(heck_code* c, heck_expr_call* call);
 
-const heck_data_type* compile_expr(heck_code* c, heck_expr* expr) {
+heck_data_type* compile_expr(heck_code* c, heck_expr* expr) {
 	
 	switch (expr->type) {
 		case EXPR_ERR:
@@ -29,7 +29,7 @@ const heck_data_type* compile_expr(heck_code* c, heck_expr* expr) {
 		case EXPR_VALUE:
 			break;
 		case EXPR_TERNARY: {
-			const heck_data_type* type = compile_expr(c, ((heck_expr_ternary*)expr->expr)->value_a);
+			heck_data_type* type = compile_expr(c, ((heck_expr_ternary*)expr->expr)->value_a);
 			if (type == NULL)
 				return create_data_type(TYPE_ERR);
 			
@@ -41,7 +41,7 @@ const heck_data_type* compile_expr(heck_code* c, heck_expr* expr) {
 			break;
 		}
 		case EXPR_BINARY: {
-			const heck_data_type* type = compile_expr(c, ((heck_expr_binary*)expr->expr)->left);
+			heck_data_type* type = compile_expr(c, ((heck_expr_binary*)expr->expr)->left);
 			if (type == NULL)
 				return create_data_type(TYPE_ERR);
 			
@@ -57,7 +57,7 @@ const heck_data_type* compile_expr(heck_code* c, heck_expr* expr) {
 			break;
 		case EXPR_LITERAL: {
 			
-			return ((heck_literal*)expr->expr)->type;
+			return create_data_type(((heck_literal*)expr->expr)->type);
 			break;
 		}
 		case EXPR_ASG:
@@ -74,7 +74,7 @@ const heck_data_type* compile_expr(heck_code* c, heck_expr* expr) {
 // gets return type from a function call
 heck_data_type* compile_func_call(heck_code* c, heck_expr_call* call) {
 	// find function in syntax tree
-	heck_nmsp* s;
+	heck_scope* s;
 	idf_map_get(c->global->map, call->name.name[0], (void*)&s);
 	if (s && s->type == IDF_FUNCTION) {
 		
@@ -88,7 +88,7 @@ heck_data_type* compile_func_call(heck_code* c, heck_expr_call* call) {
 		if (f->code->type != BLOCK_RETURNS) // block doesn't return
 			return create_data_type(TYPE_VOID);
 		
-		// begin traversing child nmsps 
+		// begin traversing child scopes 
 			
 		
 	}
@@ -113,4 +113,5 @@ bool heck_compile(heck_code* c) {
 	}
 	
 	return true;
-}*/
+}
+*/

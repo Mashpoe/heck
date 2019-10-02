@@ -14,15 +14,14 @@
 #include "code.h"
 #include "token.h"
 #include "statement.h"
-#include "nmsp.h"
+#include "scope.h"
 #include "vec.h"
 #include "str_table.h"
 #include "type_table.h"
 
 struct heck_code {
 	heck_token** token_vec; // token vector
-	heck_block* global; // syntax tree
-	//heck_nmsp* global; // global namespace/nmsp
+	heck_block* global; // code/syntax tree
 	
 	// these tables could be joined technically, but it might be better to separate them
 	type_table* types; // all unique data types

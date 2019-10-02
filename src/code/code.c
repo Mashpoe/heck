@@ -7,15 +7,14 @@
 
 #include "code.h"
 #include "code_impl.h"
-#include "nmsp.h"
+#include "scope.h"
 #include "str.h"
 #include <stdio.h>
 
 heck_code* heck_create() {
 	heck_code* c = malloc(sizeof(heck_code));
 	c->token_vec = vector_create();
-	c->global = create_block(NULL);
-	//c->global->nmsp = create_nmsp(IDF_NONE);
+	c->global = block_create(NULL);
 	c->strings = str_table_create();
 	c->types = type_table_create();
 	return c;
@@ -30,7 +29,7 @@ void free_tokens(heck_code* c) {
 }
 
 void heck_free(heck_code* c) {
-	//free_tokens(c);
+	free_tokens(c);
 	vector_free(c->token_vec);
 	str_table_free(c->strings);
 	type_table_free(c->types);

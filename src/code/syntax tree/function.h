@@ -11,7 +11,9 @@
 #include <stdio.h>
 #include "statement.h"
 #include "str.h"
-#include "declarations.h"
+//#include "scope.h"
+
+typedef struct heck_scope heck_scope;
 
 // associates argument types with generated code
 typedef struct heck_call_gen {
@@ -48,16 +50,16 @@ typedef struct heck_func {
 	
 	heck_data_type* return_type;
 } heck_func;
-heck_func* create_func(heck_scope* parent, bool declared);
-heck_nmsp* scope_add_func(heck_scope* scope, heck_func* func, heck_idf name);
+heck_func* func_create(heck_scope* parent, bool declared);
+heck_scope* scope_add_func(heck_scope* nmsp, heck_func* func, heck_idf name);
 
 // finds the correct definition/overload for a given call
-heck_func* get_func_def(heck_nmsp* nmsp, heck_expr_call* call);
+heck_func* get_func_def(heck_scope* scope, heck_expr_call* call);
 
 // checks if an definition matches a given argument list
-bool func_def_exists(heck_nmsp* nmsp, heck_func* func);
+bool func_def_exists(heck_scope* scope, heck_func* func);
 
 // prints all definitions/declarations for a given function
-void print_func_defs(heck_nmsp* nmsp, str_entry name, int indent);
+void print_func_defs(heck_scope* scope, str_entry name, int indent);
 
 #endif /* function_h */

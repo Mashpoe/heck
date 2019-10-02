@@ -10,18 +10,18 @@
 
 #include <stdbool.h>
 #include "declarations.h"
-#include "nmsp.h"
+#include "scope.h"
 #include "identifier.h"
 
 typedef struct heck_class {
 	struct heck_class** friend_vec; // friend classes
-	// TODO: add type argument
+	// TODO: add type parameter/argument
 	
 	
 } heck_class;
 
 // unlike functions, the nmsp is the important part of class creation
-heck_nmsp* create_class(heck_idf name, heck_scope* parent);
+heck_scope* class_create(heck_idf name, heck_scope* parent);
 
 // not needed as classes are just nmsps with certain labels
 //heck_nmsp* scope_add_class(heck_scope* nmsp, heck_class* child, heck_idf name);

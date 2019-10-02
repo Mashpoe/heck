@@ -6,14 +6,15 @@
 //
 
 #include "class.h"
+#include "scope.h"
 
-heck_nmsp* create_class(heck_idf name, heck_scope* parent) {
+heck_scope* class_create(heck_idf name, heck_scope* parent) {
 	
-	heck_nmsp* child = scope_get_child(parent, name);
+	heck_scope* child = scope_get_child(parent, name);
 	if (child->type == IDF_UNDECLARED) {
 		
-		if (child->scope == NULL)
-			child->scope = heck_scope_create(parent);
+		if (child->map == NULL)
+			child->map = idf_map_create();
 		
 		child->type = IDF_CLASS;
 		
@@ -26,8 +27,8 @@ heck_nmsp* create_class(heck_idf name, heck_scope* parent) {
 	} else if (child->type == IDF_CLASS) {
 		
 		// if map is null then it was just a forward declaration
-		if (child->scope == NULL) {
-			child->scope = heck_scope_create(parent);
+		if (child->map == NULL) {
+			child->map = idf_map_create();
 		} else {
 			fprintf(stderr, "error: redefinition of class ");
 			fprint_idf(stderr, name);

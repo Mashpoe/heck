@@ -18,7 +18,7 @@ typedef union heck_literal_value {
 	bool bool_value;
 } heck_literal_value;
 typedef struct heck_literal {
-	const heck_data_type* type;
+	heck_type_name type;
 	heck_literal_value value;
 } heck_literal;
 

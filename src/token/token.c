@@ -13,7 +13,6 @@
 #include <stdio.h>
 
 void heck_free_token_data(heck_token* tk) {
-/*
 	switch (tk->type) {
 		case TK_KW:
 		case TK_OP:
@@ -23,12 +22,11 @@ void heck_free_token_data(heck_token* tk) {
 			//free((char*)tk->value.str_value);
 			break;
 		case TK_LITERAL:
-			//free_literal(tk->value.literal_value);
+			free_literal(tk->value.literal_value);
 		default:
 			break;
 			
 	}
- */
 }
 
 void heck_print_token(heck_token* tk) {
