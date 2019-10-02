@@ -21,10 +21,20 @@ typedef enum heck_stmt_type {
 	STMT_ERR
 } heck_stmt_type;
 
+typedef struct stmt_vtable stmt_vtable;
 typedef struct heck_stmt {
+	const stmt_vtable* vtable;
 	heck_stmt_type type;
 	void* value;
 } heck_stmt;
+
+// TODO: maybe make these callbacks take void pointers instead
+typedef bool (*stmt_resolve)(heck_stmt*, heck_scope*);
+typedef void (*stmt_print)(heck_stmt*, int); // int for number of indents
+struct stmt_vtable {
+	stmt_resolve resolve;
+	stmt_print print;
+};
 
 // EXPRESSION STATEMENT
 // just use a regular heck_expr* for expression statements
@@ -62,40 +72,20 @@ typedef struct heck_stmt_if {
 } heck_stmt_if;
 heck_stmt* create_stmt_if(heck_if_node* contents);
 
-// FUNCTION
-/*typedef struct heck_stmt_func {
-	heck_param** param_vec;
-	heck_stmt** stmt_vec;
-	
-	heck_data_type return_type;
-} heck_stmt_func;
-heck_stmt* create_stmt_func(void);*/
 heck_stmt* create_stmt_ret(heck_expr* value);
-// define a function declaration as a vector of overloads for a function of a given name
-//typedef heck_stmt_func** heck_func_dec;
-
-// CLASS
-typedef struct heck_stmt_class {
-	heck_idf name;
-	
-	// private & public variables
-	idf_map* vars;
-} heck_stmt_class;
-heck_stmt* create_stmt_class(heck_idf name);
-
-// NAMESPACE
-// not to be confused with the scope namespace, heck_scope.
-// stores a name so statements can be compiled in the right context
-typedef struct heck_stmt_nmsp {
-	heck_idf name;
-	heck_stmt** stmt_vec;
-} heck_stmt_nmsp;
-heck_stmt* create_stmt_nmsp(heck_idf name);
 
 // ERROR
 heck_stmt* create_stmt_err(void);
 
 void print_stmt(heck_stmt* stmt, int indent);
 void print_block(heck_block* block, int indent);
+
+// vtables
+extern const stmt_vtable stmt_vtable_expr;
+extern const stmt_vtable stmt_vtable_let;
+extern const stmt_vtable stmt_vtable_block;
+extern const stmt_vtable stmt_vtable_if;
+extern const stmt_vtable stmt_vtable_ret;
+extern const stmt_vtable stmt_vtable_err;
 
 #endif /* statement_h */

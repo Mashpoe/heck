@@ -12,6 +12,8 @@
 #include "statement.h"
 #include "code_impl.h"
 
+// TODO: move these resolve methods into the headers with their corresponding structures
+
 bool resolve(heck_code* c) {
 	
 	

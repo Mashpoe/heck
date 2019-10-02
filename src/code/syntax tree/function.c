@@ -8,6 +8,17 @@
 #include "function.h"
 #include "scope.h"
 
+heck_param* param_create(str_entry name) {
+	heck_param* param = malloc(sizeof(heck_param));
+	
+	param->name = name;
+	param->def_val = NULL;
+	param->type = NULL;
+	param->obj_type = NULL;
+	
+	return param;
+}
+
 heck_func* func_create(heck_scope* parent, bool declared) {
 	heck_func* func = malloc(sizeof(heck_func));
 	func->declared = declared;

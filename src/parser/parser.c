@@ -602,7 +602,7 @@ void func_decl(parser* p, heck_scope* parent) {
 				return;
 			}
 			
-			heck_param* param = create_param(param_name[0]);
+			heck_param* param = param_create(param_name[0]);
 			free((void*)param_name);
 			
 			param->type = param_type;

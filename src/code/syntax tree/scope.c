@@ -108,7 +108,7 @@ void print_idf_map(str_entry key, void* value, void* user_ptr) {
 			for (int i = 0; i < indent; i++) {
 				printf("\t");
 			}
-			printf("unknown %s:\n", key->value);
+			printf("namespace %s:\n", key->value);
 		}
 	}
 	

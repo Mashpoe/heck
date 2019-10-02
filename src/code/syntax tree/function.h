@@ -36,7 +36,7 @@ typedef struct heck_param {
 	
 	heck_expr* def_val; // default value
 } heck_param;
-heck_param* create_param(str_entry name);
+heck_param* param_create(str_entry name);
 
 // FUNCTION
 typedef struct heck_func {

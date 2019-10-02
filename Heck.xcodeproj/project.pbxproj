@@ -198,23 +198,23 @@
 		2ACE37C423453C4400113318 /* syntax tree */ = {
 			isa = PBXGroup;
 			children = (
+				2ACE37C723453C4400113318 /* declarations.h */,
 				2ACE37FE23453C7700113318 /* types.c */,
 				2ACE37FF23453C7700113318 /* types.h */,
-				2ACE37C523453C4400113318 /* expression.c */,
-				2ACE37C623453C4400113318 /* class.c */,
-				2ACE37C723453C4400113318 /* declarations.h */,
-				2ACE37C823453C4400113318 /* statement.h */,
-				2ACE37C923453C4400113318 /* literal.h */,
-				2ACE37CA23453C4400113318 /* function.c */,
 				2ACE37CB23453C4400113318 /* identifier.h */,
+				2ACE37D023453C4400113318 /* identifier.c */,
+				2ACE37CF23453C4400113318 /* scope.h */,
 				2ACE37CC23453C4400113318 /* scope.c */,
 				2ACE37CD23453C4400113318 /* expression.h */,
-				2ACE37CE23453C4400113318 /* class.h */,
-				2ACE37CF23453C4400113318 /* scope.h */,
-				2ACE37D023453C4400113318 /* identifier.c */,
-				2ACE37D123453C4400113318 /* function.h */,
-				2ACE37D223453C4400113318 /* literal.c */,
+				2ACE37C523453C4400113318 /* expression.c */,
+				2ACE37C823453C4400113318 /* statement.h */,
 				2ACE37D323453C4400113318 /* statement.c */,
+				2ACE37D123453C4400113318 /* function.h */,
+				2ACE37CA23453C4400113318 /* function.c */,
+				2ACE37CE23453C4400113318 /* class.h */,
+				2ACE37C623453C4400113318 /* class.c */,
+				2ACE37C923453C4400113318 /* literal.h */,
+				2ACE37D223453C4400113318 /* literal.c */,
 			);
 			path = "syntax tree";
 			sourceTree = "<group>";

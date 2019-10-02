@@ -39,7 +39,7 @@ typedef struct heck_expr {
 	expr_vtable* vtable; // resolve callback
 	void* expr;
 } heck_expr;
-// TODO: maybe make these callbacks take void*s instead
+// TODO: maybe make these callbacks take void pointers instead
 typedef bool (*expr_resolve)(heck_expr*, heck_scope*);
 typedef void (*expr_print)(heck_expr*);
 struct expr_vtable {
@@ -106,7 +106,6 @@ extern const expr_vtable expr_vtable_post_decr;
 extern const expr_vtable expr_vtable_cast;
 //extern const expr_vtable expr_vtable_call;
 extern const expr_vtable expr_vtable_arr_access;
-// TODO: maybe treat . as an operator, only benefit would be overloading
 
 // precedence 2
 extern const expr_vtable expr_vtable_pre_incr;
