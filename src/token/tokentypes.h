@@ -10,6 +10,9 @@
 
 #include "types.h"
 
+// macro returns true if a token is an operator
+#define token_is_operator(token) (token > TK_BEGIN_OP && token < TK_END_OP)
+
 // comments indicate the appropriate associated data type
 typedef enum heck_tk_type {
 	TK_IDF = 0,		// library string (identifier)
@@ -36,6 +39,7 @@ typedef enum heck_tk_type {
 	TK_EOF,			// NULL
 
 	// ALL OPERATORS (nullptr)
+	TK_BEGIN_OP,	// used to check if a token is an operator
 	
 	TK_OP_INCR,		// ++
 	TK_OP_DECR,		// --
@@ -49,10 +53,6 @@ typedef enum heck_tk_type {
 	TK_OP_SUB,		// -
 	TK_OP_SHFT_L,	// <<
 	TK_OP_SHFT_R,	// >>
-	
-	// TERNARY OPERATOR
-	TK_Q_MARK,		// ?
-	TK_COLON,		// :
 	
 	// these 3 are placed before the comparison operators unlike c and c++
 	// this is intentional, so the expression (flags & MASK == FLAG)
@@ -72,7 +72,6 @@ typedef enum heck_tk_type {
 	TK_OP_GTR_EQ,		// >=
 	TK_OP_EQ,			// ==
 	TK_OP_N_EQ,			// !=
-	TK_OP_VAL,			// evaluate function call or variable
 	TK_OP_ASG,			// =
 	TK_OP_MULT_ASG,		// *=
 	TK_OP_DIV_ASG,		// /=
@@ -85,7 +84,15 @@ typedef enum heck_tk_type {
 	TK_OP_BW_NOT_ASG,	// ~=
 	TK_OP_SHFT_L_ASG,	// <<=
 	TK_OP_SHFT_R_ASG,	// >>=
-	TK_OP_DOT,			// .
+	
+	TK_END_OP,	// used to check if a token is an operator
+	
+	
+	// TERNARY OPERATOR
+	TK_Q_MARK,		// ?
+	TK_COLON,		// :
+	
+	TK_DOT,			// .
 	
 	// ALL KEYWORDS (NULL)
 	
@@ -100,23 +107,20 @@ typedef enum heck_tk_type {
 	TK_KW_SWITCH,
 	TK_KW_CASE,
 	TK_KW_LET,
-	TK_KW_FUNC,
+	TK_KW_FUNCTION,
+	TK_KW_OPERATOR,
 	TK_KW_RETURN,
 	TK_KW_CLASS,
 	TK_KW_PUBLIC,
 	TK_KW_PRIVATE,
+	TK_KW_PROTECTED,
+	TK_KW_FRIEND,
 	TK_KW_NAMESPACE,
-	TK_KW_GLOBAL,
+	
+	
+	TK_CTX, // global/local context
 	
 	// ALL TYPES
-	
-	// (NULL)
-	TK_TP_NUM,
-	TK_TP_STR,
-	TK_TP_BOOL,
-	
-	TK_TP_OBJ,			// pointer to class declaration in syntax tree (do not free on token cleanup)
-	
 	TK_PRIM_TYPE,		// primitive data type (heck_prim_type)
 } heck_tk_type;
 
@@ -162,7 +166,7 @@ typedef enum heck_op_type {
 	OP_BW_OR,		// |
 	
 	OP_AND,			// &&
-	OP_XOR,			// ^^ that's right, I'm adding the sought after logical XOR operator!
+	OP_XOR,			// ^^ that's right, I'm adding the logical XOR operator!
 	OP_OR,			// ||
 	OP_LESS,		// <
 	OP_LESS_EQ,		// <=

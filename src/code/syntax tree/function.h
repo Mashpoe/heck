@@ -32,7 +32,7 @@ typedef struct heck_param {
 	str_entry name; // name of the parameter
 	
 	heck_data_type* type;
-	heck_idf obj_type; // NULL unless type == TYPE_OBJ
+	heck_idf obj_type; // NULL unless type == TYPE_CLASS
 	
 	heck_expr* def_val; // default value
 } heck_param;
@@ -42,6 +42,8 @@ heck_param* param_create(str_entry name);
 typedef struct heck_func {
 	bool declared; // indicates whether or not a forward declaration is missing
 	
+	// if param types are generic, a new overload is added to the function's scope
+	// each time the function is compiled
 	heck_param** param_vec;
 	
 	heck_func_gen func_gen;
@@ -54,10 +56,13 @@ heck_func* func_create(heck_scope* parent, bool declared);
 heck_scope* scope_add_func(heck_scope* nmsp, heck_func* func, heck_idf name);
 
 // finds the correct definition/overload for a given call
-heck_func* get_func_def(heck_scope* scope, heck_expr_call* call);
+heck_func* func_match_def(heck_scope* scope, heck_expr_call* call);
 
-// checks if an definition matches a given argument list
+// checks if a definition matches a given argument list
+// finds the best match with the precedence exact=>generic=>castable
 bool func_def_exists(heck_scope* scope, heck_func* func);
+
+bool func_def_resolve(heck_func* func);
 
 // prints all definitions/declarations for a given function
 void print_func_defs(heck_scope* scope, str_entry name, int indent);

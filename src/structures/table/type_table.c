@@ -22,6 +22,15 @@ struct type_table {
 	int count;
 };
 
+// recursively hashes types with template arguments
+uint32_t hash_data_type(heck_data_type* type) {
+	uint32_t hash = TABLE_HASH_INIT;
+	
+	//if (type->type_name == TYPE_CLASS && type->type_value.)
+
+	return hash;
+}
+
 type_table* type_table_create(void) {
 	type_table* t = malloc(sizeof(type_table));
 	t->capacity = TABLE_DEFAULT_CAPACITY;
@@ -45,7 +54,8 @@ static void resize_entry(type_table* t, type_entry* old_entry) {
 	for (;;) {
 		type_entry* entry = &t->buckets[index];
 		
-		if (entry == NULL) {
+		// types in the table can never be NULL, must be empty
+		if (entry->value == NULL) {
 			entry = old_entry; // copy data from old entry
 			break;
 		}

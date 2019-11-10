@@ -11,7 +11,7 @@
 #include <stdbool.h>
 
 typedef void* vector;
-typedef size_t vec_size; // stores the number of elements
+typedef size_t vec_size_t; // stores the number of elements
 typedef unsigned char vec_type_size; // stores the number of bytes for a type
 
 typedef int*	vec_int;
@@ -30,14 +30,14 @@ void vector_free(vector v);
 
 void* _vector_add(vector* v, vec_type_size type_size);
 
-void* _vector_insert(vector* v, vec_type_size type_size, vec_size pos);
+void* _vector_insert(vector* v, vec_type_size type_size, vec_size_t pos);
 
-void _vector_erase(vector* v, vec_type_size type_size, vec_size pos, vec_size len);
+void _vector_erase(vector* v, vec_type_size type_size, vec_size_t pos, vec_size_t len);
 
-void _vector_remove(vector* v, vec_type_size type_size, vec_size pos);
+void _vector_remove(vector* v, vec_type_size type_size, vec_size_t pos);
 
-vec_size vector_size(vector v);
+vec_size_t vector_size(vector v);
 
-vec_size vector_get_alloc(vector v);
+vec_size_t vector_get_alloc(vector v);
 
 #endif /* vec_h */

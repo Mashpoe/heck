@@ -10,6 +10,8 @@
 
 #include "tokentypes.h"
 #include "literal.h"
+#include "types.h"
+#include "context.h"
 #include <stdbool.h>
 
 typedef struct heck_token heck_token;
@@ -17,7 +19,8 @@ typedef struct heck_token heck_token;
 typedef union heck_token_value {
 	str_entry str_value; // for identifiers only, string literals are stored in literal_value
 	heck_literal* literal_value;
-	heck_type_name prim_type;
+	const heck_data_type* prim_type;
+	idf_context ctx_value;
 } heck_token_value;
 struct heck_token {
 	int ln;

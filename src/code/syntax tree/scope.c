@@ -55,28 +55,65 @@ heck_scope* scope_get_child(heck_scope* scope, heck_idf name) {
 	return scope;
 }
 
-heck_scope* scope_resolve_idf(heck_scope* scope, heck_idf idf) {
-	heck_scope* item; // parent of the idf
-	while (!idf_map_get(scope->map, idf[0], (void*)&item)) {
+bool scope_accessible(const heck_scope* parent, const heck_scope* child) {
+	if (parent->class == child->class)
+		return true;
+	
+	if (child->access == ACCESS_PUBLIC)
+		return true;
+	
+	if (child->access == ACCESS_PRIVATE || child->access == ACCESS_PROTECTED) {
+		//vec_size_t size = vector_size(&((heck_class*)parent->class)->friends);
+		//for (vec_size_t i = 0; i < size; i++) {}
+		return false;
+	}
+	return false;
+}
+
+heck_scope* scope_resolve_idf(heck_idf idf, const heck_scope* parent) {
+	
+	// find the parent of the idf
+	heck_scope* child;
+	while (!idf_map_get(parent->map, idf[0], (void*)&child)) {
 		
 		
-		if (scope->parent == NULL)
+		if (parent->parent == NULL)
 			return NULL;
 		
-		scope = scope->parent; // check for the identifier in the parent nmsp
+		parent = parent->parent; // check for the identifier in the parent nmsp
 	}
 	
 	/*	we have found the parent of the identifier
 		now find the identifier "children" if they exist */
+	child->class = parent->class;
+	child->namespace = parent->namespace;
 	int i = 1;
 	while (idf[i] != NULL) {
-		if (!idf_map_get(scope->map, idf[i], (void*)&item))
+		
+		if (child->type == IDF_CLASS)
+			child->class = child;
+		
+		if (idf_map_get(child->map, idf[i], (void*)&child)) {
+			// TODO: check if private/protected/friend
+		} else {
 			return NULL;
+		}
 		
 		i++;
 	}
 	
-	return item;
+	return child;
+}
+
+heck_scope* scope_resolve_value(heck_expr_value* value, const heck_scope* parent, const heck_scope* global) {
+	switch (value->context) {
+		case CONTEXT_LOCAL:
+			return scope_resolve_idf(value->name, parent);
+		case CONTEXT_THIS:
+			return scope_resolve_idf(value->name, parent->class);
+		case CONTEXT_GLOBAL:
+			return scope_resolve_idf(value->name, global);
+	}
 }
 
 /*heck_scope* create_nmsp(void) {
@@ -103,18 +140,37 @@ void print_idf_map(str_entry key, void* value, void* user_ptr) {
 	switch (scope->type) {
 		case IDF_FUNCTION:
 			print_func_defs(scope, key, indent);
+			return;
+			break;
+		case IDF_VARIABLE:
+			print_stmt(scope->value, indent);
+			return;
+			break;
+			
+			// TODO: eliminate redundancies
+		case IDF_CLASS:
+			for (int i = 0; i < indent; i++) {
+				printf("\t");
+			}
+			printf("class %s {\n", key->value);
 			break;
 		default: {
 			for (int i = 0; i < indent; i++) {
 				printf("\t");
 			}
-			printf("namespace %s:\n", key->value);
+			printf("scope %s {\n", key->value);
 		}
 	}
 	
-	
 	indent++;
 	idf_map_iterate(((heck_scope*)value)->map, print_idf_map, (void*)&indent);
+	
+	// closing bracket
+	indent--;
+	for (int i = 0; i < indent; i++) {
+		printf("\t");
+	}
+	printf("}\n");
 }
 
 void print_scope(heck_scope* scope, int indent) {

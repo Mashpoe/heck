@@ -29,7 +29,7 @@ typedef struct heck_stmt {
 } heck_stmt;
 
 // TODO: maybe make these callbacks take void pointers instead
-typedef bool (*stmt_resolve)(heck_stmt*, heck_scope*);
+typedef bool (*stmt_resolve)(heck_stmt*, heck_scope* parent, heck_scope* global);
 typedef void (*stmt_print)(heck_stmt*, int); // int for number of indents
 struct stmt_vtable {
 	stmt_resolve resolve;
@@ -72,13 +72,24 @@ typedef struct heck_stmt_if {
 } heck_stmt_if;
 heck_stmt* create_stmt_if(heck_if_node* contents);
 
+typedef struct heck_stmt_func {
+	heck_func* func;
+	heck_idf* name;
+} heck_stmt_func;
+heck_stmt* create_stmt_func(heck_func* func);
+
 heck_stmt* create_stmt_ret(heck_expr* value);
 
 // ERROR
 heck_stmt* create_stmt_err(void);
 
+bool resolve_stmt(heck_stmt* stmt, heck_scope* parent);
 void print_stmt(heck_stmt* stmt, int indent);
+
+bool resolve_block(heck_block* block, heck_scope* parent, heck_scope* global);
 void print_block(heck_block* block, int indent);
+
+
 
 // vtables
 extern const stmt_vtable stmt_vtable_expr;

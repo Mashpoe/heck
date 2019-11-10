@@ -11,6 +11,6 @@
 #include <stdio.h>
 #include "code.h"
 
-bool resolve(heck_code* c);
+bool heck_resolve(heck_code* c);
 
 #endif /* resolver_h */

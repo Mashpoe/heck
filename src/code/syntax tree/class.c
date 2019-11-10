@@ -45,7 +45,10 @@ heck_scope* class_create(heck_idf name, heck_scope* parent) {
 	}
 	
 	heck_class* class = malloc(sizeof(heck_class));
-	class->friend_vec = NULL; // no friends :(
+	class->friend_vec = vector_create(); // empty list of friends :(
+	class->parent_vec = vector_create(); // empty list of friends :(
+	class->op_overload_vec = vector_create();
+	class->cast_overload_vec = vector_create();
 	
 	child->value = class;
 	

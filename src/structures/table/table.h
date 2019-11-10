@@ -14,6 +14,8 @@
 #define TABLE_MAX_LOAD				0.75f
 #define TABLE_RESIZE_FACTOR			2
 
+#define TABLE_HASH_INIT				2166136261u
+
 // inline function definition
 uint32_t hash_data(const void* data, size_t size);
 

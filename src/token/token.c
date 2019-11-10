@@ -64,7 +64,7 @@ void heck_print_token(heck_token* tk) {
 		case TK_KW_LET:
 			printf("let ");
 			break;
-		case TK_KW_FUNC:
+		case TK_KW_FUNCTION:
 			printf("function ");
 			break;
 		case TK_KW_RETURN:
@@ -88,7 +88,7 @@ void heck_print_token(heck_token* tk) {
 		case TK_COMMA:
 			printf(", ");
 			break;
-		case TK_OP_DOT:
+		case TK_DOT:
 			printf(".");
 			break;
 		case TK_SQR_L:

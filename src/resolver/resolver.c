@@ -12,13 +12,7 @@
 #include "statement.h"
 #include "code_impl.h"
 
-// TODO: move these resolve methods into the headers with their corresponding structures
-
-bool resolve(heck_code* c) {
-	
-	
-	
-	
-	
-	return true;
+// WOW, this function really deserves its own file
+bool heck_resolve(heck_code* c) {
+	return resolve_block(c->global, c->global->scope, c->global->scope);
 }

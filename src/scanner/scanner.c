@@ -4,6 +4,9 @@
 //
 //  Created by Mashpoe on 3/12/19.
 //
+//  This file has good and bad aspects, feel free to rearrange or replace altogether the massive switch statement
+//	You'll know it when you see it ;)
+//
 
 #include "scanner.h"
 #include "code_impl.h"
@@ -14,80 +17,6 @@
 #include "str.h"
 
 typedef struct file_pos file_pos;
-/*
-struct file_pos {
-	FILE* f;
-	int ln;
-	int ch;
-	size_t line_length;
-	size_t buff_size;
-	char* current_line;
-	int current; // current char
-};
-
-int scan_step_line(file_pos* fp) {
-	fp->ln++;
-	fp->ch = 0;
-	fp->line_length = getline(&fp->current_line, &fp->buff_size, fp->f);
-	
-	// keep combining lines if the line endings are escaped
-	// do not include the escaped line endings
-	size_t line_end_idx;
-	while (fp->current_line[line_end_idx = fp->line_length-2] == '\\' // regular newline
-		   || (fp->current_line[line_end_idx] == '\r' && fp->current_line[--line_end_idx] == '\\')) { // "\r\n" newline
-		
-		// backtrack until we reach a non-backslash character to make sure the trailing backslash is not escaped
-		size_t backslash_count = 1;
-		while (backslash_count < line_end_idx && fp->current_line[line_end_idx - backslash_count] == '\\') {
-			backslash_count++;
-		}
-		
-		if (!(backslash_count & 1)) { // if there is an even number of consecutive backslashes
-			break;
-		}
-		
-		size_t next_length;
-		size_t next_buff_size = 0;
-		char* next_line = NULL;
-		
-		next_length = getline(&next_line, &next_buff_size, fp->f);
-		
-		if (next_length) {
-			
-			// add the new line to the current line
-			fp->ln++;
-			fp->line_length = next_length + line_end_idx;
-			fp->buff_size = next_buff_size + line_end_idx;
-			fp->current_line = realloc(fp->current_line, fp->buff_size);
-			memcpy(&fp->current_line[line_end_idx], next_line, next_buff_size);
-			
-			free(next_line);
-		} else {
-			// there are no more lines to add
-			break;
-		}
-		
-	}
-	
-	if (fp->line_length == -1) {
-		return fp->current = EOF;
-	} else {
-		return fp->current = fp->current_line[fp->ch];
-	}
-}
-
-int scan_step(file_pos* fp) {
-	
-	if (++fp->ch < fp->line_length) {
-		// regular line character
-		fp->current = fp->current_line[fp->ch];
-		
-		return fp->current;
-		
-	} else {
-		return scan_step_line(fp);
-	}
-}*/
 
 struct file_pos {
 	int ln;
@@ -118,6 +47,9 @@ bool match_newline(file_pos* fp) {
 }
 
 int scan_step(file_pos* fp) {
+	
+//	if (fp->ln > 210)
+//		return 0;
 	
 	fp->pos++;
 	fp->ch++;
@@ -198,14 +130,14 @@ bool is_space(file_pos* fp) {
 }
 
 bool is_end(file_pos* fp) {
-	return fp->current == '\n' || fp->current == '\r' || fp->current == EOF;
+	return fp->current == '\n' || fp->current == '\r' || fp->current == '\0';
 }
 
 bool is_space_end(file_pos* fp) {
 	return is_space(fp) || is_end(fp);
 }
 
-// excludes EOF in case you don't want to consume it
+// excludes '\0' in case you don't want to consume it
 bool is_space_line_end(file_pos* fp) {
 	return is_space(fp) || fp->current == '\n' || fp->current == '\r';
 }
@@ -229,6 +161,7 @@ heck_token* add_token(heck_code* c, file_pos* fp, enum heck_tk_type type) {
 #define add_token_prim(c, fp, primtype)		add_token(c, fp, TK_PRIM_TYPE)->value.prim_type = primtype
 #define add_token_idf(c, fp, idf)			add_token(c, fp, TK_IDF)->value.str_value = idf
 #define add_token_err(c, fp)				add_token(c, fp, TK_ERR)
+#define add_token_ctx(c, fp, ctxval)		add_token(c, fp, TK_CTX)->value.ctx_value = ctxval
 
 /*
 void add_token_int(heck_code* c, int ln, int ch, int value) {
@@ -292,7 +225,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 	// get the first line and first character
 	//scan_step_line(&fp); // will set the fp.ln to 1
 	
-	while (fp.current != EOF) {
+	while (fp.current != '\0') {
 		
 		// make copies of ln and ch so we know where the token begins
 		fp.tk_ln = fp.ln;
@@ -432,13 +365,13 @@ bool heck_scan(heck_code* c, FILE* f) {
 						scan_step(&fp);
 					}
 					
-					continue; // don't skip over newline or EOF
+					continue; // don't skip over newline or '\0'
 					
 				} else if (match_str(&fp, "/*")) { // multiline comment
 					
 					while (!match_str(&fp, "*/")) { // look for the closing "*/"
 						// stop if we reach the end of the file
-						if (scan_step(&fp) == EOF) {
+						if (scan_step(&fp) == '\0') {
 							break;
 						}
 					}
@@ -472,7 +405,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 				break;
 			}
 			case '%': {
-				if (match_str(&fp, "+=")) {
+				if (match_str(&fp, "%=")) {
 					add_token(c, &fp, TK_OP_MOD_ASG); // modulus assignment
 				} else {
 					add_token(c, &fp, TK_OP_MOD); // modulus
@@ -511,7 +444,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 				}
 				
 				// if this isn't a digit, parse it as a member access/dot operator
-				add_token(c, &fp, TK_OP_DOT);
+				add_token(c, &fp, TK_DOT);
 				
 				break;
 			}
@@ -529,7 +462,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 					if (num_end == num_start) { // unable to parse a number
 						
 						if (fp.current == '.') {
-							add_token(c, &fp, TK_OP_DOT);
+							add_token(c, &fp, TK_DOT);
 						} else {
 							add_token_value(c, &fp, TK_ERR, (heck_token_value)str_copy("unable to parse number"));
 							do {
@@ -540,7 +473,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 					} else {
 						do {
 							scan_step(&fp); // seek to the end of the double
-						} while (&fp.current_line[fp.ch] != num_end && fp.current != EOF);
+						} while (&fp.current_line[fp.ch] != num_end && fp.current != '\0');
 						
 						add_token_value(c, &fp, TK_FLOAT, (heck_token_value)ld);
 						
@@ -558,7 +491,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 					do {
 						token = str_add_char(token, &len, &alloc, fp.current);
 						scan_step(&fp);
-					} while(fp.current != EOF &&
+					} while(fp.current != '\0' &&
 							(isalnum(fp.current) || fp.current == '_' ||	// identifiers can start with 'A'-'z' or '_'
 							(unsigned char)fp.current >= 0x80));			// start or body of unicode character
 					
@@ -588,10 +521,22 @@ bool heck_scan(heck_code* c, FILE* f) {
 						add_token(c, &fp, TK_KW_LET);
 						
 					} else if (strcmp(token, "function") == 0) {
-						add_token(c, &fp, TK_KW_FUNC);
+						add_token(c, &fp, TK_KW_FUNCTION);
 
 					} else if (strcmp(token, "class") == 0) {
 						add_token(c, &fp, TK_KW_CLASS);
+
+					} else if (strcmp(token, "public") == 0) {
+						add_token(c, &fp, TK_KW_PUBLIC);
+
+					} else if (strcmp(token, "private") == 0) {
+						add_token(c, &fp, TK_KW_PRIVATE);
+
+					} else if (strcmp(token, "protected") == 0) {
+						add_token(c, &fp, TK_KW_PROTECTED);
+
+					} else if (strcmp(token, "friend") == 0) {
+						add_token(c, &fp, TK_KW_FRIEND);
 						
 					} else if (strcmp(token, "return") == 0) {
 						add_token(c, &fp, TK_KW_RETURN);
@@ -606,20 +551,22 @@ bool heck_scan(heck_code* c, FILE* f) {
 						add_token(c, &fp, TK_KW_NULL);
 						
 					} else if (strcmp(token, "global") == 0) {
-						add_token(c, &fp, TK_KW_GLOBAL);
-						
+						add_token_ctx(c, &fp, CONTEXT_GLOBAL);
+							
+					} else if (strcmp(token, "this") == 0) {
+						add_token_ctx(c, &fp, CONTEXT_THIS);
+					
 					} else if (strcmp(token, "int") == 0) {
-						add_token_prim(c, &fp, TYPE_INT);
+						add_token_prim(c, &fp, data_type_int);
 						
 					} else if (strcmp(token, "float") == 0) {
-						add_token_prim(c, &fp, TYPE_FLOAT);
+						add_token_prim(c, &fp, data_type_float);
 						
 					} else if (strcmp(token, "bool") == 0) {
-						add_token_prim(c, &fp, TYPE_BOOL);
+						add_token_prim(c, &fp, data_type_bool);
 						
 					} else if (strcmp(token, "string") == 0) {
-						add_token_prim(c, &fp, TYPE_STRING);
-						
+						add_token_prim(c, &fp, data_type_string);
 					} else { // it is an identifier and not a keyword
 						
 						str_entry idf_str = create_str_entry(token, len);

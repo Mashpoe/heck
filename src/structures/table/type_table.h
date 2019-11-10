@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include "types.h"
+#include "table.h"
 
 typedef struct type_table type_table;
 

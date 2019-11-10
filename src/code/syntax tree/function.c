@@ -70,18 +70,66 @@ heck_scope* scope_add_func(heck_scope* scope, heck_func* func, heck_idf name) {
 	
 }
 
+/*	calls are matched with definitions/overloads based on a score system.
+	for each parameter:
+		an exact match with the corresponding call argument type gives 3 points
+		a parameter with a generic type (any argument type will work) gives 2 points
+		a possible cast from the argument to the corresponding parameter type gives 1 point
+	the definition/overload with the hightes score gets returned*/
+heck_func* func_match_def(heck_scope* scope, heck_expr_call* call) {
+	heck_func** def_vec = scope->value;
+	vec_size_t def_count = vector_size(def_vec);
+	vec_size_t param_count = vector_size(call->arg_vec);
+	
+	heck_func* best_match = NULL;
+	int best_score = 0;
+	for (vec_size_t i = 0; i < def_count; i++) {
+		if (param_count != vector_size(def_vec[i]->param_vec))
+			continue;
+		
+		bool match = true;
+		int current_score = 0;
+		
+		for (vec_size_t j = 0; j < param_count; j++) {
+			// check for matching parameter types
+			if (data_type_cmp(def_vec[i]->param_vec[j]->type, call->arg_vec[j]->data_type)) {
+				current_score += 3;
+			
+			// check for generic param
+			} else if (call->arg_vec[i]->data_type->type_name == TYPE_GEN) {
+				current_score += 2;
+				
+			// TODO: check for possible cast
+//			} else if (/*arg can be cast to param type*/) {
+//				current_score += 1;
+				
+			} else {
+				match = false;
+				break;
+			}
+		}
+		
+		if (match && current_score > best_score) {
+			best_score = current_score;
+			best_match = def_vec[i];
+		}
+	}
+	
+	return best_match;
+}
+
 bool func_def_exists(heck_scope* scope, heck_func* func) {
 	heck_func** def_vec = scope->value;
-	vec_size def_count = vector_size(def_vec);
-	vec_size param_count = vector_size(func->param_vec);
+	vec_size_t def_count = vector_size(def_vec);
+	vec_size_t param_count = vector_size(func->param_vec);
 	
-	for (vec_size i = 0; i < def_count; i++) {
+	for (vec_size_t i = 0; i < def_count; i++) {
 		if (param_count != vector_size(def_vec[i]->param_vec))
 			continue;
 		
 		bool match = true;
 		
-		for (vec_size j = 0; j < param_count; j++) {
+		for (vec_size_t j = 0; j < param_count; j++) {
 			// check for matching parameter types
 			if (!data_type_cmp(def_vec[i]->param_vec[j]->type, func->param_vec[j]->type)) {
 				match = false;
@@ -97,8 +145,8 @@ bool func_def_exists(heck_scope* scope, heck_func* func) {
 }
 
 void print_func_defs(heck_scope* scope, str_entry name, int indent) {
-	vec_size num_defs = vector_size(scope->value);
-	for (vec_size i = 0; i < num_defs; i++) {
+	vec_size_t num_defs = vector_size(scope->value);
+	for (vec_size_t i = 0; i < num_defs; i++) {
 		heck_func* func = ((heck_func**)scope->value)[i];
 		
 		for (int j = 0; j < indent; j++)
@@ -108,12 +156,17 @@ void print_func_defs(heck_scope* scope, str_entry name, int indent) {
 			printf("undeclared ");
 		printf("function %s(", name->value);
 		
-		vec_size num_params = vector_size(func->param_vec);
-		for (int i = 0; i < num_params; i++) {
-			print_data_type(func->param_vec[i]->type);
-			printf(" %s", func->param_vec[i]->name->value);
-			if (i < num_params - 1)
-				printf(", ");
+		vec_size_t num_params = vector_size(func->param_vec);
+		if (num_params > 0) {
+			vec_size_t j = 0;
+			for (;;) {
+				print_data_type(func->param_vec[j]->type);
+				printf(" %s", func->param_vec[j]->name->value);
+				if (j == num_params - 1)
+					break;
+				fputs(", ", stdout);
+				++j;
+			}
 		}
 		
 		printf(") -> %i ", func->code->type);

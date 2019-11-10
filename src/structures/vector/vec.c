@@ -10,12 +10,12 @@
 typedef struct vector_data vector_data;
 
 struct vector_data {
-	vec_size alloc;				// stores the number of bytes allocated
-	vec_size length;
+	vec_size_t alloc;				// stores the number of bytes allocated
+	vec_size_t length;
 	char buff[]; // use char to store bytes of an unknown type
 };
 
-vector_data* vector_alloc(vec_size alloc, vec_size size) {
+vector_data* vector_alloc(vec_size_t alloc, vec_size_t size) {
 	vector_data* v_data = malloc(sizeof(vector_data) + alloc * size);
 	v_data->alloc = alloc;
 	return v_data;
@@ -37,16 +37,16 @@ void vector_free(vector v) {
 	free(vector_get_data(v));
 }
 
-vec_size vector_size(vector v) {
+vec_size_t vector_size(vector v) {
 	return vector_get_data(v)->length;
 }
 
-vec_size vector_get_alloc(vector v) {
+vec_size_t vector_get_alloc(vector v) {
 	return vector_get_data(v)->alloc;
 }
 
 vector_data* vector_realloc(vector_data* v_data, vec_type_size type_size) {
-	vec_size new_alloc = (v_data->alloc == 0) ? 1 : v_data->alloc * 2;
+	vec_size_t new_alloc = (v_data->alloc == 0) ? 1 : v_data->alloc * 2;
 	vector_data* new_v_data = realloc(v_data, sizeof(vector_data) + new_alloc * type_size);
 	new_v_data->alloc = new_alloc;
 	return new_v_data;
@@ -67,10 +67,10 @@ void* _vector_add(vector* v, vec_type_size type_size) {
 	return (void*)&v_data->buff[type_size * v_data->length++];
 }
 
-void* _vector_insert(vector* v, vec_type_size type_size, vec_size pos) {
+void* _vector_insert(vector* v, vec_type_size type_size, vec_size_t pos) {
 	vector_data* v_data = vector_get_data(*v);
 	
-	vec_size new_length = v_data->length + 1;
+	vec_size_t new_length = v_data->length + 1;
 	
 	// make sure there is enough room for the new element
 	if (!vector_has_space(v_data)) {
@@ -85,7 +85,7 @@ void* _vector_insert(vector* v, vec_type_size type_size, vec_size pos) {
 	return &v_data->buff[pos * type_size];
 }
 
-void _vector_erase(vector* v, vec_type_size type_size, vec_size pos, vec_size len) {
+void _vector_erase(vector* v, vec_type_size type_size, vec_size_t pos, vec_size_t len) {
 	vector_data* v_data = vector_get_data(v);
 	// anyone who puts in a bad index can face the consequences on their own
 	memmove(&v_data->buff[pos * type_size],
@@ -95,6 +95,6 @@ void _vector_erase(vector* v, vec_type_size type_size, vec_size pos, vec_size le
 	v_data->length -= len;
 }
 
-void _vector_remove(vector* v, vec_type_size type_size, vec_size pos) {
+void _vector_remove(vector* v, vec_type_size type_size, vec_size_t pos) {
 	_vector_erase(v, type_size, pos, 1);
 }

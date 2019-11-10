@@ -10,6 +10,7 @@
 #include "vec.h"
 #include "scanner.h"
 #include "parser.h"
+#include "resolver.h"
 #include "compiler.h"
 
 #include <time.h>
@@ -33,7 +34,7 @@ int main(int argc, const char * argv[]) {
 	
 	clock_t begin = clock();
 
-	FILE* f = fopen("frick.js", "rb");
+	FILE* f = fopen("test.heck", "rb");
 
 	if (f) {
 
@@ -43,6 +44,7 @@ int main(int argc, const char * argv[]) {
 		//heck_print_tokens(c);
 		heck_parse(c);
 		//printf("done.\n");
+		heck_resolve(c);
 		//heck_compile(c);
 		//printf("press ENTER to continue...");
 		//getchar();
