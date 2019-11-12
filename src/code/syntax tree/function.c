@@ -162,6 +162,10 @@ void print_func_defs(heck_scope* scope, str_entry name, int indent) {
 			for (;;) {
 				print_data_type(func->param_vec[j]->type);
 				printf(" %s", func->param_vec[j]->name->value);
+				if (func->param_vec[j]->def_val != NULL) {
+					fputs(" = ", stdout);
+					print_expr(func->param_vec[j]->def_val);
+				}
 				if (j == num_params - 1)
 					break;
 				fputs(", ", stdout);

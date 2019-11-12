@@ -34,7 +34,7 @@ int main(int argc, const char * argv[]) {
 	
 	clock_t begin = clock();
 
-	FILE* f = fopen("test.heck", "rb");
+	FILE* f = fopen("resolve_test.heck", "rb");
 
 	if (f) {
 
@@ -44,7 +44,11 @@ int main(int argc, const char * argv[]) {
 		//heck_print_tokens(c);
 		heck_parse(c);
 		//printf("done.\n");
-		heck_resolve(c);
+		if (heck_resolve(c)) {
+			printf("successfully resolved!\n");
+		} else {
+			printf("failed to resolve :(\n");
+		}
 		//heck_compile(c);
 		//printf("press ENTER to continue...");
 		//getchar();

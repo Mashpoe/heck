@@ -123,6 +123,8 @@ heck_data_type* resolve_type_arr(heck_data_type* type, heck_scope* parent, heck_
 	return resolve_data_type(type->type_value.arr_type, parent, global);
 }
 heck_data_type* resolve_type_class(heck_data_type* type, heck_scope* parent, heck_scope* global) {
+	// find the correct class
+	
 	return NULL;
 }
 heck_data_type* resolve_type_class_args(heck_data_type* type, heck_scope* parent, heck_scope* global) {
@@ -189,7 +191,8 @@ void print_type_class_args(const heck_data_type* type) {
 }
 
 void print_type_arr(const heck_data_type* type) {
-	
+	print_data_type(type->type_value.arr_type);
+	fputs("[]", stdout);
 }
 
 /*

@@ -707,15 +707,16 @@ int parse_hex(heck_code* c, file_pos* fp) {
 float parse_float(heck_code* c, file_pos* fp) {
 	
 	// do arithmetic on an int for more precise values, move decimal places later
-	int val = fp->current - '0';
+	int val = 0;
 	
 	// 10ths place
 	float dec_place = 0.1f;
 	
-	while (isdigit(scan_step(fp))) {
-		val *= 10;
+	while (isdigit(fp->current)) {
 		val += fp->current - '0';
+		val *= 10;
 		dec_place /= 10.0f;
+		scan_step(fp);
 	}
 	
 	return (float)val * dec_place;

@@ -884,13 +884,9 @@ heck_stmt* ret_statement(parser* p, heck_scope* parent) {
 	return create_stmt_ret(expression(p, parent));
 }
 
+// classes can be declared in any scope
 void class_decl(parser* p, heck_scope* parent) {
 	step(p);
-	
-	if (parent->type != IDF_CLASS && parent->type != IDF_NAMESPACE) {
-		parser_error(p, previous(p), 0, "class declarations are not allowed here");
-		return;
-	}
 	
 	if (!match(p, TK_IDF)) {
 		parser_error(p, peek(p), 0, "expected an identifier");
@@ -990,7 +986,7 @@ void statement(parser* p, heck_block* block) {
 			func_decl(p, block->scope);
 			return;
 		case TK_KW_CLASS:
-			parser_error(p, peek(p), 0, "class declarations are not allowed in functions");
+			class_decl(p, block->scope);
 			break;
 		case TK_KW_RETURN:
 			stmt = ret_statement(p, block->scope);
@@ -1058,6 +1054,8 @@ bool heck_parse(heck_code* c) {
 	while (!at_end(p)) {
 		
 		global_statement(p, c->global);
+		
+		// TODO: check for newline or ;
 		
 	}
 	

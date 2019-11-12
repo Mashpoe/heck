@@ -540,8 +540,6 @@ bool resolve_expr_ternary(heck_expr* expr, heck_scope* parent, heck_scope* globa
 // precedence 15
 bool resolve_expr_asg(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 	
-	printf("lfajsdlfkjadsiou238943498230948023984903284903842839482390849023849023840-21394890-231841-23481-2349812-348120-3481-234981-20394891-203481-02348-1234890-12384-0123894-12843-120");
-	
 	heck_expr_binary* asg = expr->expr;
 	
 	/*
