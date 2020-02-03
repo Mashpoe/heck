@@ -31,7 +31,7 @@ struct file_pos {
 
 // handles '\n', '\r', and '\r\n' line endings. It doesn't care if they're mixed
 // it won't pass over the last character of the newline (so it can be processed)
-// also deals with escaped characters
+// also deals with escaped newlines
 bool match_newline(file_pos* fp) {
 	
 	 // an attempt at handling all cases with minimal branching
@@ -151,50 +151,15 @@ heck_token* add_token(heck_code* c, file_pos* fp, enum heck_tk_type type) {
 	return tk;
 }
 
-#define add_token_literal(c, fp, val)		add_token(c, fp, TK_LITERAL)->value.literal_value = val
-#define add_token_int(c, fp, intval)		add_token_literal(c, fp, create_literal_int(intval))
-#define add_token_float(c, fp, floatval)	add_token_literal(c, fp, create_literal_float(floatval))
-#define add_token_bool(c, fp, boolval)		add_token_literal(c, fp, create_literal_bool(boolval))
-#define add_token_string(c, fp, strval)		add_token_literal(c, fp, create_literal_string(strval))
-#define add_token_prim(c, fp, primtype)		add_token(c, fp, TK_PRIM_TYPE)->value.prim_type = primtype
-#define add_token_idf(c, fp, idf)			add_token(c, fp, TK_IDF)->value.str_value = idf
-#define add_token_err(c, fp)				add_token(c, fp, TK_ERR)
-#define add_token_ctx(c, fp, ctxval)		add_token(c, fp, TK_CTX)->value.ctx_value = ctxval
-
-/*
-void add_token_int(heck_code* c, int ln, int ch, int value) {
-	heck_token* tk = add_token(c, fp, TK_LITERAL);
-	tk->value.literal_value = create_literal_int(value);
-}
-
-void add_token_float(heck_code* c, int ln, int ch, float value) {
-	heck_token* tk = add_token(c, fp, TK_LITERAL);
-	tk->value.literal_value = create_literal_float(value);
-}
-
-void add_token_bool(heck_code* c, int ln, int ch, bool value) {
-	heck_token* tk = add_token(c, fp, TK_LITERAL);
-	tk->value.literal_value = create_literal_bool(value);
-}
-
-void add_token_string(heck_code* c, int ln, int ch, str_entry value) {
-	heck_token* tk = add_token(c, fp, TK_LITERAL);
-	tk->value.literal_value = create_literal_string(value);
-}
-void add_token_prim(heck_code* c, file_pos* fp, heck_type_name type) {
-	heck_token* tk = add_token(c, fp, TK_PRIM_TYPE);
-	tk->value.prim_type = type;
-}
-
-void add_token_idf(heck_code* c, file_pos* fp, str_entry value) {
-	heck_token* tk = add_token(c, fp, TK_IDF);
-	tk->value.str_value = value;
-}
-
-void add_token_err(heck_code* c, file_pos* fp) {
-	add_token(c, fp, TK_ERR);
-}
-*/
+#define add_token_literal(c, fp, val)		(add_token(c, fp, TK_LITERAL)->value.literal_value = val)
+#define add_token_int(c, fp, intval)		(add_token_literal(c, fp, create_literal_int(intval)))
+#define add_token_float(c, fp, floatval)	(add_token_literal(c, fp, create_literal_float(floatval)))
+#define add_token_bool(c, fp, boolval)		(add_token_literal(c, fp, create_literal_bool(boolval)))
+#define add_token_string(c, fp, strval)		(add_token_literal(c, fp, create_literal_string(strval)))
+#define add_token_prim(c, fp, primtype)		(add_token(c, fp, TK_PRIM_TYPE)->value.prim_type = primtype)
+#define add_token_idf(c, fp, idf)			(add_token(c, fp, TK_IDF)->value.str_value = idf)
+#define add_token_err(c, fp)				(add_token(c, fp, TK_ERR))
+#define add_token_ctx(c, fp, ctxval)		(add_token(c, fp, TK_CTX)->value.ctx_value = ctxval)
 
 // forward declarations
 bool parse_string(heck_code* c, file_pos* fp);
@@ -237,10 +202,6 @@ bool heck_scan(heck_code* c, FILE* f) {
 		fp.tk_ln = fp.ln;
 		fp.tk_ch = fp.ch;
 		
-		
-		// TODO: rework the loop so the value passed into the switch statement is the previous character
-		// this would eliminate the step at the end
-		// ((((((MAYBE))))))
 		switch (fp.current) {
 			case '\n': // semicolons and newlines can separate statements
 				//add_token(c, &fp, TK_ENDL, NULL);
@@ -420,12 +381,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 			}
 			case '\\': {
 				
-				/*int str_len;
-				char* err_str = str_copy("unexpected escape sequence", &str_len);
-				
-				// TODO: good error reporting
-				str_entry err_entry = create_str_entry(err_str, str_len);
-				err_str = NULL;*/
+				// there shouldn't be any escape sequences here, match_newline() already handles escaped newlines
 				
 				fprintf(stderr, "error: unexpected escape sequence, ln %i ch %i\n", fp.ln, fp.ch);
 				
@@ -460,34 +416,6 @@ bool heck_scan(heck_code* c, FILE* f) {
 					parse_number(c, &fp);
 					continue;
 					
-					/*
-					char* num_start = &fp.current_line[fp.ch];
-					char* num_end = NULL;
-					float ld = strtof(num_start, &num_end);
-					
-					if (num_end == num_start) { // unable to parse a number
-						
-						if (fp.current == '.') {
-							add_token(c, &fp, TK_DOT);
-						} else {
-							add_token_value(c, &fp, TK_ERR, (heck_token_value)str_copy("unable to parse number"));
-							do {
-								scan_step(&fp); // seek to the end of the invalid token
-							} while (!is_space_end(&fp));
-						}
-						
-					} else {
-						do {
-							scan_step(&fp); // seek to the end of the double
-						} while (&fp.current_line[fp.ch] != num_end && fp.current != '\0');
-						
-						add_token_value(c, &fp, TK_FLOAT, (heck_token_value)ld);
-						
-						continue; // avoid step at the end so we don't skip a char
-						
-					}
-					 */
-					
 				} else if (isalpha(fp.current) || fp.current == '_' ||	// identifiers can start with 'A'-'z' or '_'
 						   (unsigned char)fp.current >= 0xC0)			// start of unicode character
 				{
@@ -502,6 +430,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 							(unsigned char)fp.current >= 0x80));			// start or body of unicode character
 					
 					// check for keywords
+					// if you have a better way to do this (that's still readable) go right ahead
 					if (strcmp(token, "if") == 0) {
 						add_token(c, &fp, TK_KW_IF);
 						
@@ -576,7 +505,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 						
 					} else if (strcmp(token, "string") == 0) {
 						add_token_prim(c, &fp, data_type_string);
-					} else { // it is an identifier and not a keyword
+					} else { // it's an identifier and not a keyword
 						
 						str_entry idf_str = create_str_entry(token, len);
 						token = NULL;
@@ -713,7 +642,6 @@ int parse_hex(heck_code* c, file_pos* fp) {
 	return 0x0;
 }
 
-// assumes
 float parse_float(heck_code* c, file_pos* fp, int val) {
 	
 	// do arithmetic on an int for more precise values, move decimal places later
