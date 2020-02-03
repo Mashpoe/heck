@@ -58,6 +58,7 @@ typedef struct heck_block {
 	heck_stmt** stmt_vec;
 } heck_block;
 heck_block* block_create(heck_scope* parent);
+void block_free(heck_block* block);
 heck_stmt* create_stmt_block(heck_block* block);
 
 // IF STATEMENT

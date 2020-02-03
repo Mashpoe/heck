@@ -40,7 +40,7 @@ type_table* type_table_create(void) {
 }
 
 void type_table_free(type_table* t) {
-	for (int i = 0; i < t->capacity; i++) {
+	for (int i = 0; i < t->capacity; ++i) {
 		if (t->buckets[i].value != NULL) {
 			free((void*)t->buckets[i].value);
 		}
@@ -73,7 +73,7 @@ static void type_table_resize(type_table* t) {
 	t->buckets = calloc(t->capacity, sizeof(type_entry)); // initializes everything to 0
 	//printf("resize %i\n", t->capacity);
 	
-	for (int i = 0; i < old_capacity; i++) {
+	for (int i = 0; i < old_capacity; ++i) {
 		type_entry* old_bucket = &old_buckets[i];
 		if (old_bucket->value == NULL) continue;
 		

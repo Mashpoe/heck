@@ -10,16 +10,15 @@
 
 #include "types.h"
 
-typedef union heck_literal_value {
-	void* obj_value; // can objects be literals?
-	str_entry str_value;
-	int int_value;
-	float float_value;
-	bool bool_value;
-} heck_literal_value;
 typedef struct heck_literal {
-	heck_type_name type;
-	heck_literal_value value;
+	const heck_data_type* data_type; // use one of the const primitive data types
+	union {
+		void* obj_value; // can objects be literals?
+		str_entry str_value;
+		int int_value;
+		float float_value;
+		bool bool_value;
+	} value;
 } heck_literal;
 
 heck_literal* create_literal_int(int val);

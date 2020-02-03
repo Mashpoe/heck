@@ -8,6 +8,7 @@
 #include "types.h"
 #include <stdlib.h>
 #include "vec.h"
+#include "scope.h"
 
 heck_data_type* create_data_type(heck_type_name name) {
 	heck_data_type* t = malloc(sizeof(heck_data_type));
@@ -25,21 +26,22 @@ bool data_type_cmp(const heck_data_type* a, const heck_data_type* b) {
 			const heck_class_type* class_a = &a->type_value.class_type;
 			const heck_class_type* class_b = &b->type_value.class_type;
 			
-			if (!idf_cmp(class_a->value.name, class_b->value.name))
+			// check if class scopes are the same
+			if (scope_resolve_idf(class_a->value.name, class_a->parent) != scope_resolve_idf(class_b->value.name, class_b->parent))
 				return false;
 			
 			// check if they have type arguments; return false if only one has type arguments
-			if (class_a->type_arg_vec == NULL || class_b->type_arg_vec == NULL)
-				return class_a->type_arg_vec == class_b->type_arg_vec;
+			if (class_a->type_args.type_vec == NULL || class_b->type_args.type_vec == NULL)
+				return class_a->type_args.type_vec == class_b->type_args.type_vec;
 			
 			// check if the class types have the same number of argument types
-			vec_size_t num_type_args = vector_size(class_a->type_arg_vec);
-			if (num_type_args != vector_size(class_b->type_arg_vec))
+			vec_size_t num_type_args = vector_size(class_a->type_args.type_vec);
+			if (num_type_args != vector_size(class_b->type_args.type_vec))
 				return false;
 			
 			// compare the type arguments one by one
-			for (vec_size_t i = 0; i < num_type_args; i++) {
-				if (!data_type_cmp(class_a->type_arg_vec[i], class_b->type_arg_vec[i]))
+			for (vec_size_t i = 0; i < num_type_args; ++i) {
+				if (!data_type_cmp(class_a->type_args.type_vec[i], class_b->type_args.type_vec[i]))
 					return false;
 			}
 			
@@ -53,8 +55,13 @@ bool data_type_cmp(const heck_data_type* a, const heck_data_type* b) {
 	}
 }
 
+inline bool data_type_is_numeric(const heck_data_type* type) {
+	return type->type_name == TYPE_INT || type->type_name == TYPE_FLOAT;
+}
+
 // locates classes, hashes types, etc
 inline heck_data_type* resolve_data_type(heck_data_type* type, heck_scope* parent, heck_scope* global) {
+	// TODO: free it if it can't be resolved, or maybe leave that to whoever calls
 	return type->vtable->resolve(type, parent, global);
 }
 
@@ -123,12 +130,46 @@ heck_data_type* resolve_type_arr(heck_data_type* type, heck_scope* parent, heck_
 	return resolve_data_type(type->type_value.arr_type, parent, global);
 }
 heck_data_type* resolve_type_class(heck_data_type* type, heck_scope* parent, heck_scope* global) {
-	// find the correct class
+	// find the correct class using the parent scope
+	heck_class_type* class_type = &type->type_value.class_type;
+	
+	heck_scope* s = scope_resolve_idf(class_type->value.name, parent);
+	
+	// TODO: line numbers in error messages
+	if (s == NULL) {
+		fprintf(stderr, "error: unable to resolve identifier\n");
+		return NULL;
+	}
+	
+	if (s->type != IDF_CLASS) {
+		fprintf(stderr, "error: not a class\n");
+	}
+	
+	class_type->value.class = s->value.class_value;
 	
 	return NULL;
 }
 heck_data_type* resolve_type_class_args(heck_data_type* type, heck_scope* parent, heck_scope* global) {
-	return NULL;
+	
+	type = resolve_type_class(type, parent, global);
+	
+	if (!type)
+		return NULL;
+	
+	// resolve the type arguments
+	heck_class_type* class_type = &type->type_value.class_type;
+	
+	vec_size_t size = vector_size(class_type->type_args.type_vec);
+	for (vec_size_t i = 0; i < size; i++) {
+		heck_data_type* current_type = resolve_data_type(class_type->type_args.type_vec[i], parent, global);
+		if (current_type == NULL) {
+			fprintf(stderr, "error: invalid type argument\n");
+			return NULL;
+		}
+		class_type->type_args.type_vec[i] = current_type;
+	}
+	
+	return type;
 }
 
 void free_type_prim(heck_data_type* type) {
@@ -143,7 +184,7 @@ void free_type_class(heck_data_type* type) {
 
 void free_type_class_args(heck_data_type* type) {
 	free(type);
-	vector_free(type->type_value.class_type.type_arg_vec);
+	vector_free(type->type_value.class_type.type_args.type_vec);
 }
 
 void free_type_arr(heck_data_type* type) {
@@ -177,17 +218,17 @@ void print_type_class(const heck_data_type* type) {
 
 void print_type_class_args(const heck_data_type* type) {
 	print_idf(type->type_value.class_type.value.name);
-	putc('<', stdout);
-	vec_size_t size = vector_size(type->type_value.class_type.type_arg_vec);
+	fputs(":[", stdout);
+	vec_size_t size = vector_size(type->type_value.class_type.type_args.type_vec);
 	vec_size_t i = 0;
 	for (;;) {
-		print_data_type(type->type_value.class_type.type_arg_vec[i]);
+		print_data_type(type->type_value.class_type.type_args.type_vec[i]);
 		if (i == size - 1)
 			break;
 		fputs(", ", stdout);
 		++i;
 	}
-	putc('>', stdout);
+	putc(']', stdout);
 }
 
 void print_type_arr(const heck_data_type* type) {

@@ -7,8 +7,18 @@
 
 #include "class.h"
 #include "scope.h"
+#include "overload.h"
 
-heck_scope* class_create(heck_idf name, heck_scope* parent) {
+heck_class* class_create() {
+	heck_class* c = malloc(sizeof(heck_class));
+	c->friend_vec = vector_create(); // empty list of friends :(
+	c->parent_vec = vector_create(); // empty list of friends :(
+	c->op_overloads = vector_create();
+	
+	return c;
+}
+
+heck_scope* class_create_scope(heck_idf name, heck_scope* parent) {
 	
 	heck_scope* child = scope_get_child(parent, name);
 	if (child->type == IDF_UNDECLARED) {
@@ -44,13 +54,25 @@ heck_scope* class_create(heck_idf name, heck_scope* parent) {
 		return NULL;
 	}
 	
-	heck_class* class = malloc(sizeof(heck_class));
-	class->friend_vec = vector_create(); // empty list of friends :(
-	class->parent_vec = vector_create(); // empty list of friends :(
-	class->op_overload_vec = vector_create();
-	class->cast_overload_vec = vector_create();
-	
-	child->value = class;
+	child->value.class_value = class_create();
 	
 	return child;
+}
+
+void print_class(heck_scope* scope, const char* name, int indent) {
+	
+	heck_class* c = scope->value.class_value;
+	
+	for (int i = 0; i < indent; ++i)
+		putchar('\t');
+	
+	// TODO: friends and parents and stuff
+	printf("class %s {\n", name);
+	
+	vec_size_t num_overloads = vector_size(c->op_overloads);
+	for (vec_size_t i = 0; i < num_overloads; ++i) {
+		
+		print_func_defs(&c->op_overloads[i].overloads, "operator @op ", indent + 1);
+	}
+	
 }

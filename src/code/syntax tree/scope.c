@@ -7,6 +7,7 @@
 
 #include "scope.h"
 #include "function.h"
+#include "class.h"
 #include <stdio.h>
 
 heck_scope* scope_create(heck_idf_type type, heck_scope* parent) {
@@ -14,10 +15,14 @@ heck_scope* scope_create(heck_idf_type type, heck_scope* parent) {
 	heck_scope* scope = malloc(sizeof(heck_scope));
 	scope->map = idf_map_create();
 	scope->type = type;
-	scope->value = NULL;
+	scope->value.class_value = NULL; // will set all fields to NULL
 	scope->parent = parent;
 	
 	return scope;
+}
+
+void scope_free(heck_scope* scope) {
+	// TODO: free the scope
 }
 
 // creates undeclared children if they do not exist
@@ -64,7 +69,7 @@ bool scope_accessible(const heck_scope* parent, const heck_scope* child) {
 	
 	if (child->access == ACCESS_PRIVATE || child->access == ACCESS_PROTECTED) {
 		//vec_size_t size = vector_size(&((heck_class*)parent->class)->friends);
-		//for (vec_size_t i = 0; i < size; i++) {}
+		//for (vec_size_t i = 0; i < size; ++i) {}
 		return false;
 	}
 	return false;
@@ -139,23 +144,21 @@ void print_idf_map(str_entry key, void* value, void* user_ptr) {
 	heck_scope* scope = (heck_scope*)value;
 	switch (scope->type) {
 		case IDF_FUNCTION:
-			print_func_defs(scope, key, indent);
+			print_func_defs(&scope->value.func_value, key->value, indent);
 			return;
 			break;
 		case IDF_VARIABLE:
-			print_stmt(scope->value, indent);
+			print_stmt(scope->value.let_value, indent);
 			return;
 			break;
 			
 			// TODO: eliminate redundancies
-		case IDF_CLASS:
-			for (int i = 0; i < indent; i++) {
-				printf("\t");
-			}
-			printf("class %s {\n", key->value);
+		case IDF_CLASS: {
+			print_class(scope, key->value, indent);
 			break;
+		}
 		default: {
-			for (int i = 0; i < indent; i++) {
+			for (int i = 0; i < indent; ++i) {
 				printf("\t");
 			}
 			printf("scope %s {\n", key->value);
@@ -167,7 +170,7 @@ void print_idf_map(str_entry key, void* value, void* user_ptr) {
 	
 	// closing bracket
 	indent--;
-	for (int i = 0; i < indent; i++) {
+	for (int i = 0; i < indent; ++i) {
 		printf("\t");
 	}
 	printf("}\n");

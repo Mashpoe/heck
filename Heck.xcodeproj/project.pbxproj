@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		2A3DC77F2364E60800499743 /* error.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A3DC77E2364E60800499743 /* error.c */; };
+		2AC46AC5238453BB00877DCE /* vec.c in Sources */ = {isa = PBXBuildFile; fileRef = 2AC46AC3238453BB00877DCE /* vec.c */; };
 		2ACE37E923453C4400113318 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 2ACE37B023453C4400113318 /* main.c */; };
 		2ACE37EA23453C4400113318 /* wasm_code.c in Sources */ = {isa = PBXBuildFile; fileRef = 2ACE37B423453C4400113318 /* wasm_code.c */; };
 		2ACE37EB23453C4400113318 /* compiler.c in Sources */ = {isa = PBXBuildFile; fileRef = 2ACE37B723453C4400113318 /* compiler.c */; };
@@ -28,7 +29,6 @@
 		2ACE37FA23453C4400113318 /* type_table.c in Sources */ = {isa = PBXBuildFile; fileRef = 2ACE37E123453C4400113318 /* type_table.c */; };
 		2ACE37FB23453C4400113318 /* idf_map.c in Sources */ = {isa = PBXBuildFile; fileRef = 2ACE37E223453C4400113318 /* idf_map.c */; };
 		2ACE37FC23453C4400113318 /* str.c in Sources */ = {isa = PBXBuildFile; fileRef = 2ACE37E423453C4400113318 /* str.c */; };
-		2ACE37FD23453C4400113318 /* vec.c in Sources */ = {isa = PBXBuildFile; fileRef = 2ACE37E823453C4400113318 /* vec.c */; };
 		2ACE380023453C7700113318 /* types.c in Sources */ = {isa = PBXBuildFile; fileRef = 2ACE37FE23453C7700113318 /* types.c */; };
 		2AEF7E31235F65CE00BC913F /* overload.c in Sources */ = {isa = PBXBuildFile; fileRef = 2AEF7E30235F65CE00BC913F /* overload.c */; };
 /* End PBXBuildFile section */
@@ -50,6 +50,8 @@
 		2A3DC77D2364E60800499743 /* error.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = error.h; sourceTree = "<group>"; };
 		2A3DC77E2364E60800499743 /* error.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = error.c; sourceTree = "<group>"; };
 		2A5034FB22E5A20100AEA530 /* Heck */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Heck; sourceTree = BUILT_PRODUCTS_DIR; };
+		2AC46AC3238453BB00877DCE /* vec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = vec.c; sourceTree = "<group>"; };
+		2AC46AC4238453BB00877DCE /* vec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vec.h; sourceTree = "<group>"; };
 		2ACE37B023453C4400113318 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		2ACE37B223453C4400113318 /* compiler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compiler.h; sourceTree = "<group>"; };
 		2ACE37B423453C4400113318 /* wasm_code.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = wasm_code.c; sourceTree = "<group>"; };
@@ -93,8 +95,6 @@
 		2ACE37E223453C4400113318 /* idf_map.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = idf_map.c; sourceTree = "<group>"; };
 		2ACE37E423453C4400113318 /* str.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = str.c; sourceTree = "<group>"; };
 		2ACE37E523453C4400113318 /* str.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = str.h; sourceTree = "<group>"; };
-		2ACE37E723453C4400113318 /* vec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vec.h; sourceTree = "<group>"; };
-		2ACE37E823453C4400113318 /* vec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = vec.c; sourceTree = "<group>"; };
 		2ACE37FE23453C7700113318 /* types.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = types.c; sourceTree = "<group>"; };
 		2ACE37FF23453C7700113318 /* types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = types.h; sourceTree = "<group>"; };
 		2AEF7E2F235F65CE00BC913F /* overload.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = overload.h; sourceTree = "<group>"; };
@@ -127,10 +127,10 @@
 				2ACE37B023453C4400113318 /* main.c */,
 				2A3DC77C2364E5F600499743 /* error */,
 				2ACE37C223453C4400113318 /* code */,
-				2ACE37B123453C4400113318 /* compiler */,
+				2ACE37BC23453C4400113318 /* scanner */,
 				2ACE37BF23453C4400113318 /* parser */,
 				2ACE37D623453C4400113318 /* resolver */,
-				2ACE37BC23453C4400113318 /* scanner */,
+				2ACE37B123453C4400113318 /* compiler */,
 				2ACE37D923453C4400113318 /* structures */,
 				2ACE37B823453C4400113318 /* token */,
 			);
@@ -285,8 +285,8 @@
 		2ACE37E623453C4400113318 /* vector */ = {
 			isa = PBXGroup;
 			children = (
-				2ACE37E723453C4400113318 /* vec.h */,
-				2ACE37E823453C4400113318 /* vec.c */,
+				2AC46AC3238453BB00877DCE /* vec.c */,
+				2AC46AC4238453BB00877DCE /* vec.h */,
 			);
 			path = vector;
 			sourceTree = "<group>";
@@ -360,6 +360,7 @@
 				2ACE37EF23453C4400113318 /* expression.c in Sources */,
 				2ACE37E923453C4400113318 /* main.c in Sources */,
 				2ACE37EE23453C4400113318 /* parser.c in Sources */,
+				2AC46AC5238453BB00877DCE /* vec.c in Sources */,
 				2ACE37FA23453C4400113318 /* type_table.c in Sources */,
 				2ACE37F123453C4400113318 /* function.c in Sources */,
 				2ACE37F323453C4400113318 /* identifier.c in Sources */,
@@ -369,7 +370,6 @@
 				2A3DC77F2364E60800499743 /* error.c in Sources */,
 				2ACE37F023453C4400113318 /* class.c in Sources */,
 				2ACE37EB23453C4400113318 /* compiler.c in Sources */,
-				2ACE37FD23453C4400113318 /* vec.c in Sources */,
 				2ACE37F423453C4400113318 /* literal.c in Sources */,
 				2ACE37F723453C4400113318 /* resolver.c in Sources */,
 			);

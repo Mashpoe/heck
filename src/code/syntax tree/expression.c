@@ -21,15 +21,16 @@ inline heck_expr* create_expr(heck_expr_type expr_type, const expr_vtable* vtabl
 
 heck_expr* create_expr_literal(heck_literal* value) {
 	heck_expr* e = create_expr(EXPR_LITERAL, &expr_vtable_literal);
-	e->expr = value;
+	e->value.literal = value;
+	e->data_type = value->data_type;
 	
 	return e;
 }
 
-heck_expr* create_expr_cast(heck_data_type* type, heck_expr* expr) {
+heck_expr* create_expr_cast(const heck_data_type* type, heck_expr* expr) {
 	heck_expr* e = create_expr(EXPR_CAST, &expr_vtable_cast);
 	e->data_type = type;
-	e->expr = expr;
+	e->value.expr = expr;
 	return e;
 }
 
@@ -41,7 +42,7 @@ heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr*
 	binary->operator = operator;
 	binary->right = right;
 	
-	e->expr = binary;
+	e->value.binary = binary;
 	
 	return e;
 }
@@ -53,7 +54,7 @@ heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator, const expr_
 	unary->expr = expr;
 	unary->operator = operator;
 	
-	e->expr = unary;
+	e->value.unary = unary;
 	
 	return e;
 }
@@ -65,22 +66,11 @@ heck_expr* create_expr_value(heck_idf name, idf_context context) {
 	value->name = name;
 	value->context = context;
 	
-	e->expr = (void*)value;
+	// value :)
+	e->value.value = value;
 	
 	return e;
 }
-
-//heck_expr* create_expr_callback(heck_idf name, idf_context context) {
-//	heck_expr* e = create_expr(EXPR_CALLBACK, &expr_vtable_callback);
-//
-//	heck_expr_callback* callback = malloc(sizeof(heck_expr_callback));
-//	callback->name = name;
-//	callback->context = context;
-//
-//	e->expr = (void*)callback;
-//
-//	return e;
-//}
 
 heck_expr* create_expr_call(heck_expr* operand) {
 	heck_expr* e = create_expr(EXPR_CALL, &expr_vtable_call);
@@ -92,7 +82,7 @@ heck_expr* create_expr_call(heck_expr* operand) {
 	call->arg_vec = vector_create();
 	call->type_arg_vec = NULL;
 	
-	e->expr = call;
+	e->value.call = call;
 	
 	return e;
 }
@@ -104,7 +94,7 @@ heck_expr* create_expr_asg(heck_expr* left, heck_expr* right) {
 	asg->left = left;
 	asg->right = right;
 	
-	e->expr = asg;
+	e->value.binary = asg;
 	
 	return e;
 }
@@ -117,7 +107,7 @@ heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_ex
 	ternary->value_a = value_a;
 	ternary->value_b = value_b;
 	
-	e->expr = ternary;
+	e->value.ternary = ternary;
 	
 	return e;
 }
@@ -125,7 +115,7 @@ heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_ex
 heck_expr* create_expr_err() {
 	heck_expr* e = create_expr(EXPR_ERR, &expr_vtable_err);
 	
-	e->expr = NULL;
+	e->value.expr = NULL;
 	
 	return e;
 }
@@ -172,19 +162,16 @@ heck_expr* create_expr_err() {
 //}
 
 //
-// resolve function definitions
+// internal use only, for quickly checking binary expressions, doesn't actually fully resolve the expression
+// meant to be called by the resolve functions for binary expressions
 //
-bool resolve_expr_binary(heck_expr* expr, heck_scope* parent, heck_scope* global) {
-	heck_expr_binary* binary = expr->expr;
-	if (!(
+bool resolve_expr_binary(heck_expr* expr, heck_scope* parent, heck_scope* global);
+inline bool resolve_expr_binary(heck_expr* expr, heck_scope* parent, heck_scope* global) {
+	heck_expr_binary* binary = expr->value.binary;
+	return (
 		  binary->left->vtable->resolve(binary->left, parent, global) &&
 		  binary->right->vtable->resolve(binary->right, parent, global)
-	)) return false;
-	
-	// TODO: check for operator overloading between the two types (if they are class types)
-	expr->data_type = binary->left->data_type; // temporary solution
-	
-	return true;
+	);
 }
 
 /************************
@@ -427,12 +414,12 @@ bool resolve_expr_err(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 bool resolve_expr_literal(heck_expr* expr, heck_scope* parent, heck_scope* global) { return true; }
 bool resolve_expr_value(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 bool resolve_expr_callback(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_unary(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }// precedence 1
+bool resolve_expr_unary(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 bool resolve_expr_post_incr(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 bool resolve_expr_post_decr(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 bool resolve_expr_call(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 	
-	heck_expr_call* func_call  = expr->expr;
+	heck_expr_call* func_call  = expr->value.call;
 	
 	// find function
 	//heck_scope* func_scope = scope_resolve_value(&func_call->name, parent, global);
@@ -477,7 +464,17 @@ bool resolve_expr_unary_minus(heck_expr* expr, heck_scope* parent, heck_scope* g
 bool resolve_expr_not(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 bool resolve_expr_bw_not(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 bool resolve_expr_cast(heck_expr* expr, heck_scope* parent, heck_scope* global) {
-	return resolve_expr(expr->expr, parent, global) && ((heck_expr*)expr->expr)->data_type == expr->data_type;
+	if (!resolve_expr(expr->value.expr, parent, global))
+		return false;
+	
+	// check if the types are identical first
+	if (data_type_cmp(expr->data_type, expr->value.expr->data_type))
+		return true;
+	
+	// TODO: check if types are convertable
+	fputs("error: unable to resolve type cast", stderr);
+	
+	return false;
 }
 
 // precedence 3
@@ -486,7 +483,21 @@ bool resolve_expr_div(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 bool resolve_expr_mod(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 
 // precedence 4
-bool resolve_expr_add(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_expr_add(heck_expr* expr, heck_scope* parent, heck_scope* global) {
+	if (!resolve_expr_binary(expr, parent, global))
+		return false;
+	
+	heck_expr_binary* binary = expr->value.binary;
+
+	// check if types are numeric
+	if (data_type_is_numeric(binary->left->data_type) && data_type_is_numeric(binary->right->data_type)) {
+		expr->data_type = binary->left->data_type;
+		return true;
+	}
+	// TODO: check for operator overloads
+	
+	return false;
+}
 bool resolve_expr_sub(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 
 // precedence 5
@@ -510,7 +521,7 @@ bool resolve_expr_gtr_eq(heck_expr* expr, heck_scope* parent, heck_scope* global
 
 // precedence 10
 bool resolve_expr_eq(heck_expr* expr, heck_scope* parent, heck_scope* global) {
-	heck_expr_binary* eq_expr = expr->expr;
+	heck_expr_binary* eq_expr = expr->value.binary;
 	
 	if (!resolve_expr(eq_expr->left, parent, global) || !resolve_expr(eq_expr->right, parent, global))
 		return false;
@@ -522,7 +533,7 @@ bool resolve_expr_n_eq(heck_expr* expr, heck_scope* parent, heck_scope* global) 
 
 // precedence 11
 bool resolve_expr_and(heck_expr* expr, heck_scope* parent, heck_scope* global) {
-	heck_expr_binary* or_expr = expr->expr;
+	heck_expr_binary* or_expr = expr->value.binary;
 	
 	// values can be truthy or falsy as long as they can be resolved (unless operator bool() is deleted)
 	return resolve_expr(or_expr->left, parent, global) && resolve_expr(or_expr->right, parent, global);
@@ -540,7 +551,7 @@ bool resolve_expr_ternary(heck_expr* expr, heck_scope* parent, heck_scope* globa
 // precedence 15
 bool resolve_expr_asg(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 	
-	heck_expr_binary* asg = expr->expr;
+	heck_expr_binary* asg = expr->value.binary;
 	
 	/*
 	 *	TODO: check if it's a expr_value
@@ -609,7 +620,7 @@ void print_expr_err(heck_expr* expr) {
 }
 
 void print_expr_literal(heck_expr* expr) {
-	print_literal(expr->expr);
+	print_literal(expr->value.literal);
 }
 
 void print_value_idf(heck_expr_value* value) {
@@ -623,12 +634,12 @@ void print_value_idf(heck_expr_value* value) {
 
 void print_expr_value(heck_expr* expr) {
 	fputs("[", stdout);
-	print_value_idf(expr->expr);
+	print_value_idf(expr->value.value);
 	fputs("]", stdout);
 }
 
 void print_expr_call(heck_expr* expr) {
-	heck_expr_call* call = expr->expr;
+	heck_expr_call* call = expr->value.call;
 	putc('[', stdout);
 	print_expr(call->operand);
 	putc('(', stdout);
@@ -647,7 +658,7 @@ void print_expr_call(heck_expr* expr) {
 }
 
 void print_expr_arr_access(heck_expr* expr) {
-	heck_expr_arr_access* arr_access = expr->expr;
+	heck_expr_arr_access* arr_access = expr->value.arr_access;
 	print_expr(arr_access->operand);
 	putc('[', stdout);
 	print_expr(arr_access->value);
@@ -658,12 +669,12 @@ void print_expr_cast(heck_expr* expr) {
 	fputs("<", stdout);
 	print_data_type((const heck_data_type*)expr->data_type);
 	fputs(">", stdout);
-	print_expr(expr->expr);
+	print_expr(expr->value.expr);
 }
 
 void print_expr_binary(heck_expr* expr) {
 	fputs("(", stdout);
-	heck_expr_binary* binary = expr->expr;
+	heck_expr_binary* binary = expr->value.binary;
 	print_expr(binary->left);
 	fputs(" @op ", stdout);
 	print_expr(binary->right);
@@ -672,13 +683,13 @@ void print_expr_binary(heck_expr* expr) {
 
 void print_expr_unary(heck_expr* expr) {
 	fputs("(@op", stdout);
-	heck_expr_unary* unary = expr->expr;
+	heck_expr_unary* unary = expr->value.unary;
 	print_expr(unary->expr);
 	fputs(")", stdout);
 }
 
 void print_expr_asg(heck_expr* expr) {
-	heck_expr_binary* asg = expr->expr;
+	heck_expr_binary* asg = expr->value.binary;
 	fputs("[", stdout);
 	print_expr(asg->left);
 	fputs("] = ", stdout);
@@ -686,7 +697,7 @@ void print_expr_asg(heck_expr* expr) {
 }
 
 void print_expr_ternary(heck_expr* expr) {
-	heck_expr_ternary* ternary = expr->expr;
+	heck_expr_ternary* ternary = expr->value.ternary;
 	fputs("[", stdout);
 	print_expr(ternary->condition);
 	fputs("] ? [", stdout);
@@ -731,7 +742,7 @@ void print_expr_ternary(heck_expr* expr) {
  printf("[");
  print_expr_value(&call->name);
  printf("(");
- for (vec_size_t i = 0; i < vector_size(call->arg_vec); i++) {
+ for (vec_size_t i = 0; i < vector_size(call->arg_vec); ++i) {
  print_expr(call->arg_vec[i]);
  if (i < vector_size(call->arg_vec) - 1) {
  printf(", ");

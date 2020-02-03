@@ -104,7 +104,7 @@ bool heck_compile(heck_code* c) {
 	$wasm(code, $magic, $version);
 	
 	unsigned long num_stmts = vector_size(c->syntax_tree_vec);
-	for (unsigned long i = 0; i < num_stmts; i++) {
+	for (unsigned long i = 0; i < num_stmts; ++i) {
 		if (c->syntax_tree_vec[i]->type == STMT_EXPR) {
 			print_data_type(compile_expr(c, c->syntax_tree_vec[i]->value));
 			printf("\n");

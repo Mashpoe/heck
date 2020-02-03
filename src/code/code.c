@@ -22,7 +22,7 @@ heck_code* heck_create() {
 
 void free_tokens(heck_code* c) {
 	size_t num_tokens = vector_size(c->token_vec);
-	for (int i = 0; i < num_tokens; i++) {
+	for (int i = 0; i < num_tokens; ++i) {
 		heck_free_token_data(c->token_vec[i]);
 		free(c->token_vec[i]);
 	}
@@ -43,7 +43,7 @@ void heck_print_tokens(heck_code* c) {
 	int indent = 0;
 	
 	size_t num_tokens = vector_size(c->token_vec);
-	for (int i = 0; i < num_tokens; i++) {
+	for (int i = 0; i < num_tokens; ++i) {
 		
 		if (c->token_vec[i]->type == TK_BRAC_L) {
 			indent++;
@@ -58,7 +58,7 @@ void heck_print_tokens(heck_code* c) {
 				printf("\n% 3d| ", ln);
 			}
 			
-			for (int i = 0; i < indent; i++) {
+			for (int i = 0; i < indent; ++i) {
 				printf("\t");
 			}
 			
@@ -72,7 +72,7 @@ void heck_print_tokens(heck_code* c) {
 
 bool heck_add_token(heck_code* c, heck_token* tk) {
 	
-	vector_add(&c->token_vec, heck_token*) = tk;
+	vector_add(&c->token_vec, tk);
 	
 	return true;
 }

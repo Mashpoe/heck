@@ -29,6 +29,23 @@ heck_func* func_create(heck_scope* parent, bool declared) {
 	return func;
 }
 
+void func_free(heck_func* func) {
+	vector_free(func->param_vec);
+	block_free(func->code);
+	if (func->return_type != NULL)
+		free_data_type(func->return_type);
+	// TODO: free func->value
+}
+
+bool func_add_overload(heck_func_list* list, heck_func* func) {
+	if (!func_overload_exists(list, func))  {
+		vector_add(&list->func_vec, func);
+		return true;
+	}
+	return false;
+}
+
+
 heck_scope* scope_add_func(heck_scope* scope, heck_func* func, heck_idf name) {
 	
 	// create a child, populate it with the function
@@ -49,20 +66,20 @@ heck_scope* scope_add_func(heck_scope* scope, heck_func* func, heck_idf name) {
 		}
 		
 		child_scope->type = IDF_FUNCTION;
-		child_scope->value = vector_create(); // create vector to store overloads/definitions
-		vector_add(&child_scope->value, heck_func*) = func;
+		child_scope->value.func_value.func_vec = vector_create(); // create vector to store overloads/definitions
+		vector_add(&child_scope->value.func_value.func_vec, func);
 		
 	} else if (child_scope->type == IDF_FUNCTION) {
 		
 		// check if this is a unique overload
-		if (func_def_exists(child_scope, func)) {
+		if (func_overload_exists(&child_scope->value.func_value, func)) {
 			fprintf(stderr, "error: function has already been declared with the same parameters: ");
 			fprint_idf(stderr, name);
 			fprintf(stderr, "\n");
 			return NULL;
 		}
 		
-		vector_add(&child_scope->value, heck_func*) = func;
+		vector_add(&child_scope->value.func_value.func_vec, func);
 		
 	}
 	
@@ -77,13 +94,14 @@ heck_scope* scope_add_func(heck_scope* scope, heck_func* func, heck_idf name) {
 		a possible cast from the argument to the corresponding parameter type gives 1 point
 	the definition/overload with the hightes score gets returned*/
 heck_func* func_match_def(heck_scope* scope, heck_expr_call* call) {
-	heck_func** def_vec = scope->value;
+	// temporary reference to a vector. DO NOT ADD ELEMENTS TO def_vec
+	heck_func** def_vec = scope->value.func_value.func_vec;
 	vec_size_t def_count = vector_size(def_vec);
 	vec_size_t param_count = vector_size(call->arg_vec);
 	
 	heck_func* best_match = NULL;
 	int best_score = 0;
-	for (vec_size_t i = 0; i < def_count; i++) {
+	for (vec_size_t i = 0; i < def_count; ++i) {
 		if (param_count != vector_size(def_vec[i]->param_vec))
 			continue;
 		
@@ -118,20 +136,19 @@ heck_func* func_match_def(heck_scope* scope, heck_expr_call* call) {
 	return best_match;
 }
 
-bool func_def_exists(heck_scope* scope, heck_func* func) {
-	heck_func** def_vec = scope->value;
-	vec_size_t def_count = vector_size(def_vec);
+bool func_overload_exists(heck_func_list* list, heck_func* func) {
+	vec_size_t def_count = vector_size(list->func_vec);
 	vec_size_t param_count = vector_size(func->param_vec);
 	
-	for (vec_size_t i = 0; i < def_count; i++) {
-		if (param_count != vector_size(def_vec[i]->param_vec))
+	for (vec_size_t i = 0; i < def_count; ++i) {
+		if (param_count != vector_size(list->func_vec[i]->param_vec))
 			continue;
 		
 		bool match = true;
 		
 		for (vec_size_t j = 0; j < param_count; j++) {
 			// check for matching parameter types
-			if (!data_type_cmp(def_vec[i]->param_vec[j]->type, func->param_vec[j]->type)) {
+			if (!data_type_cmp(list->func_vec[i]->param_vec[j]->type, func->param_vec[j]->type)) {
 				match = false;
 				break;
 			}
@@ -144,17 +161,17 @@ bool func_def_exists(heck_scope* scope, heck_func* func) {
 	return false;
 }
 
-void print_func_defs(heck_scope* scope, str_entry name, int indent) {
-	vec_size_t num_defs = vector_size(scope->value);
-	for (vec_size_t i = 0; i < num_defs; i++) {
-		heck_func* func = ((heck_func**)scope->value)[i];
+void print_func_defs(heck_func_list* list, const char* name, int indent) {
+	vec_size_t num_defs = vector_size(list->func_vec);
+	for (vec_size_t i = 0; i < num_defs; ++i) {
+		heck_func* func = ((heck_func**)list->func_vec)[i];
 		
 		for (int j = 0; j < indent; j++)
 			putchar('\t');
 		
 		if (!func->declared)
 			printf("undeclared ");
-		printf("function %s(", name->value);
+		printf("function %s(", name);
 		
 		vec_size_t num_params = vector_size(func->param_vec);
 		if (num_params > 0) {

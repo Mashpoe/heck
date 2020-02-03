@@ -12,35 +12,36 @@
 #include "declarations.h"
 #include "scope.h"
 #include "identifier.h"
-
-// e.g. operator bool()
-typedef struct cast_overload {
-	heck_data_type* type;
-	heck_func* overload;
-} cast_overload;
-
-typedef struct op_overload {
-	heck_tk_type op;
-	heck_func* overload;
-} op_overload;
+//
+//// e.g. operator bool()
+//typedef struct cast_overload {
+//	heck_data_type* type;
+//	heck_func_list overloads;
+//} cast_overload;
+//
+//typedef struct op_overload {
+//	heck_tk_type op;
+//	heck_func_list overloads;
+//} op_overload;
 
 typedef struct heck_class {
-	struct heck_idf* friend_vec; // friend classes
-	struct heck_idf* parent_vec; // parent classes
+	heck_idf* friend_vec; // friend classes
+	heck_idf* parent_vec; // parent classes
 	// TODO: add type parameter/argument
 	
 	// overloads
-	op_overload* op_overload_vec;
-	cast_overload* cast_overload_vec;
+	heck_op_overload* op_overloads;
 	
 	// store let statements and some function statements to be resolved after parsing
 	heck_stmt** declarations;
 } heck_class;
 
-// unlike functions, the nmsp is the important part of class creation
-heck_scope* class_create(heck_idf name, heck_scope* parent);
+heck_class* class_create(void);
+// creates a scope with a class in it
+heck_scope* class_create_scope(heck_idf name, heck_scope* parent);
 
-//void print_class(heck_scope* scope);
+// just prints operator overloads, friends, etc
+void print_class(heck_scope* scope, const char* name, int indent);
 
 // not needed as classes are just nmsps with certain labels
 //heck_nmsp* scope_add_class(heck_scope* nmsp, heck_class* child, heck_idf name);

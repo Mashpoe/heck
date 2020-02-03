@@ -30,7 +30,7 @@ idf_map* idf_map_create(void) {
 }
 
 void idf_map_free(idf_map* m) {
-	for (int i = 0; i < m->capacity; i++) {
+	for (int i = 0; i < m->capacity; ++i) {
 		if (m->buckets[i].key != NULL) {
 			free((void*)m->buckets[i].value);
 		}
@@ -62,7 +62,7 @@ static void idf_map_resize(idf_map* m) {
 	m->buckets = calloc(m->capacity, sizeof(idf_entry)); // initializes everything to 0
 	//printf("resize %i\n", t->capacity);
 	
-	for (int i = 0; i < old_capacity; i++) {
+	for (int i = 0; i < old_capacity; ++i) {
 		idf_entry* old_bucket = &old_buckets[i];
 		if (old_bucket->key == NULL) continue;
 		
@@ -123,7 +123,7 @@ int idf_map_size(idf_map* m) {
 
 void idf_map_iterate(idf_map* m, map_callback callback, void* user_ptr) {
 	int count = m->count;
-	for (int i = 0; i < m->capacity; i++) {
+	for (int i = 0; i < m->capacity; ++i) {
 		
 		// stop when we've gone through all entries
 		if (count == 0)

@@ -19,6 +19,13 @@ typedef enum {
 	PRIM_STR,
 } heck_prim_type;*/
 
+typedef enum heck_qual_type {
+	QUAL_CONST = 1,
+	QUAL_STATIC = 2,
+	QUAL_UNIQUE = 4,
+	QUAL_SHARED = 8,
+} heck_qual_type;
+
 typedef enum heck_type_name {
 	TYPE_ERR = 0,		// unable to deduce return type
 	
@@ -36,16 +43,22 @@ typedef enum heck_type_name {
 	//TYPE_NULL,		// NULL is internally its own type
 	
 	TYPE_ARR, // associated with another type, e.g. array of integers, array of arrays of integers
-	TYPE_ARG_LIST, // type argument list
+	//TYPE_ARG_LIST, // type argument list
 } heck_type_name;
 
 typedef struct heck_data_type heck_data_type;
+
+typedef struct heck_type_arg_list {
+	heck_data_type** type_vec;
+} heck_type_arg_list;
+
 typedef struct heck_class_type {
 	union {
 		heck_idf name;
 		heck_class* class; // class is used after resolving
 	} value;
-	heck_data_type** type_arg_vec;
+	heck_type_arg_list type_args;
+	heck_scope* parent; // this is used with name to find the correct class during resolve time
 } heck_class_type;
 
 typedef struct type_vtable type_vtable;
@@ -55,7 +68,7 @@ struct heck_data_type {
 	union {
 		heck_class_type class_type;
 		heck_data_type* arr_type; // recursive structure
-		heck_data_type** arg_list_type;
+		//heck_type_arg_list type_arg_list;
 	} type_value;
 };
 // resolve callback
@@ -99,6 +112,7 @@ extern const heck_data_type val_data_type_string;
 #define data_type_string	&val_data_type_string
 
 bool data_type_cmp(const heck_data_type* a, const heck_data_type* b);
+bool data_type_is_numeric(const heck_data_type* type);
 /*
 typedef enum heck_literal_type {
 	LITERAL_INT = PRIM_INT,

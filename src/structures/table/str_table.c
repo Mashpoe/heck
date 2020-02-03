@@ -37,7 +37,7 @@ str_table* str_table_create(void) {
 }
 
 void str_table_free(str_table* t) {
-	for (int i = 0; i < t->capacity; i++) {
+	for (int i = 0; i < t->capacity; ++i) {
 		if (t->buckets[i] != NULL) {
 			free((void*)t->buckets[i]);
 		}
@@ -69,7 +69,7 @@ static void str_table_resize(str_table* t) {
 	t->buckets = calloc(t->capacity, sizeof(str_entry)); // initializes everything to 0
 	//printf("resize %i\n", t->capacity);
 	
-	for (int i = 0; i < old_capacity; i++) {
+	for (int i = 0; i < old_capacity; ++i) {
 		str_entry old_bucket = old_buckets[i];
 		if (old_bucket == NULL) continue;
 		

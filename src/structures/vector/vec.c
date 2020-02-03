@@ -21,8 +21,8 @@ vector_data* vector_alloc(vec_size_t alloc, vec_size_t size) {
 	return v_data;
 }
 
-vector_data* vector_get_data(vector v) {
-	return &((vector_data*)v)[-1];
+vector_data* vector_get_data(vector vec) {
+	return &((vector_data*)vec)[-1];
 }
 
 vector vector_create(void) {
@@ -33,19 +33,19 @@ vector vector_create(void) {
 	return &v->buff;
 }
 
-void vector_free(vector v) {
-	free(vector_get_data(v));
+void vector_free(vector vec) {
+	free(vector_get_data(vec));
 }
 
-vec_size_t vector_size(vector v) {
-	return vector_get_data(v)->length;
+vec_size_t vector_size(vector vec) {
+	return vector_get_data(vec)->length;
 }
 
-vec_size_t vector_get_alloc(vector v) {
-	return vector_get_data(v)->alloc;
+vec_size_t vector_get_alloc(vector vec) {
+	return vector_get_data(vec)->alloc;
 }
 
-vector_data* vector_realloc(vector_data* v_data, vec_type_size type_size) {
+vector_data* vector_realloc(vector_data* v_data, vec_type_t type_size) {
 	vec_size_t new_alloc = (v_data->alloc == 0) ? 1 : v_data->alloc * 2;
 	vector_data* new_v_data = realloc(v_data, sizeof(vector_data) + new_alloc * type_size);
 	new_v_data->alloc = new_alloc;
@@ -56,19 +56,19 @@ bool vector_has_space(vector_data* v_data) {
 	return v_data->alloc - v_data->length > 0;
 }
 
-void* _vector_add(vector* v, vec_type_size type_size) {
-	vector_data* v_data = vector_get_data(*v);
+void* _vector_add(vector* vec_addr, vec_type_t type_size) {
+	vector_data* v_data = vector_get_data(*vec_addr);
 	
 	if (!vector_has_space(v_data)) {
 		v_data = vector_realloc(v_data, type_size);
-		*v = v_data->buff;
+		*vec_addr = v_data->buff;
 	}
 	
 	return (void*)&v_data->buff[type_size * v_data->length++];
 }
 
-void* _vector_insert(vector* v, vec_type_size type_size, vec_size_t pos) {
-	vector_data* v_data = vector_get_data(*v);
+void* _vector_insert(vector* vec_addr, vec_type_t type_size, vec_size_t pos) {
+	vector_data* v_data = vector_get_data(*vec_addr);
 	
 	vec_size_t new_length = v_data->length + 1;
 	
@@ -85,8 +85,8 @@ void* _vector_insert(vector* v, vec_type_size type_size, vec_size_t pos) {
 	return &v_data->buff[pos * type_size];
 }
 
-void _vector_erase(vector* v, vec_type_size type_size, vec_size_t pos, vec_size_t len) {
-	vector_data* v_data = vector_get_data(v);
+void _vector_erase(vector* vec_addr, vec_type_t type_size, vec_size_t pos, vec_size_t len) {
+	vector_data* v_data = vector_get_data(vec_addr);
 	// anyone who puts in a bad index can face the consequences on their own
 	memmove(&v_data->buff[pos * type_size],
 			&v_data->buff[(pos+len) * type_size],
@@ -95,6 +95,6 @@ void _vector_erase(vector* v, vec_type_size type_size, vec_size_t pos, vec_size_
 	v_data->length -= len;
 }
 
-void _vector_remove(vector* v, vec_type_size type_size, vec_size_t pos) {
-	_vector_erase(v, type_size, pos, 1);
+void _vector_remove(vector* vec_addr, vec_type_t type_size, vec_size_t pos) {
+	_vector_erase(vec_addr, type_size, pos, 1);
 }

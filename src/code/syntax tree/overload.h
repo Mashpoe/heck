@@ -11,21 +11,27 @@
 #include <stdbool.h>
 #include "token.h"
 #include "tokentypes.h"
+#include "declarations.h"
+#include "function.h"
 
-// bitmask flags
-typedef enum {
-	OVERLOAD_LEFT		= 1,
-	OVERLOAD_RIGHT		= 2,
-	OVERLOAD_DEFAULT	= OVERLOAD_LEFT | OVERLOAD_RIGHT, // assigns to 3
-	OVERLOAD_CAST		= 4
-} heck_overload_args;
-
-typedef struct heck_overload {
-	char flags; // for type cast
+typedef struct heck_op_overload_type {
+	bool cast; // true if operator overload is a type cast
 	union {
-		heck_token* operator;
+		heck_tk_type operator;
 		heck_data_type* cast;
 	} value;
-} heck_overload;
+} heck_op_overload_type;
+
+typedef struct heck_op_overload {
+	heck_op_overload_type type;
+	heck_func_list overloads;
+} heck_op_overload;
+
+bool add_op_overload(heck_class* class, heck_op_overload_type* type, heck_func* func);
+
+//bool add_op_overload(heck_class* class, heck_tk_type operator, heck_func* func);
+//bool add_cast_overload(heck_class* class, heck_data_type* type, heck_func* func);
+
+
 
 #endif /* overload_h */

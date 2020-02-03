@@ -44,7 +44,7 @@ void wasm_code_print(wasm_code* code) {
 	printf("offset: 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
 	printf("------:------------------------------------------------");
 	
-	for (size_t i = 0; i < code->pos; i++) {
+	for (size_t i = 0; i < code->pos; ++i) {
 		if (i % 0x10 == 0)
 			printf("\n%06zX: ", i - i % 0x10);
 		printf("%02X ", code->bytes[i]);

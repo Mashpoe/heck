@@ -84,6 +84,20 @@ heck_block* block_create(heck_scope* parent) {
 	return block_stmt;
 }
 
+void block_free(heck_block* block) {
+	vec_size_t size = vector_size(block->stmt_vec);
+	
+	for (vec_size_t i = 0; i < size; ++i) {
+		free_stmt(block->stmt_vec[i]);
+	}
+	
+	vector_free(block->stmt_vec);
+	
+	scope_free(block->scope);
+	
+	free(block);
+}
+
 heck_stmt* create_stmt_block(struct heck_block* block) {
 	
 	heck_stmt* s = malloc(sizeof(heck_stmt));
@@ -108,7 +122,7 @@ bool resolve_block(heck_block* block, heck_scope* parent, heck_scope* global) {
 	bool result = true; // store status in bool so we can continue resolving even when we come across an error
 	
 	vec_size_t size = vector_size(block->stmt_vec);
-	for (vec_size_t i = 0; i < size; i++) {
+	for (vec_size_t i = 0; i < size; ++i) {
 		heck_stmt* current = block->stmt_vec[i];
 		if (!current->vtable->resolve(current, parent, global))
 			result = false;
@@ -124,11 +138,11 @@ void print_block(heck_block* block, int indent) {
 	if (block->scope)
 		print_scope(block->scope, indent + 1);
 	
-	for (int i = 0; i < vector_size(block->stmt_vec); i++) {
+	for (int i = 0; i < vector_size(block->stmt_vec); ++i) {
 		print_stmt(((heck_stmt**)block->stmt_vec)[i], indent + 1);
 	}
 	
-	for (int i = 0; i < indent; i++) {
+	for (int i = 0; i < indent; ++i) {
 		printf("\t");
 	}
 	printf("}\n");
@@ -140,10 +154,11 @@ inline bool resolve_stmt(heck_stmt* stmt, heck_scope* parent, heck_scope* global
 }
 inline void free_stmt(heck_stmt* stmt) {
 	stmt->vtable->free(stmt);
+	free(stmt);
 }
 inline void print_stmt(heck_stmt* stmt, int indent) {
 	
-	for (int i = 0; i < indent; i++) {
+	for (int i = 0; i < indent; ++i) {
 		printf("\t");
 	}
 	
@@ -221,7 +236,7 @@ bool resolve_stmt_block(heck_stmt* stmt, heck_scope* parent, heck_scope* global)
 	return resolve_block(stmt->value, parent, global);
 }
 void free_stmt_block(heck_stmt* stmt) {
-	
+	block_free(stmt->value);
 }
 void print_stmt_block(heck_stmt* stmt, int indent) {
 	print_block(stmt->value, indent);
@@ -247,7 +262,7 @@ void print_stmt_if(heck_stmt* stmt, int indent) {
 		}
 			
 		node = node->next;
-		for (int i = 0; i < indent; i++) {
+		for (int i = 0; i < indent; ++i) {
 			printf("\t");
 		}
 		

@@ -36,12 +36,8 @@ enum heck_expr_type {
 
 // heck_expr is a polymorphic structure with a "vtable"
 typedef struct expr_vtable expr_vtable;
-typedef struct heck_expr {
-	heck_expr_type type;
-	const heck_data_type* data_type;
-	const expr_vtable* vtable; // resolve callback
-	void* expr;
-} heck_expr;
+typedef struct heck_expr heck_expr;
+
 // TODO: maybe make these callbacks take void pointers instead of heck_expr
 typedef bool (*expr_resolve)(heck_expr*, heck_scope* parent, heck_scope* global);
 typedef void (*expr_free)(heck_expr*);
@@ -56,7 +52,7 @@ heck_expr* create_expr_res_type(heck_data_type* type);
 
 heck_expr* create_expr_literal(heck_literal* value);
 
-heck_expr* create_expr_cast(heck_data_type* type, heck_expr* expr);
+heck_expr* create_expr_cast(const heck_data_type* type, heck_expr* expr);
 
 typedef struct heck_expr_binary {
 	heck_expr* left;
@@ -115,6 +111,22 @@ typedef struct heck_expr_ternary {
 	heck_expr* value_b;
 } heck_expr_ternary;
 heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b);
+
+struct heck_expr {
+	heck_expr_type type;
+	const heck_data_type* data_type;
+	const expr_vtable* vtable; // resolve callback
+	union {
+		heck_expr_unary* unary;
+		heck_expr_binary* binary;
+		heck_expr_ternary* ternary;
+		heck_expr_call* call;
+		heck_expr_arr_access* arr_access;
+		heck_expr_value* value;
+		heck_literal* literal;
+		heck_expr* expr; // used for cast expression, cast type is stored in parent ^^
+	} value;
+};
 
 heck_expr* create_expr_err(void);
 

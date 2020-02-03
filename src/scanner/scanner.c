@@ -29,48 +29,46 @@ struct file_pos {
 	int tk_ch;
 };
 
-// handles '\n', '\r', and 'r\n' line endings. It doesn't care if they're mixed
+// handles '\n', '\r', and '\r\n' line endings. It doesn't care if they're mixed
 // it won't pass over the last character of the newline (so it can be processed)
+// also deals with escaped characters
 bool match_newline(file_pos* fp) {
-	if (fp->file[fp->pos] == '\n') {
-		fp->ln++;
-		fp->ch = 0;
-		return true;
-	} else if (fp->file[fp->pos] == '\r') {
-		if (fp->file[fp->pos] == '\n')
-			fp->pos++;
-		fp->ln++;
-		fp->ch = 0;
-		return true;
+	
+	 // an attempt at handling all cases with minimal branching
+	
+	// handle escaping backslash
+	size_t new_pos = fp->pos;
+	bool escaped = fp->file[new_pos] == '\\';
+	if (escaped)
+		++new_pos;
+	
+	// handle the various line endings
+	if (fp->file[new_pos] == '\r') {
+		if (fp->file[new_pos + 1] == '\n')
+			++new_pos;
+	} else if (fp->file[new_pos] != '\n') {
+		
+		// most of the time there won't be a newline
+		// exit the function quickly
+		return false;
 	}
-	return false;
+	
+	// there was clearly a newline, update position
+	fp->pos = new_pos;
+	++fp->ln;
+	fp->ch = 0;
+	
+	return !escaped;
 }
 
 int scan_step(file_pos* fp) {
 	
-//	if (fp->ln > 210)
-//		return 0;
-	
-	fp->pos++;
-	fp->ch++;
+	++fp->pos;
+	++fp->ch;
 	
 	// check for a newline
 	if (match_newline(fp))
 		return fp->current = '\n'; // return '\n' no-matter what line ending was found
-		
-	// ignore escaped newlines, otherwise return the backslash like a normal character
-	if (fp->file[fp->pos] == '\\') {
-		fp->pos++; // advance a character (possibly temporary)
-		fp->ch++;
-		if (match_newline(fp)) {
-			return fp->current = '\n'; // return '\n' no-matter what line ending was found
-		} else {
-			// go back a character and return the backslash
-			fp->pos--;
-			fp->ch--;
-		}
-		
-	}
 	
 	return fp->current = fp->file[fp->pos];
 }
@@ -94,7 +92,7 @@ bool match_str(file_pos* fp, char* s) {
 			// check for escaped newline
 			if (fp->file[l_pos] == '\\') {
 				
-				l_pos++;
+				++l_pos;
 				
 				/*
 				if (fp->file[l_pos] == '\n') {
@@ -112,8 +110,8 @@ bool match_str(file_pos* fp, char* s) {
 			}
 			return false;
 		}
-		l_pos++;
-		s_pos++;
+		++l_pos;
+		++s_pos;
 	}
 	
 	// if you ever add support for escaped newlines (by uncommenting the code above),
@@ -148,7 +146,7 @@ heck_token* add_token(heck_code* c, file_pos* fp, enum heck_tk_type type) {
 	tk->ch = fp->tk_ch;
 	tk->type = type;
 	
-	vector_add(&c->token_vec, heck_token*) = tk;
+	vector_add(&c->token_vec, tk);
 	
 	return tk;
 }
@@ -201,12 +199,21 @@ void add_token_err(heck_code* c, file_pos* fp) {
 // forward declarations
 bool parse_string(heck_code* c, file_pos* fp);
 void parse_number(heck_code* c, file_pos* fp);
-// returns a float rather than adding it to the token list
-float parse_float(heck_code* c, file_pos* fp);
+// modifies a float* parameter rather than adding it to the token list
+float parse_float(heck_code* c, file_pos* fp, int whole);
 
 bool heck_scan(heck_code* c, FILE* f) {
 	
-	file_pos fp = {1,0,0,0,NULL,'\0'};
+	file_pos fp = {
+		.ln = 1,
+		.ch = 0,
+		.size = 0,
+		.pos = 0,
+		.file = NULL,
+		.current = '\0',
+		.tk_ln = 1,
+		.tk_ch = 0
+	};
 	
 	// load the file into memory
 	fseek(f, 0, SEEK_END);
@@ -220,10 +227,9 @@ bool heck_scan(heck_code* c, FILE* f) {
 	fp.file = buffer;
 	buffer = NULL;
 	
-	fp.current = fp.file[0]; // initialize fp.current
-	
-	// get the first line and first character
-	//scan_step_line(&fp); // will set the fp.ln to 1
+	// initialize scanner state
+	match_newline(&fp); // prevents the scanner from ignoring a potential newline at the beginning of a file
+	fp.current = fp.file[fp.pos]; // initialize fp.current (must use fp.pos in case of matched newline)
 	
 	while (fp.current != '\0') {
 		
@@ -439,7 +445,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 				// if there's a digit, parse a float
 				if (isdigit(scan_peek_next(&fp))) {
 					scan_step(&fp);
-					add_token_float(c, &fp, parse_float(c, &fp));
+					add_token_float(c, &fp, parse_float(c, &fp, 0));
 					continue;
 				}
 				
@@ -537,6 +543,9 @@ bool heck_scan(heck_code* c, FILE* f) {
 
 					} else if (strcmp(token, "friend") == 0) {
 						add_token(c, &fp, TK_KW_FRIEND);
+
+					} else if (strcmp(token, "operator") == 0) {
+						add_token(c, &fp, TK_KW_OPERATOR);
 						
 					} else if (strcmp(token, "return") == 0) {
 						add_token(c, &fp, TK_KW_RETURN);
@@ -704,22 +713,26 @@ int parse_hex(heck_code* c, file_pos* fp) {
 	return 0x0;
 }
 
-float parse_float(heck_code* c, file_pos* fp) {
+// assumes
+float parse_float(heck_code* c, file_pos* fp, int val) {
 	
 	// do arithmetic on an int for more precise values, move decimal places later
-	int val = 0;
+	//int val = 0;
 	
 	// 10ths place
-	float dec_place = 0.1f;
+	float dec_place = 1.0;
 	
-	while (isdigit(fp->current)) {
-		val += fp->current - '0';
+	do {
+
+		dec_place /= 10;
 		val *= 10;
-		dec_place /= 10.0f;
-		scan_step(fp);
-	}
+		
+		// this is portable according to the c standard
+		val += fp->current - '0';
+	} while (isdigit(scan_step(fp)));
 	
-	return (float)val * dec_place;
+	// finally, do move the decimal places
+	return dec_place * val;
 }
 
 void parse_number(heck_code* c, file_pos* fp) {
@@ -741,7 +754,7 @@ void parse_number(heck_code* c, file_pos* fp) {
 	
 	if (fp->current == '.') { // number contains a decimal point and is a float
 		scan_step(fp);
-		float fval = (float)val + parse_float(c, fp);
+		float fval = isdigit(fp->current) ? parse_float(c, fp, val) : (float)val;
 		add_token_float(c, fp, fval);
 	} else {
 		add_token_int(c, fp, val);

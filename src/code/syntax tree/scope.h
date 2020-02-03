@@ -13,6 +13,14 @@
 #include "identifier.h"
 #include "context.h"
 #include "expression.h"
+#include "function.h"
+
+// declaration status
+typedef enum heck_decl_status {
+	DECL_DECLARED = 1,	// item was only forward declared
+	DECL_DEFINED = 2,	// item has been defined but not explicitly declared
+	DECL_COMPLETE = DECL_DECLARED | DECL_DEFINED // both declared and defined
+} heck_decl_status;
 
 typedef enum heck_idf_type heck_idf_type;
 enum heck_idf_type {
@@ -46,9 +54,14 @@ typedef struct heck_scope {
 	idf_map* map;
 	
 	// data for unique scopes, such as classes and functions
-	void* value;
+	union {
+		heck_class* class_value;
+		heck_func_list func_value;
+		heck_stmt* let_value;
+	} value;
 } heck_scope;
 heck_scope* scope_create(heck_idf_type type, heck_scope* parent);
+void scope_free(heck_scope* scope);
 heck_scope* scope_get_child(heck_scope* scope, heck_idf name);
 
 
@@ -65,7 +78,6 @@ heck_scope* add_nmsp_idf(heck_scope* scope, heck_scope* child, heck_idf name);
 
 // CLASS
 //heck_scope* add_class_idf(heck_scope* scope, heck_stmt_class* child, heck_idf name);
-
 
 void print_scope(heck_scope* scope, int indent);
 

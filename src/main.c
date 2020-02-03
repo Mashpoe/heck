@@ -44,11 +44,6 @@ int main(int argc, const char * argv[]) {
 		//heck_print_tokens(c);
 		heck_parse(c);
 		//printf("done.\n");
-		if (heck_resolve(c)) {
-			printf("successfully resolved!\n");
-		} else {
-			printf("failed to resolve :(\n");
-		}
 		//heck_compile(c);
 		//printf("press ENTER to continue...");
 		//getchar();
