@@ -26,8 +26,16 @@ bool data_type_cmp(const heck_data_type* a, const heck_data_type* b) {
 			const heck_class_type* class_a = &a->type_value.class_type;
 			const heck_class_type* class_b = &b->type_value.class_type;
 			
+			heck_name* name_a = scope_resolve_idf(class_a->value.name, class_a->parent);
+			if (!name_a)
+				return false;
+			
+			heck_name* name_b = scope_resolve_idf(class_b->value.name, class_b->parent);
+			if (!name_b)
+				return false;
+			
 			// check if class scopes are the same
-			if (scope_resolve_idf(class_a->value.name, class_a->parent) != scope_resolve_idf(class_b->value.name, class_b->parent))
+			if (name_a != name_b)
 				return false;
 			
 			// check if they have type arguments; return false if only one has type arguments
@@ -133,19 +141,19 @@ heck_data_type* resolve_type_class(heck_data_type* type, heck_scope* parent, hec
 	// find the correct class using the parent scope
 	heck_class_type* class_type = &type->type_value.class_type;
 	
-	heck_scope* s = scope_resolve_idf(class_type->value.name, parent);
+	heck_name* n = scope_resolve_idf(class_type->value.name, parent);
 	
 	// TODO: line numbers in error messages
-	if (s == NULL) {
+	if (n == NULL) {
 		fprintf(stderr, "error: unable to resolve identifier\n");
 		return NULL;
 	}
 	
-	if (s->type != IDF_CLASS) {
+	if (n->type != IDF_CLASS) {
 		fprintf(stderr, "error: not a class\n");
 	}
 	
-	class_type->value.class = s->value.class_value;
+	class_type->value.class = n->value.class_value;
 	
 	return NULL;
 }

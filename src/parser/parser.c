@@ -696,7 +696,7 @@ heck_stmt* if_statement(parser* p, heck_scope* parent, bool in_func) {
 		
 	}
 	
-	((heck_stmt_if*)s->value)->type = type;
+	(s->value.if_stmt)->type = type;
 	
 	return s;
 }
@@ -796,12 +796,21 @@ void func_decl(parser* p, heck_scope* parent) {
 	step(p);
 	
 	heck_idf func_idf;
-	heck_scope* func_scope; // can be either a function or a class in the case of operator overloading
+	heck_name* func_name; // can be either a function or a class in the case of operator overloading ??
+	heck_scope* func_scope; // the parent scope of the function (function names don't have child scopes)
 	if (match(p, TK_IDF)) {
 		func_idf = identifier(p, parent);
-		func_scope = scope_get_child(parent, func_idf);
+		func_name = scope_get_child(parent, func_idf);
+		
+		if (func_name == NULL) {
+			parser_error(p, peek(p), 0, "unable to create function");
+			return;
+		}
+		
+		func_scope = func_name->parent;
 	} else {
 		func_idf = NULL;
+		func_name = NULL;
 		func_scope = parent;
 	}
 	
@@ -814,7 +823,7 @@ void func_decl(parser* p, heck_scope* parent) {
 	heck_func* func = NULL;
 	//heck_func_list* overload_list = NULL; // the list that we add the func to
 	
-	if (func_idf == NULL || (func_idf != NULL && match(p, TK_DOT))) {
+	if (func_idf == NULL || match(p, TK_DOT)) {
 		
 		if (!match(p, TK_KW_OPERATOR)) {
 			parser_error(p, peek(p), 0, "expected a function name");
@@ -822,12 +831,14 @@ void func_decl(parser* p, heck_scope* parent) {
 		}
 		
 		// begin parsing operator/cast overload
-		if (func_scope->type == IDF_UNDECLARED) {
+		if (func_name != NULL && func_name->type == IDF_UNDECLARED) {
 			// implicitly create class
-			func_scope->type = IDF_UNDECLARED_CLASS;
-			func_scope->value.class_value = class_create();
+			func_name->type = IDF_UNDECLARED_CLASS;
+			func_name->value.class_value = class_create();
 			
-		} else if (func_scope->type != IDF_CLASS && func_scope->type != IDF_UNDECLARED_CLASS) {
+		} else if (scope_is_class(func_scope)) {
+			func_name = func_scope->class;
+		} else {
 			heck_token* err_tk = previous(p);
 			fprintf(stderr, "error: operator overload outside of class, ln %i ch %i\n", err_tk->ln, err_tk->ch);
 			panic_mode(p);
@@ -850,11 +861,12 @@ void func_decl(parser* p, heck_scope* parent) {
 			}
 			
 			overload_type.cast = true;
+			overload_type.value.cast = type_cast;
 			
 		}
 		
 		// there are no issues, create the function
-		func = func_create(func_scope, func_idf == NULL || func_idf[1] == '\0');
+		func = func_create(parent, func_idf == NULL || func_idf[1] == '\0');
 		
 		if (!parse_parameters(p, func, parent)) {
 			func_free(func);
@@ -862,7 +874,7 @@ void func_decl(parser* p, heck_scope* parent) {
 		}
 		
 		// add to the correct class overload vector
-		if (!add_op_overload(func_scope->value.class_value, &overload_type, func)) {
+		if (!add_op_overload(func_name->value.class_value, &overload_type, func)) {
 			func_free(func);
 			parser_error(p, peek(p), 0, "duplicate operator overload declaration");
 			return;
@@ -872,7 +884,7 @@ void func_decl(parser* p, heck_scope* parent) {
 		// parse as a regular function
 		
 		// get the parameters
-		func = func_create(func_scope, func_idf[1] == '\0');
+		func = func_create(parent, func_idf[1] == '\0');
 		
 		if (!parse_parameters(p, func, parent)) {
 			func_free(func);
@@ -880,23 +892,25 @@ void func_decl(parser* p, heck_scope* parent) {
 		}
 		
 		// check if the scope is valid
-		if (func_scope->type == IDF_UNDECLARED) {
+		if (func_name->type == IDF_UNDECLARED) {
 			
 			// functions cannot have children
-			if (idf_map_size(func_scope->map) > 0) {
+			if (func_name->child_scope != NULL) {
+			//if (idf_map_size(func_scope->names) > 0) {
+				
 				fprintf(stderr, "error: unable to create child scope for a function: ");
 				fprint_idf(stderr, func_idf);
 				fprintf(stderr, "\n");
 				return;
 			}
 			
-			func_scope->type = IDF_FUNCTION;
-			func_scope->value.func_value.func_vec = vector_create(); // create vector to store overloads/definitions
+			func_name->type = IDF_FUNCTION;
+			func_name->value.func_value.func_vec = vector_create(); // create vector to store overloads/definitions
 			
-		} else if (func_scope->type == IDF_FUNCTION) {
+		} else if (func_name->type == IDF_FUNCTION) {
 			
 			// check if this is a unique overload
-			if (func_overload_exists(&func_scope->value.func_value, func)) {
+			if (func_overload_exists(&func_name->value.func_value, func)) {
 				fprintf(stderr, "error: function has already been declared with the same parameters: ");
 				fprint_idf(stderr, func_idf);
 				fprintf(stderr, "\n");
@@ -905,7 +919,7 @@ void func_decl(parser* p, heck_scope* parent) {
 			
 		}
 		
-		vector_add(&func_scope->value.func_value.func_vec, func);
+		vector_add(&func_name->value.func_value.func_vec, func);
 		
 	}
 //	} else {
@@ -959,9 +973,11 @@ void class_decl(parser* p, heck_scope* parent) {
 	
 	heck_idf class_idf = identifier(p, parent);
 	
-	heck_scope* child = class_create_scope(class_idf, parent);
+	heck_name* class_name = scope_add_class(parent, class_idf);
+
+	heck_class* class = class_name->value.class_value;
 	
-	if (child == NULL) {
+	if (class_name == NULL) {
 		panic_mode(p);
 		return;
 	}
@@ -973,10 +989,10 @@ void class_decl(parser* p, heck_scope* parent) {
 			
 			if (match(p, TK_KW_FRIEND) && match(p, TK_IDF)) {
 				// friend will be resolved later
-				vector_add(&((heck_class*)child->value.class_value)->friend_vec, identifier(p, parent));
+				vector_add(&class->friend_vec, identifier(p, parent));
 			} else if (match(p, TK_IDF)) {
 				// parent will be resolved later
-				vector_add(&((heck_class*)child->value.class_value)->parent_vec, identifier(p, parent));
+				vector_add(&class->parent_vec, identifier(p, parent));
 			} else {
 				parser_error(p, peek(p), 0, "unexpected token");
 				return;
@@ -1004,21 +1020,23 @@ void class_decl(parser* p, heck_scope* parent) {
 				if (let_stmt->type == EXPR_ERR)
 					break;
 				
-				heck_scope* let_scope = scope_create(IDF_VARIABLE, child);
-				let_scope->value.let_value = let_stmt;
-				idf_map_set(child->map, ((heck_stmt_let*)let_stmt->value)->name, let_scope);
+				scope_add_decl(class_name->child_scope, let_stmt);
+				
 				break;
 			}
-			case TK_KW_FUNCTION:{
-				func_decl(p, child);
+			case TK_KW_FUNCTION: {
+				func_decl(p, class_name->child_scope);
 				break;
 			}
 			case TK_KW_CLASS:
-				class_decl(p, child);
+				class_decl(p, class_name->child_scope);
 				break;
 			case TK_BRAC_L:
 				// assume function or class
-				break;
+				do {
+					step(p);
+				} while (!match(p, TK_BRAC_R));
+				// fallthrough
 			default:
 				parser_error(p, current, 0, "unexpected token");
 				break;
@@ -1045,8 +1063,8 @@ void statement(parser* p, heck_block* block) {
 			break;
 		case TK_KW_IF:
 			stmt = if_statement(p, block->scope, true);
-			if (block->type < BLOCK_BREAKS && ((heck_stmt_if*)stmt->value)->type != BLOCK_DEFAULT) {
-				block->type = ((heck_stmt_if*)stmt->value)->type;
+			if (block->type < BLOCK_BREAKS && (stmt->value.if_stmt)->type != BLOCK_DEFAULT) {
+				block->type = stmt->value.if_stmt->type;
 			}
 			break;
 		case TK_KW_FUNCTION:
@@ -1061,7 +1079,7 @@ void statement(parser* p, heck_block* block) {
 			break;
 		case TK_BRAC_L:
 			stmt = block_statement(p, block->scope);
-			if (((heck_block*)stmt->value)->type == BLOCK_RETURNS && block->type != BLOCK_BREAKS)
+			if ((stmt->value.block)->type == BLOCK_RETURNS && block->type != BLOCK_BREAKS)
 				block->type = BLOCK_RETURNS;
 			break;
 		default: {
@@ -1119,30 +1137,24 @@ bool heck_parse(heck_code* c) {
 		
 		global_statement(&p, c->global);
 		
-		if (at_end(&p)) {
+		if (at_end(&p))
 			break;
-		}
-		
-		heck_token* a = previous(&p);
-		heck_token* b = peek(&p);
-		heck_token* c = next(&p);
 		
 		// TODO: check for newline or ;
 		if (!at_newline(&p) && !match(&p, TK_SEMI)) {
-			parser_error(&p, peek(&p), 0, "unexpected token");
+			parser_error(&p, peek(&p), 0, "expected ; or newline");
 		}
 	}
 	
-	printf("global ");
-	print_block(c->global, 0);
-	
-	
 	// resolve everything
-	if (heck_resolve(c)) {
+	if (heck_resolve(c) && p.success) {
 		printf("successfully resolved!\n");
 	} else {
 		printf("failed to resolve :(\n");
 	}
+	
+	printf("global ");
+	print_block(c->global, 0);
 	
 	return p.success;
 }

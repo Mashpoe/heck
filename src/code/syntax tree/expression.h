@@ -71,7 +71,6 @@ heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator, const expr_
 // variable/variable value
 typedef struct heck_expr_value {
 	heck_idf name;
-	// TODO: replace "bool global" with an enum for global.val, this.val, and val
 	idf_context context;
 } heck_expr_value;
 heck_expr* create_expr_value(heck_idf name, idf_context context);

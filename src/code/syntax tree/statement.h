@@ -17,6 +17,7 @@ typedef enum heck_stmt_type {
 	STMT_IF,
 	STMT_RET,
 	STMT_CLASS,
+	STMT_FUNC,
 	STMT_BLOCK,
 	STMT_ERR
 } heck_stmt_type;
@@ -25,7 +26,14 @@ typedef struct stmt_vtable stmt_vtable;
 typedef struct heck_stmt {
 	const stmt_vtable* vtable;
 	heck_stmt_type type;
-	void* value;
+	union {
+		struct heck_stmt_let* let_stmt;
+		struct heck_stmt_if* if_stmt;
+		struct heck_stmt_class* class_stmt;
+		struct heck_stmt_func* func_stmt;
+		struct heck_block* block;
+		struct heck_expr* expr;
+	} value;
 } heck_stmt;
 
 // TODO: maybe make these callbacks take void pointers instead
@@ -75,9 +83,15 @@ typedef struct heck_stmt_if {
 } heck_stmt_if;
 heck_stmt* create_stmt_if(heck_if_node* contents);
 
+typedef struct heck_stmt_class {
+	heck_scope* class_scope;
+	//heck_idf* name;
+} heck_stmt_class;
+heck_stmt* create_stmt_class(heck_scope* class_scope);
+
 typedef struct heck_stmt_func {
 	heck_func* func;
-	heck_idf* name;
+	//heck_idf* name;
 } heck_stmt_func;
 heck_stmt* create_stmt_func(heck_func* func);
 
@@ -90,7 +104,7 @@ bool resolve_stmt(heck_stmt* stmt, heck_scope* parent, heck_scope* global);
 void free_stmt(heck_stmt* stmt);
 void print_stmt(heck_stmt* stmt, int indent);
 
-bool resolve_block(heck_block* block, heck_scope* parent, heck_scope* global);
+bool resolve_block(heck_block* block, heck_scope* global);
 void print_block(heck_block* block, int indent);
 
 
@@ -101,6 +115,8 @@ extern const stmt_vtable stmt_vtable_let;
 extern const stmt_vtable stmt_vtable_block;
 extern const stmt_vtable stmt_vtable_if;
 extern const stmt_vtable stmt_vtable_ret;
+extern const stmt_vtable stmt_vtable_class;
+extern const stmt_vtable stmt_vtable_func;
 extern const stmt_vtable stmt_vtable_err;
 
 #endif /* statement_h */

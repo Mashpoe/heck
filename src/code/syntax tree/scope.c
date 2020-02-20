@@ -10,13 +10,32 @@
 #include "class.h"
 #include <stdio.h>
 
-heck_scope* scope_create(heck_idf_type type, heck_scope* parent) {
+heck_name* name_create(heck_idf_type type, heck_scope* parent) {
+	
+	heck_name* name = malloc(sizeof(heck_name));
+	
+	name->type = type;
+	name->value.class_value = NULL; // will set all fields to NULL
+	name->parent = parent;
+	name->child_scope = NULL;
+	
+	return name;
+}
+
+heck_scope* scope_create(heck_scope* parent) {
 	
 	heck_scope* scope = malloc(sizeof(heck_scope));
-	scope->map = idf_map_create();
-	scope->type = type;
-	scope->value.class_value = NULL; // will set all fields to NULL
+	scope->names = NULL;
+	scope->decl_vec = NULL;
+	
 	scope->parent = parent;
+	if (parent == NULL) {
+		scope->namespace = NULL;
+		scope->class = NULL;
+	} else {
+		scope->namespace = parent->namespace;
+		scope->class = parent->class;
+	}
 	
 	return scope;
 }
@@ -25,49 +44,86 @@ void scope_free(heck_scope* scope) {
 	// TODO: free the scope
 }
 
-// creates undeclared children if they do not exist
-heck_scope* scope_get_child(heck_scope* scope, heck_idf name) {
+// use this function only when parsing a declaration or definition
+// finds a child of a scope, possibly multiple levels deep.
+// if the child cannot be found, it may be implicitly declared.
+// returns null on failure
+heck_name* scope_get_child(heck_scope* scope, heck_idf idf) {
 	
-	// iterate through the tree of nmsps
+	// the current name as we iterate through the idf
+	heck_name* name;
+	
+	// try to iterate through the tree of names
 	int i = 0;
-	do  {
+	do {
 		
-		if (scope->type == IDF_FUNCTION) {
-			fprintf(stderr, "error: unable to create child scope for a function: ");
-			fprint_idf(stderr, name);
-			fprintf(stderr, "\n");
-			return NULL;
+		if (scope->names == NULL) {
+			scope->names = idf_map_create();
+		} else if (idf_map_get(scope->names, idf[i], (void*)&name)) {
+			
+			// access modifiers won't matter until resolving
+			
+			if (name->child_scope == NULL) {
+				// return if there are no more children
+				if (idf[++i] == NULL)
+					return name;
+				
+				// we need to create children, check the identifier type first
+				if (name->type == IDF_FUNCTION || name->type == IDF_VARIABLE)
+					return NULL;
+				
+				// create a child, let the loop below do the rest of the work
+				name->child_scope = scope_create(scope);
+				scope = name->child_scope;
+				scope->names = idf_map_create();
+			} else {
+				// there is a child scope, so we can obviously continue
+				scope = name->child_scope;
+				
+				// we can continue checking for children as long as they exist
+				continue;
+			}
+			
 		}
 		
-		heck_scope* child;
-		if (!idf_map_get(scope->map, name[i], (void*)&child)) {
+		// the above continue wasn't reached, so the child doesn't exist
+		// we'll just create one instead
+		for (;;) {
+			name = name_create(IDF_UNDECLARED, scope);
 			
-			// if a scope doesn't exist, create it
-			do {
-				child = scope_create(IDF_UNDECLARED, scope);
-				idf_map_set(scope->map, name[i], child);
-				scope = child;
-			} while (name[++i] != NULL);
-			break;
+			idf_map_set(scope->names, idf[i], name);
 			
-		} else {
-			scope = child;
+			if (idf[++i] == NULL)
+				return name;
+		
+			// create a child scope
+			name->child_scope = scope_create(scope);
+			scope = name->child_scope;
+			
+			scope->names = idf_map_create();
+			
 		}
 		
+		// we are done creating children
+		return name;
 		
-	} while (name[++i] != NULL);
+	} while (idf[++i] != NULL);
 	
-	return scope;
+	// if this is reached, the children were found without implicit declarations
+	return name;
 }
 
-bool scope_accessible(const heck_scope* parent, const heck_scope* child) {
-	if (parent->class == child->class)
+bool name_accessible(const heck_scope* parent, const heck_scope* child, const heck_name* name) {
+	if (name->access == ACCESS_PUBLIC)
 		return true;
 	
-	if (child->access == ACCESS_PUBLIC)
+	if (name->type == IDF_CLASS && parent->class == child->class)
 		return true;
 	
-	if (child->access == ACCESS_PRIVATE || child->access == ACCESS_PROTECTED) {
+	if (name->access == ACCESS_PUBLIC)
+		return true;
+	
+	if (name->access == ACCESS_PRIVATE || name->access == ACCESS_PROTECTED) {
 		//vec_size_t size = vector_size(&((heck_class*)parent->class)->friends);
 		//for (vec_size_t i = 0; i < size; ++i) {}
 		return false;
@@ -75,13 +131,13 @@ bool scope_accessible(const heck_scope* parent, const heck_scope* child) {
 	return false;
 }
 
-heck_scope* scope_resolve_idf(heck_idf idf, const heck_scope* parent) {
+heck_name* scope_resolve_idf(heck_idf idf, const heck_scope* parent) {
 	
 	// find the parent of the idf
-	heck_scope* child;
-	while (!idf_map_get(parent->map, idf[0], (void*)&child)) {
+	heck_name* name;
+	while (!idf_map_get(parent->names, idf[0], (void*)&name)) {
 		
-		
+		// we have likely reached the global scope if parent->parent == NULL
 		if (parent->parent == NULL)
 			return NULL;
 		
@@ -90,16 +146,18 @@ heck_scope* scope_resolve_idf(heck_idf idf, const heck_scope* parent) {
 	
 	/*	we have found the parent of the identifier
 		now find the identifier "children" if they exist */
-	child->class = parent->class;
-	child->namespace = parent->namespace;
 	int i = 1;
 	while (idf[i] != NULL) {
+		// keep track of child's child_scope as the parent of
+		heck_scope* child_scope = name->child_scope;
 		
-		if (child->type == IDF_CLASS)
-			child->class = child;
+		if (child_scope == NULL)
+			return NULL;
 		
-		if (idf_map_get(child->map, idf[i], (void*)&child)) {
+		if (idf_map_get(child_scope->names, idf[i], (void*)&name)) {
 			// TODO: check if private/protected/friend
+			if (!name_accessible(parent, child_scope, name))
+				return NULL;
 		} else {
 			return NULL;
 		}
@@ -107,18 +165,29 @@ heck_scope* scope_resolve_idf(heck_idf idf, const heck_scope* parent) {
 		i++;
 	}
 	
-	return child;
+	return name;
 }
 
-heck_scope* scope_resolve_value(heck_expr_value* value, const heck_scope* parent, const heck_scope* global) {
+heck_name* scope_resolve_value(heck_expr_value* value, const heck_scope* parent, const heck_scope* global) {
 	switch (value->context) {
 		case CONTEXT_LOCAL:
 			return scope_resolve_idf(value->name, parent);
 		case CONTEXT_THIS:
-			return scope_resolve_idf(value->name, parent->class);
+			if (parent->class == NULL || parent->class->child_scope == NULL)
+				return NULL;
+			return scope_resolve_idf(value->name, parent->class->child_scope);
 		case CONTEXT_GLOBAL:
 			return scope_resolve_idf(value->name, global);
 	}
+}
+
+void scope_add_decl(heck_scope* scope, heck_stmt* decl) {
+	
+	if (scope->decl_vec == NULL)
+		scope->decl_vec = vector_create();
+	
+	vector_add(&scope->decl_vec, decl);
+	
 }
 
 /*heck_scope* create_nmsp(void) {
@@ -137,27 +206,108 @@ heck_scope* add_nmsp_idf(heck_scope* scope, heck_scope* child, heck_idf name) {
 //	return NULL;
 //}
 
+heck_name* scope_add_class(heck_scope* parent, heck_idf idf) {
+	heck_name* child = scope_get_child(parent, idf);
+	if (child == NULL)
+		return NULL;
+	
+	if (child->type == IDF_UNDECLARED) {
+		
+		// assume things will be declared in the class, create a scope and names map
+		if (child->child_scope == NULL) {
+			child->child_scope = scope_create(parent);
+			child->child_scope->names = idf_map_create();
+		} else if (child->child_scope->names == NULL) {
+			child->child_scope->names = idf_map_create();
+		}
+		
+		child->type = IDF_CLASS;
+		child->child_scope->class = child;
+
+		// if idf has one value (e.g. name instead of classA.classB.name)
+		if (idf[1] == NULL) {
+			child->type = IDF_CLASS;
+		} else {
+			child->type = IDF_UNDECLARED_CLASS;
+		}
+	} else if (child->type == IDF_CLASS) {
+
+		// if map is null then it was just a forward declaration
+		if (child->child_scope->names == NULL) {
+			child->child_scope->names = idf_map_create();
+		} else {
+			fprintf(stderr, "error: redefinition of class ");
+			fprint_idf(stderr, idf);
+			fprintf(stderr, "\n");
+			return NULL;
+		}
+
+	// another class definition exists, but there is no class declaration
+	} else if (child->type == IDF_UNDECLARED_CLASS) {
+		fprintf(stderr, "error: redefinition of class ");
+		fprint_idf(stderr, idf);
+		fprintf(stderr, "\n");
+		return NULL;
+	}
+
+	child->value.class_value = class_create();
+
+	return child;
+}
+
+inline bool scope_is_class(heck_scope* scope) {
+	if (scope->class == NULL)
+		return false;
+	
+	return scope->class->child_scope == scope;
+}
+
+// TODO: add vtables
+
+//bool resolve_scope(heck_scope* scope, heck_scope* global) {
+//	if (scope->decl_vec == NULL)
+//		return true;
+//	
+//	bool result = true;
+//	
+//	vec_size_t size = vector_size(scope->decl_vec);
+//	for (vec_size_t i = 0; i < size; ++i) {
+//		heck_stmt* current = scope->decl_vec[i];
+//		if (!current->vtable->resolve(current, scope, global))
+//			result = false;
+//	}
+//	
+//	return result;
+//}
+
 void print_idf_map(str_entry key, void* value, void* user_ptr) {
 	
 	int indent = *(int*)user_ptr;
 	
-	heck_scope* scope = (heck_scope*)value;
-	switch (scope->type) {
+	heck_name* name = (heck_name*)value;
+	switch (name->type) {
 		case IDF_FUNCTION:
-			print_func_defs(&scope->value.func_value, key->value, indent);
+			print_func_defs(&name->value.func_value, key->value, indent);
 			return;
 			break;
 		case IDF_VARIABLE:
-			print_stmt(scope->value.let_value, indent);
+			for (int i = 0; i < indent; ++i) {
+				printf("\t");
+			}
+			printf("variable %s: ", key->value);
+			print_expr(name->value.var_value);
+			printf("\n");
 			return;
 			break;
 			
 			// TODO: eliminate redundancies
+		case IDF_UNDECLARED_CLASS: // fallthrough TODO: print undeclared
 		case IDF_CLASS: {
-			print_class(scope, key->value, indent);
+			print_class(name, key->value, indent);
 			break;
 		}
 		default: {
+			
 			for (int i = 0; i < indent; ++i) {
 				printf("\t");
 			}
@@ -165,11 +315,14 @@ void print_idf_map(str_entry key, void* value, void* user_ptr) {
 		}
 	}
 	
-	indent++;
-	idf_map_iterate(((heck_scope*)value)->map, print_idf_map, (void*)&indent);
+	if (name->child_scope != NULL) {
+		++indent;
+		idf_map_iterate(name->child_scope->names, print_idf_map, (void*)&indent);
+		--indent;
+		return;
+	}
 	
 	// closing bracket
-	indent--;
 	for (int i = 0; i < indent; ++i) {
 		printf("\t");
 	}
@@ -177,5 +330,6 @@ void print_idf_map(str_entry key, void* value, void* user_ptr) {
 }
 
 void print_scope(heck_scope* scope, int indent) {
-	idf_map_iterate(scope->map, print_idf_map, (void*)&indent);
+	if (scope->names != NULL)
+		idf_map_iterate(scope->names, print_idf_map, (void*)&indent);
 }

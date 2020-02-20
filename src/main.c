@@ -34,7 +34,7 @@ int main(int argc, const char * argv[]) {
 	
 	clock_t begin = clock();
 
-	FILE* f = fopen("resolve_test.heck", "rb");
+	FILE* f = fopen("resolve_test2.heck", "rb");
 
 	if (f) {
 

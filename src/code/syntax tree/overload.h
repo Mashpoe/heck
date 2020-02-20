@@ -18,7 +18,7 @@ typedef struct heck_op_overload_type {
 	bool cast; // true if operator overload is a type cast
 	union {
 		heck_tk_type operator;
-		heck_data_type* cast;
+		const heck_data_type* cast;
 	} value;
 } heck_op_overload_type;
 

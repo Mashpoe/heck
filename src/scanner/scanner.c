@@ -50,8 +50,12 @@ bool match_newline(file_pos* fp) {
 		
 		// most of the time there won't be a newline
 		// exit the function quickly
+		
 		return false;
 	}
+	
+	if (escaped)
+		++new_pos;
 	
 	// there was clearly a newline, update position
 	fp->pos = new_pos;

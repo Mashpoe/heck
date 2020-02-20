@@ -29,19 +29,21 @@ typedef struct heck_class {
 	heck_idf* parent_vec; // parent classes
 	// TODO: add type parameter/argument
 	
+	bool resolved;
+	
 	// overloads
 	heck_op_overload* op_overloads;
 	
 	// store let statements and some function statements to be resolved after parsing
-	heck_stmt** declarations;
+	//heck_stmt** declarations; // no
 } heck_class;
 
 heck_class* class_create(void);
-// creates a scope with a class in it
-heck_scope* class_create_scope(heck_idf name, heck_scope* parent);
+// creates a heck_name for a class
+heck_scope* class_create_name(heck_idf name, heck_scope* parent);
 
 // just prints operator overloads, friends, etc
-void print_class(heck_scope* scope, const char* name, int indent);
+void print_class(heck_name* class_name, const char* name, int indent);
 
 // not needed as classes are just nmsps with certain labels
 //heck_nmsp* scope_add_class(heck_scope* nmsp, heck_class* child, heck_idf name);

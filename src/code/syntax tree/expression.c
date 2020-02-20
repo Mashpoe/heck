@@ -265,17 +265,19 @@ const expr_vtable expr_vtable_cast = { resolve_expr_cast, free_expr_cast, print_
  * precedence 3
  */
 
+// the basic operators (*, /, %, +, -) share a resolve function currently
+
 // multiplication
 bool resolve_expr_mult(heck_expr* expr, heck_scope* parent, heck_scope* global);
 const expr_vtable expr_vtable_mult = { resolve_expr_mult, free_expr_binary, print_expr_binary };
 
 // division
 bool resolve_expr_div(heck_expr* expr, heck_scope* parent, heck_scope* global);
-const expr_vtable expr_vtable_div = { resolve_expr_div, free_expr_binary, print_expr_binary };
+const expr_vtable expr_vtable_div = { resolve_expr_mult, free_expr_binary, print_expr_binary };
 
 // modulo
 bool resolve_expr_mod(heck_expr* expr, heck_scope* parent, heck_scope* global);
-const expr_vtable expr_vtable_mod = { resolve_expr_mod, free_expr_binary, print_expr_binary };
+const expr_vtable expr_vtable_mod = { resolve_expr_mult, free_expr_binary, print_expr_binary };
 
 /*
  * precedence 4
@@ -283,11 +285,11 @@ const expr_vtable expr_vtable_mod = { resolve_expr_mod, free_expr_binary, print_
 
 // addition
 bool resolve_expr_add(heck_expr* expr, heck_scope* parent, heck_scope* global);
-const expr_vtable expr_vtable_add = { resolve_expr_add, free_expr_binary, print_expr_binary };
+const expr_vtable expr_vtable_add = { resolve_expr_mult, free_expr_binary, print_expr_binary };
 
 // subtraction
 bool resolve_expr_sub(heck_expr* expr, heck_scope* parent, heck_scope* global);
-const expr_vtable expr_vtable_sub = { resolve_expr_sub, free_expr_binary, print_expr_binary };
+const expr_vtable expr_vtable_sub = { resolve_expr_mult, free_expr_binary, print_expr_binary };
 
 /*
  * precedence 5
@@ -412,7 +414,26 @@ inline bool resolve_expr(heck_expr* expr, heck_scope* parent, heck_scope* global
 bool resolve_expr_err(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 // literals are always resolved immediatley during scanning
 bool resolve_expr_literal(heck_expr* expr, heck_scope* parent, heck_scope* global) { return true; }
-bool resolve_expr_value(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_expr_value(heck_expr* expr, heck_scope* parent, heck_scope* global) {
+	// try to find the identifier
+	heck_name* name = scope_resolve_value(expr->value.value, parent, global);
+	
+	if (name == NULL) {
+		fprintf(stderr, "error: use of undeclared identifier\n");
+		return false;
+	}
+	
+	if (name->type == IDF_VARIABLE) {
+		if (name->value.var_value->data_type == NULL) {
+			fprintf(stderr, "error: use of invalid variable\n");
+			return false;
+		}
+		return true;
+	}
+	
+	
+	return false;
+}
 bool resolve_expr_callback(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 bool resolve_expr_unary(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 bool resolve_expr_post_incr(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
@@ -478,12 +499,7 @@ bool resolve_expr_cast(heck_expr* expr, heck_scope* parent, heck_scope* global) 
 }
 
 // precedence 3
-bool resolve_expr_mult(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_div(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_mod(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-
-// precedence 4
-bool resolve_expr_add(heck_expr* expr, heck_scope* parent, heck_scope* global) {
+bool resolve_expr_mult(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 	if (!resolve_expr_binary(expr, parent, global))
 		return false;
 	
@@ -497,7 +513,13 @@ bool resolve_expr_add(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 	// TODO: check for operator overloads
 	
 	return false;
+	
 }
+bool resolve_expr_div(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_expr_mod(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+
+// precedence 4
+bool resolve_expr_add(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 bool resolve_expr_sub(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 
 // precedence 5
