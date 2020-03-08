@@ -8,6 +8,7 @@
 #include "class.h"
 #include "scope.h"
 #include "overload.h"
+#include "print.h"
 
 heck_class* class_create() {
 	heck_class* c = malloc(sizeof(heck_class));
@@ -65,8 +66,7 @@ void print_class(heck_name* class_name, const char* name, int indent) {
 	
 	heck_class* c = class_name->value.class_value;
 	
-	for (int i = 0; i < indent; ++i)
-		putchar('\t');
+	print_indent(indent);
 	
 	// TODO: friends and parents and stuff
 	printf("class %s {\n", name);

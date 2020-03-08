@@ -9,12 +9,17 @@
 #include "code_impl.h"
 #include "scope.h"
 #include "str.h"
+#include "print.h"
 #include <stdio.h>
 
 heck_code* heck_create() {
 	heck_code* c = malloc(sizeof(heck_code));
 	c->token_vec = vector_create();
-	c->global = block_create(NULL);
+	
+	heck_scope* block_scope = scope_create(NULL);
+	block_scope->namespace = block_scope; // global namespace = global scope
+	c->global = block_create(block_scope);
+	
 	c->strings = str_table_create();
 	c->types = type_table_create();
 	return c;
@@ -58,9 +63,7 @@ void heck_print_tokens(heck_code* c) {
 				printf("\n% 3d| ", ln);
 			}
 			
-			for (int i = 0; i < indent; ++i) {
-				printf("\t");
-			}
+			print_indent(indent);
 			
 		}
 		

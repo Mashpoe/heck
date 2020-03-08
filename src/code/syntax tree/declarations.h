@@ -18,5 +18,6 @@ typedef struct heck_func			heck_func;
 typedef struct heck_func_list		heck_func_list;
 typedef struct heck_class			heck_class;
 typedef struct heck_op_overload		heck_op_overload;
+typedef enum heck_idf_type			heck_idf_type;
 
 #endif /* declarations_h */

@@ -8,6 +8,7 @@
 #include "scope.h"
 #include "function.h"
 #include "class.h"
+#include "print.h"
 #include <stdio.h>
 
 heck_name* name_create(heck_idf_type type, heck_scope* parent) {
@@ -291,9 +292,7 @@ void print_idf_map(str_entry key, void* value, void* user_ptr) {
 			return;
 			break;
 		case IDF_VARIABLE:
-			for (int i = 0; i < indent; ++i) {
-				printf("\t");
-			}
+			print_indent(indent);
 			printf("variable %s: ", key->value);
 			print_expr(name->value.var_value);
 			printf("\n");
@@ -315,11 +314,10 @@ void print_idf_map(str_entry key, void* value, void* user_ptr) {
 		}
 	}
 	
-	if (name->child_scope != NULL) {
+	if (name->child_scope != NULL && name->child_scope->names != NULL) {
 		++indent;
 		idf_map_iterate(name->child_scope->names, print_idf_map, (void*)&indent);
 		--indent;
-		return;
 	}
 	
 	// closing bracket

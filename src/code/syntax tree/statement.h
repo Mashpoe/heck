@@ -65,7 +65,7 @@ typedef struct heck_block {
 	struct heck_scope* scope;
 	heck_stmt** stmt_vec;
 } heck_block;
-heck_block* block_create(heck_scope* parent);
+heck_block* block_create(heck_scope* child);
 void block_free(heck_block* block);
 heck_stmt* create_stmt_block(heck_block* block);
 
@@ -82,6 +82,13 @@ typedef struct heck_stmt_if {
 	heck_if_node* contents; // linked list for if/else ladder
 } heck_stmt_if;
 heck_stmt* create_stmt_if(heck_if_node* contents);
+
+// not currently in use, but could be used for debugging
+//typedef struct heck_stmt_nmsp {
+//	heck_idf* name;
+//	heck_block* block;
+//} heck_stmt_nmsp;
+//heck_stmt* create_stmt_nmsp(heck_idf* name, heck_block* block);
 
 typedef struct heck_stmt_class {
 	heck_scope* class_scope;

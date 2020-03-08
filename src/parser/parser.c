@@ -16,9 +16,11 @@
 #include "types.h"
 #include "overload.h"
 #include "resolver.h"
+#include "error.h"
 
 #include <stdio.h>
 #include <stdarg.h>
+
 
 typedef struct parser parser;
 
@@ -27,6 +29,14 @@ struct parser {
 	heck_code* code;
 	bool success; // true unless there are errors in the code
 };
+
+// a function that parses a statement based on it's current scope
+typedef void stmt_parser(parser*, heck_block*);
+
+// callbacks
+stmt_parser global_parse;
+stmt_parser func_parse;
+stmt_parser local_parse;
 
 #define _HECK_MACRO_STEPS
 
@@ -90,11 +100,6 @@ inline bool match(parser* p, heck_tk_type type) {
 	return false;     
 }
 
-// don't step because newlines aren't tokens
-bool match_endl(parser* p) {
-	return previous(p)->ln < peek(p)->ln;
-}
-
 void panic_mode(parser* p) {
 	// we are in panic mode, so obviously the code won't compile
 	p->success = false;
@@ -109,7 +114,7 @@ void panic_mode(parser* p) {
 			case TK_BRAC_R:
 			case TK_KW_LET:
 			case TK_KW_IF:
-			case TK_KW_FUNCTION:
+			case TK_KW_FUNC:
 			case TK_KW_CLASS:
 				return;
 			default:
@@ -570,9 +575,23 @@ heck_expr* expression(parser* p, heck_scope* parent) {
  *
  */
 
+// flags
+enum stmt_flag {
+	STMT_FLAG_GLOBAL = 0, // the global scope, mutually exclusive to other flags
+	STMT_FLAG_FUNC = 1, // inside a function
+	STMT_FLAG_LOCAL = 2, // child scope, if statement, etc
+	STMT_FLAG_LOOP = 4, // inside a structure that supports a break statement
+};
+
+// preferred macros to check flags, unless you are doing == for exactly one flag
+// flags are a uint8_t
+#define STMT_IN_GLOBAL(flags)	( (flags) == 0)
+#define STMT_IN_FUNC(flags)		(( (flags) & STMT_FLAG_FUNC) == STMT_FLAG_FUNC)
+#define STMT_IN_LOCAL(flags)	(( (flags) & STMT_FLAG_LOCAL) == STMT_FLAG_LOCAL)
+#define STMT_IN_LOOP(flags)		(( (flags) & STMT_FLAG_LOOP) == STMT_FLAG_LOOP)
+
 // forward declarations
-void statement(parser* p, heck_block* block); // needs a block so it can add code
-void global_statement(parser* p, heck_block* block);
+void parse_statement(parser* p, heck_block* block, uint8_t flags);
 
 heck_stmt* let_statement(parser* p, heck_scope* parent) {
 	step(p);
@@ -580,13 +599,17 @@ heck_stmt* let_statement(parser* p, heck_scope* parent) {
 	// TODO: add support for explicit type in let statement
 	if (match(p, TK_IDF)) {
 		str_entry name = previous(p)->value.str_value;
-		if (match(p, TK_OP_ASG)) { // =
-			return create_stmt_let(name, expression(p, parent));
-		} else {
-			// TODO: report expected '='
-			heck_token* err_token = peek(p);
-			fprintf(stderr, "error: expected '=', ln %i ch %i\n", err_token->ln, err_token->ch);
-		}
+		
+		// initialization is optional if the type is specified
+		// you get an error for using an uninitialized variable
+		return create_stmt_let(name, match(p, TK_OP_ASG) ? expression(p, parent) : NULL);
+//		if (match(p, TK_OP_ASG)) { // =
+//			return create_stmt_let(name, expression(p, parent));
+//		} else {
+//			// TODO: report expected '='
+//			heck_token* err_token = peek(p);
+//			fprintf(stderr, "error: expected '=', ln %i ch %i\n", err_token->ln, err_token->ch);
+//		}
 	} else {
 		// TODO: report expected identifier
 	}
@@ -594,50 +617,36 @@ heck_stmt* let_statement(parser* p, heck_scope* parent) {
 	return create_stmt_err();
 }
 
-heck_block* global_parse_block(parser* p, heck_scope* parent) {
+// parses a block using a given child scope
+heck_block* parse_block(parser* p, heck_scope* child, uint8_t flags) {
 	step(p);
-	heck_block* block = block_create(parent);
-	
-	for (;;) {
-		if (at_end(p)) {
-			// TODO report unexpected EOF
-			break;
-		} else if (match(p, TK_BRAC_R)) {
-			break;
-		} else {
-			global_statement(p, block);
-		}
-	}
-	
-	return block;
-}
-heck_stmt* global_block_statement(parser* p, heck_scope* parent) {
-	return create_stmt_block(global_parse_block(p, parent));
-}
+	heck_block* block = block_create(child);
 
-heck_block* parse_block(parser* p, heck_scope* parent) {
-	step(p);
-	heck_block* block = block_create(parent);
-	
 	for (;;) {
 		if (at_end(p)) {
-			// TODO report unexpected EOF
+			parser_error(p, peek(p), 0, "unexpected EOF");
 			break;
 		} else if (match(p, TK_BRAC_R)) {
 			break;
 		} else {
-			statement(p, block);
+			parse_statement(p, block, flags);
+			
+			if (!at_newline(p) && !match(p, TK_SEMI)) {
+				parser_error(p, peek(p), 0, "expected ; or newline");
+			}
 		}
+		
+		
 	}
-	
+
 	return block;
 }
-heck_stmt* block_statement(parser* p, heck_scope* parent) {
-	return create_stmt_block(parse_block(p, parent));
+heck_stmt* block_statement(parser* p, heck_scope* parent, uint8_t flags) {
+	return create_stmt_block(parse_block(p, scope_create(parent), flags));
 }
 
 // block parser is a callback
-heck_stmt* if_statement(parser* p, heck_scope* parent, bool in_func) {
+heck_stmt* if_statement(parser* p, heck_scope* parent, uint8_t flags) {
 	step(p);
 	
 	// if statements do not need (parentheses) around the condition in heck
@@ -656,11 +665,13 @@ heck_stmt* if_statement(parser* p, heck_scope* parent, bool in_func) {
 			panic_mode(p);
 			break;
 		}
-		
+
+		heck_scope* block_scope = scope_create(parent);
+		node->code = parse_block(p, block_scope, flags);
+
 		// parse code block; handle returns if we are in a function
-		if (in_func) {
+		if (STMT_IN_FUNC(flags)) {
 			
-			node->code = parse_block(p, parent);
 			switch (node->code->type) {
 				case BLOCK_RETURNS:
 					if (node == first_node) {
@@ -677,8 +688,6 @@ heck_stmt* if_statement(parser* p, heck_scope* parent, bool in_func) {
 					break;
 			}
 			
-		} else {
-			node->code = global_parse_block(p, parent);
 		}
 		
 		if (last || !match(p, TK_KW_ELSE)) {
@@ -934,7 +943,8 @@ void func_decl(parser* p, heck_scope* parent) {
 	
 	if (peek(p)->type == TK_BRAC_L) {
 		
-		func->code = parse_block(p, parent);
+		heck_scope* block_scope = scope_create(parent);
+		func->code = parse_block(p, block_scope, STMT_FLAG_FUNC);
 		
 		if (func->code->type == BLOCK_MAY_RETURN) {
 			parser_error(p, peek(p), 0, "function only returns in some cases");
@@ -956,9 +966,10 @@ heck_stmt* ret_statement(parser* p, heck_scope* parent) {
 	step(p);
 	
 	// expression must start on the same line as return statement or else it's void
-	if (match(p, TK_SEMI) || match_endl(p)) {
+	if (peek(p)->type == TK_SEMI || at_newline(p)) {
 		return create_stmt_ret(NULL);
 	}
+	heck_token* t = peek(p);
 	return create_stmt_ret(expression(p, parent));
 }
 
@@ -1024,7 +1035,7 @@ void class_decl(parser* p, heck_scope* parent) {
 				
 				break;
 			}
-			case TK_KW_FUNCTION: {
+			case TK_KW_FUNC: {
 				func_decl(p, class_name->child_scope);
 				break;
 			}
@@ -1045,88 +1056,104 @@ void class_decl(parser* p, heck_scope* parent) {
 	
 }
 
-heck_stmt* namespace(parser* p, heck_scope* scope) {
+// returns a block statement with the corresponding namespace scope
+heck_stmt* namespace(parser* p, heck_scope* parent) {
+	step(p);
 	
-	// check if namespace is already defined
+	if (!match(p, TK_IDF)) {
+		parser_error(p, peek(p), 0, "expected an identifier");
+		return create_stmt_err();
+	}
 	
-	return NULL;
-}
-
-// for statements inside of functions
-void statement(parser* p, heck_block* block) {
+	heck_name* nmsp = scope_get_child(parent, identifier(p, parent));
 	
-	heck_stmt* stmt = NULL;
+	if (nmsp == NULL) {
+		parser_error(p, peek(p), 0, "error: unable to create namespace");
+		return create_stmt_err();
+	}
 	
-	switch (peek(p)->type) {
-		case TK_KW_LET:
-			stmt = let_statement(p, block->scope);
-			break;
-		case TK_KW_IF:
-			stmt = if_statement(p, block->scope, true);
-			if (block->type < BLOCK_BREAKS && (stmt->value.if_stmt)->type != BLOCK_DEFAULT) {
-				block->type = stmt->value.if_stmt->type;
-			}
-			break;
-		case TK_KW_FUNCTION:
-			func_decl(p, block->scope);
-			return;
-		case TK_KW_CLASS:
-			class_decl(p, block->scope);
-			break;
-		case TK_KW_RETURN:
-			stmt = ret_statement(p, block->scope);
-			if (block->type != BLOCK_BREAKS) block->type = BLOCK_RETURNS;
-			break;
-		case TK_BRAC_L:
-			stmt = block_statement(p, block->scope);
-			if ((stmt->value.block)->type == BLOCK_RETURNS && block->type != BLOCK_BREAKS)
-				block->type = BLOCK_RETURNS;
-			break;
-		default: {
-			stmt = create_stmt_expr(expression(p, block->scope));
+	if (nmsp->type != IDF_NAMESPACE) {
+		if (nmsp->type != IDF_UNDECLARED) {
+			// item already exists with the same name
+			
+			
+			parser_error(p,
+						 peek(p),
+						 0,
+						 "error: unable to create namespace; %s already exists with the same name",
+						 get_idf_type_string(nmsp->type)
+			 );
+			
+			return create_stmt_err();
 		}
+		
+		nmsp->type = IDF_NAMESPACE;
+		// namespaces must always have a child scope
+		if (nmsp->child_scope == NULL)
+			nmsp->child_scope = scope_create(parent);
 	}
 	
-	vector_add(&block->stmt_vec, stmt);
+	heck_block* block = parse_block(p, nmsp->child_scope, STMT_FLAG_GLOBAL);
 	
+	return create_stmt_block(block);
 }
 
-// for statements outside of functions
-void global_statement(parser* p, heck_block* block) {
-	
-	heck_stmt* stmt = NULL;
-	
-	heck_token* t = peek(p);
-	switch (t->type) {
-		case TK_KW_LET:
-			stmt = let_statement(p, block->scope);
-			break;
-		case TK_KW_IF:
-			stmt = if_statement(p, block->scope, false);
-			break;
-		case TK_KW_FUNCTION:
-			func_decl(p, block->scope);
-			return;
-			break;
-		case TK_KW_CLASS:
-			class_decl(p, block->scope);
-			return;
-			break;
-		case TK_KW_RETURN:
-			//stmt = ret_statement(p);
-//			fprintf(stderr, "error: return statement outside function, ln %i ch %i\n", t->ln, t->ch);
-//			panic_mode(p);
-			parser_error(p, t, 0, "return statement outside function");
-			return;
-			break;
-		case TK_BRAC_L:
-			stmt = global_block_statement(p, block->scope);
-			break;
-		default:
-			stmt = create_stmt_expr(expression(p, block->scope));
-	}
-	
-	vector_add(&block->stmt_vec, stmt);
+// parses statements in the global scope
+void parse_statement(parser* p, heck_block* block, uint8_t flags) {
+		
+		heck_stmt* stmt = NULL;
+		
+		heck_token* t = peek(p);
+		switch (t->type) {
+			case TK_KW_LET:
+				stmt = let_statement(p, block->scope);
+				break;
+			case TK_KW_IF:
+				stmt = if_statement(p, block->scope, flags);
+				break;
+			case TK_KW_NAMESPACE:
+				if (STMT_IN_GLOBAL(flags)) {
+					stmt = namespace(p, block->scope);
+				} else {
+					parser_error(p, peek(p), 0, "declaration of a namespace outside of the global scope");
+					return;
+				}
+				break;
+			case TK_KW_FUNC:
+//				if (STMT_IN_GLOBAL(flags) || flags == STMT_FLAG_FUNC) {
+//					func_decl(p, block->scope);
+//				} else {
+//					parser_error(p, peek(p), 0, "you cannot declare a function here");
+//				}
+				
+				// currently in heck you can declare a function anywhere
+				func_decl(p, block->scope);
+				return;
+				break;
+			case TK_KW_CLASS:
+				class_decl(p, block->scope);
+				return;
+				break;
+			case TK_KW_RETURN:
+				//stmt = ret_statement(p);
+	//			fprintf(stderr, "error: return statement outside function, ln %i ch %i\n", t->ln, t->ch);
+	//			panic_mode(p);
+				
+				if (STMT_IN_FUNC(flags)) {
+					stmt = ret_statement(p, block->scope);
+				} else {
+					parser_error(p, t, 0, "return statement outside function");
+				}
+				return;
+				break;
+			case TK_BRAC_L:
+				stmt = block_statement(p, block->scope, flags);
+				break;
+			default:
+				stmt = create_stmt_expr(expression(p, block->scope));
+		}
+		
+		vector_add(&block->stmt_vec, stmt);
 }
 
 bool heck_parse(heck_code* c) {
@@ -1135,7 +1162,7 @@ bool heck_parse(heck_code* c) {
 	
 	for (;;) {
 		
-		global_statement(&p, c->global);
+		parse_statement(&p, c->global, STMT_FLAG_GLOBAL);
 		
 		if (at_end(&p))
 			break;

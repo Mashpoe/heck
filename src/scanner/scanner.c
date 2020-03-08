@@ -459,11 +459,14 @@ bool heck_scan(heck_code* c, FILE* f) {
 					} else if (strcmp(token, "let") == 0) {
 						add_token(c, &fp, TK_KW_LET);
 						
-					} else if (strcmp(token, "function") == 0) {
-						add_token(c, &fp, TK_KW_FUNCTION);
+					} else if (strcmp(token, "func") == 0) {
+						add_token(c, &fp, TK_KW_FUNC);
 
 					} else if (strcmp(token, "class") == 0) {
 						add_token(c, &fp, TK_KW_CLASS);
+
+					} else if (strcmp(token, "namespace") == 0) {
+						add_token(c, &fp, TK_KW_NAMESPACE);
 
 					} else if (strcmp(token, "public") == 0) {
 						add_token(c, &fp, TK_KW_PUBLIC);

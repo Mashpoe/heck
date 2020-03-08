@@ -68,7 +68,7 @@ struct heck_data_type {
 	union {
 		heck_class_type class_type;
 		heck_data_type* arr_type; // recursive structure
-		//heck_type_arg_list type_arg_list;
+		const heck_data_type* prim_arr_type;
 	} type_value;
 };
 // resolve callback

@@ -20,7 +20,7 @@
 /*
 let a = run()
 
-function run() {
+func run() {
 	return a
 }*/
 

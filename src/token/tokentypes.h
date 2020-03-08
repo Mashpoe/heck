@@ -107,7 +107,7 @@ typedef enum heck_tk_type {
 	TK_KW_SWITCH,
 	TK_KW_CASE,
 	TK_KW_LET,
-	TK_KW_FUNCTION,
+	TK_KW_FUNC,
 	TK_KW_OPERATOR,
 	TK_KW_RETURN,
 	TK_KW_CLASS,
@@ -123,70 +123,5 @@ typedef enum heck_tk_type {
 	// ALL TYPES
 	TK_PRIM_TYPE,		// primitive data type (heck_prim_type)
 } heck_tk_type;
-
-typedef enum heck_kw_type {
-	KW_IF,
-	KW_ELSE,
-	KW_DO,
-	KW_WHILE,
-	KW_FOR,
-	KW_SWITCH,
-	KW_CASE,
-	KW_LET,
-	KW_FUN,			// function
-	KW_RETURN,
-	KW_CLASS,
-	KW_PUBLIC,
-	KW_PRIVATE
-} heck_kw_type;
-
-// anything that can be used in an expression, in order of precedence (further down = lower precedence)
-// https://en.wikipedia.org/wiki/Operators_in_C_and_C%2B%2B#Operator_precedence
-typedef enum heck_op_type {
-	OP_INCR,		// ++
-	OP_DECR,		// --
-	OP_NOT,			// !
-	OP_BW_NOT,		// ~
-	OP_EXP,			// **
-	OP_MULT,		// *
-	OP_DIV,			// /
-	OP_MOD,			// %
-	OP_ADD,			// +
-	OP_SUB,			// -
-	OP_SHFT_L,		// <<
-	OP_SHFT_R,		// >>
-	
-	// these 3 are placed before the comparison operators unlike c and c++
-	// this is intentional, so the expression (flags & MASK == FLAG)
-	// evaluates to ((flags & MASK) == FLAG) instead of (flags & (MASK == FLAG))
-	// http://www.craftinginterpreters.com/parsing-expressions.html#design-note
-	// https://en.wikipedia.org/wiki/Operators_in_C_and_C%2B%2B#Criticism_of_bitwise_and_equality_operators_precedence
-	OP_BW_AND,		// &
-	OP_BW_XOR,		// ^
-	OP_BW_OR,		// |
-	
-	OP_AND,			// &&
-	OP_XOR,			// ^^ that's right, I'm adding the logical XOR operator!
-	OP_OR,			// ||
-	OP_LESS,		// <
-	OP_LESS_EQ,		// <=
-	OP_GT,			// >
-	OP_GT_EQ,		// >=
-	OP_EQ,			// ==
-	OP_N_EQ,		// !=
-	OP_ASG,			// =
-	OP_MULT_ASG,	// *=
-	OP_DIV_ASG,		// /=
-	OP_MOD_ASG,		// %=
-	OP_ADD_ASG,		// +=
-	OP_SUB_ASG,		// -=
-	OP_BW_AND_ASG,	// &=
-	OP_BW_OR_ASG,	// |=
-	OP_BW_XOR_ASG,	// ^=
-	OP_BW_NOT_ASG,	// ~=
-	OP_SHFT_L_ASG,	// <<=
-	OP_SHFT_R_ASG,	// >>=
-	OP_DOT			// .
-} heck_op_type;
 
 #endif /* tokentypes_h */

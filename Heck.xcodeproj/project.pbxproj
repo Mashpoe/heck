@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2A1A574823FE0F7B00532850 /* print.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A1A574723FE0F7B00532850 /* print.c */; };
 		2A3DC77F2364E60800499743 /* error.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A3DC77E2364E60800499743 /* error.c */; };
 		2AC46AC5238453BB00877DCE /* vec.c in Sources */ = {isa = PBXBuildFile; fileRef = 2AC46AC3238453BB00877DCE /* vec.c */; };
 		2ACE37E923453C4400113318 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 2ACE37B023453C4400113318 /* main.c */; };
@@ -46,6 +47,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		2A1A574623FE0F7B00532850 /* print.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = print.h; sourceTree = "<group>"; };
+		2A1A574723FE0F7B00532850 /* print.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = print.c; sourceTree = "<group>"; };
 		2A2F26B62346339A00B00C9E /* context.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = context.h; sourceTree = "<group>"; };
 		2A3DC77D2364E60800499743 /* error.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = error.h; sourceTree = "<group>"; };
 		2A3DC77E2364E60800499743 /* error.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = error.c; sourceTree = "<group>"; };
@@ -117,6 +120,8 @@
 			children = (
 				2A3DC77D2364E60800499743 /* error.h */,
 				2A3DC77E2364E60800499743 /* error.c */,
+				2A1A574623FE0F7B00532850 /* print.h */,
+				2A1A574723FE0F7B00532850 /* print.c */,
 			);
 			path = error;
 			sourceTree = "<group>";
@@ -372,6 +377,7 @@
 				2ACE37EB23453C4400113318 /* compiler.c in Sources */,
 				2ACE37F423453C4400113318 /* literal.c in Sources */,
 				2ACE37F723453C4400113318 /* resolver.c in Sources */,
+				2A1A574823FE0F7B00532850 /* print.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -8,6 +8,7 @@
 //#include "statement.h"
 #include "scope.h"
 #include "function.h"
+#include "print.h"
 #include <stdio.h>
 
 heck_stmt* create_stmt_expr(heck_expr* expr) {
@@ -33,9 +34,13 @@ heck_stmt* create_stmt_let(str_entry name, heck_expr* value) {
 
 heck_if_node* create_if_node(heck_expr* condition, heck_scope* parent) {
 	heck_if_node* node = malloc(sizeof(heck_if_node));
+	
 	node->condition = condition;
-	node->code = block_create(parent);
 	node->next = NULL;
+	
+	heck_scope* block_scope = scope_create(parent);
+	node->code = block_create(block_scope);
+	
 	
 	return node;
 }
@@ -49,16 +54,6 @@ heck_stmt* create_stmt_if(heck_if_node* contents) {
 	if_stmt->contents = contents;
 	
 	s->value.if_stmt = if_stmt;
-	return s;
-}
-
-heck_stmt* create_stmt_ret(heck_expr* expr) {
-	heck_stmt* s = malloc(sizeof(heck_stmt));
-	s->type = STMT_RET;
-	s->vtable = &stmt_vtable_ret;
-	
-	s->value.expr = expr;
-	
 	return s;
 }
 
@@ -88,10 +83,20 @@ heck_stmt* create_stmt_func(heck_func* func) {
 	return s;
 }
 
-heck_block* block_create(heck_scope* parent) {
+heck_stmt* create_stmt_ret(heck_expr* expr) {
+	heck_stmt* s = malloc(sizeof(heck_stmt));
+	s->type = STMT_RET;
+	s->vtable = &stmt_vtable_ret;
+	
+	s->value.expr = expr;
+	
+	return s;
+}
+
+heck_block* block_create(heck_scope* child) {
 	heck_block* block_stmt = malloc(sizeof(heck_block));
 	block_stmt->stmt_vec = vector_create();
-	block_stmt->scope = scope_create(parent);
+	block_stmt->scope = child;
 	block_stmt->type = BLOCK_DEFAULT;
 	
 	return block_stmt;
@@ -158,9 +163,7 @@ void print_block(heck_block* block, int indent) {
 		print_stmt(((heck_stmt**)block->stmt_vec)[i], indent + 1);
 	}
 	
-	for (int i = 0; i < indent; ++i) {
-		printf("\t");
-	}
+	print_indent(indent);
 	printf("}\n");
 }
 
@@ -174,9 +177,7 @@ inline void free_stmt(heck_stmt* stmt) {
 }
 inline void print_stmt(heck_stmt* stmt, int indent) {
 	
-	for (int i = 0; i < indent; ++i) {
-		printf("\t");
-	}
+	print_indent(indent);
 	
 	stmt->vtable->print(stmt, indent);
 }
@@ -258,8 +259,11 @@ void free_stmt_let(heck_stmt* stmt) {
 }
 void print_stmt_let(heck_stmt* stmt, int indent) {
 	heck_stmt_let* let_stmt = stmt->value.let_stmt;
-	printf("let [%s] = ", let_stmt->name->value);
-	print_expr(let_stmt->value);
+	printf("let [%s]", let_stmt->name->value);
+	if (let_stmt->value != NULL) {
+		printf(" = ");
+		print_expr(let_stmt->value);
+	}
 	printf("\n");
 }
 
@@ -293,9 +297,7 @@ void print_stmt_if(heck_stmt* stmt, int indent) {
 		}
 			
 		node = node->next;
-		for (int i = 0; i < indent; ++i) {
-			printf("\t");
-		}
+		print_indent(indent);
 		
 		if (node->condition == NULL) {
 			printf("else ");

@@ -7,6 +7,7 @@
 
 #include "function.h"
 #include "scope.h"
+#include "print.h"
 
 heck_param* param_create(str_entry name) {
 	heck_param* param = malloc(sizeof(heck_param));
@@ -23,7 +24,9 @@ heck_func* func_create(heck_scope* parent, bool declared) {
 	heck_func* func = malloc(sizeof(heck_func));
 	func->declared = declared;
 	func->param_vec = vector_create();
-	func->code = block_create(parent);
+	
+	heck_scope* block_scope = scope_create(parent);
+	func->code = block_create(block_scope);
 	func->return_type = NULL; // unknown
 	
 	return func;
@@ -166,12 +169,11 @@ void print_func_defs(heck_func_list* list, const char* name, int indent) {
 	for (vec_size_t i = 0; i < num_defs; ++i) {
 		heck_func* func = ((heck_func**)list->func_vec)[i];
 		
-		for (int j = 0; j < indent; j++)
-			putchar('\t');
+		print_indent(indent);
 		
 		if (!func->declared)
 			printf("undeclared ");
-		printf("function %s(", name);
+		printf("func %s(", name);
 		
 		vec_size_t num_params = vector_size(func->param_vec);
 		if (num_params > 0) {
