@@ -340,12 +340,20 @@ bool heck_scan(heck_code* c, FILE* f) {
 					
 				} else if (match_str(&fp, "/*")) { // multiline comment
 					
-					while (!match_str(&fp, "*/")) { // look for the closing "*/"
-						// stop if we reach the end of the file
+					// keep track of nested block comments
+					int unmatched = 1;
+					
+					do {
+						if (match_str(&fp, "*/")) {
+							--unmatched;
+						} else if (match_str(&fp, "/*")) {
+							++unmatched;
+						}
 						if (scan_step(&fp) == '\0') {
 							break;
 						}
-					}
+					} while (unmatched > 0);
+					
 					continue;
 					
 				} else if (match_str(&fp, "/=")) {
