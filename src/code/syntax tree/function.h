@@ -35,15 +35,15 @@ typedef union heck_func_value {
 } heck_func_value;
 
 // FUNCTION PARAMETER
-typedef struct heck_param {
-	str_entry name; // name of the parameter
-	
-	heck_data_type* type;
-	heck_idf obj_type; // NULL unless type == TYPE_CLASS
-	
-	heck_expr* def_val; // default value
-} heck_param;
-heck_param* param_create(str_entry name);
+//typedef struct heck_param {
+//	str_entry name; // name of the parameter
+//
+//	heck_data_type* type;
+//	heck_idf obj_type; // NULL unless type == TYPE_CLASS
+//
+//	heck_expr* def_val; // default value
+//} heck_param;
+//heck_param* param_create(str_entry name);
 
 // FUNCTION
 typedef struct heck_func {
@@ -51,9 +51,9 @@ typedef struct heck_func {
 	bool declared; // heck_func implied definition, so we just need to check if there is a declaration
 	bool generic; // if it's generic, use value.gen_inst_vec
 	
-	// if param types are generic, a new overload is added to the function's scope
+	// if param types are generic, a new overload is added to the function's name
 	// each time the function is compiled
-	heck_param** param_vec;
+	heck_variable** param_vec;
 	
 	heck_func_value value;
 	

@@ -27,6 +27,10 @@ bool idf_cmp(heck_idf a, heck_idf b) {
 	return b[pos] == NULL;
 }
 
+inline void free_idf(heck_idf idf) {
+	free(idf);
+}
+
 void print_idf(heck_idf idf) {
 	fprint_idf(stdout, idf);
 }

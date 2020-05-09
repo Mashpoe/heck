@@ -20,6 +20,8 @@ heck_name* name_create(heck_idf_type type, heck_scope* parent) {
 	name->parent = parent;
 	name->child_scope = NULL;
 	
+	name->flags = 0x0; // set all flags to 0
+	
 	return name;
 }
 
@@ -256,6 +258,8 @@ heck_name* scope_add_class(heck_scope* parent, heck_idf idf) {
 	return child;
 }
 
+// this could be made into a macro as a ternary expression
+//#define scope_is_class(scope) ((scope)->class == NULL ? false : (scope)->class->child_scope == (scope))
 inline bool scope_is_class(heck_scope* scope) {
 	if (scope->class == NULL)
 		return false;
@@ -293,9 +297,7 @@ void print_idf_map(str_entry key, void* value, void* user_ptr) {
 			break;
 		case IDF_VARIABLE:
 			print_indent(indent);
-			printf("variable %s: ", key->value);
-			print_expr(name->value.var_value);
-			printf("\n");
+			printf("variable %s\n", key->value);
 			return;
 			break;
 			

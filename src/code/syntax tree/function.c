@@ -9,16 +9,16 @@
 #include "scope.h"
 #include "print.h"
 
-heck_param* param_create(str_entry name) {
-	heck_param* param = malloc(sizeof(heck_param));
-	
-	param->name = name;
-	param->def_val = NULL;
-	param->type = NULL;
-	param->obj_type = NULL;
-	
-	return param;
-}
+//heck_param* param_create(str_entry name) {
+//	heck_param* param = malloc(sizeof(heck_param));
+//	
+//	param->name = name;
+//	param->def_val = NULL;
+//	param->type = NULL;
+//	param->obj_type = NULL;
+//	
+//	return param;
+//}
 
 heck_func* func_create(heck_scope* parent, bool declared) {
 	heck_func* func = malloc(sizeof(heck_func));
@@ -179,12 +179,7 @@ void print_func_defs(heck_func_list* list, const char* name, int indent) {
 		if (num_params > 0) {
 			vec_size_t j = 0;
 			for (;;) {
-				print_data_type(func->param_vec[j]->type);
-				printf(" %s", func->param_vec[j]->name->value);
-				if (func->param_vec[j]->def_val != NULL) {
-					fputs(" = ", stdout);
-					print_expr(func->param_vec[j]->def_val);
-				}
+				print_variable(func->param_vec[j]);
 				if (j == num_params - 1)
 					break;
 				fputs(", ", stdout);

@@ -25,6 +25,7 @@ struct str_obj {
 typedef const struct str_obj* str_entry;
 
 str_entry create_str_entry(const char* value, size_t size);
+// there is no free method because the str_table frees them
 
 //typedef char* string;
 

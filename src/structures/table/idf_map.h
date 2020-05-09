@@ -26,6 +26,8 @@ void idf_map_set(idf_map* m, str_entry key, void* input_val);
 
 int idf_map_size(idf_map* m);
 
+bool idf_map_item_exists(idf_map* m, str_entry key);
+
 // map_iterate is not very fast, used mostly for printing/debugging
 typedef void (*map_callback)(str_entry key, void* value, void* user_ptr);
 void idf_map_iterate(idf_map* m, map_callback callback, void* user_ptr);

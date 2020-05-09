@@ -20,6 +20,10 @@
 
 #include "declarations.h"
 
+enum heck_expr_flags {
+	EXPR_RESOLVED = 0x01
+};
+
 typedef enum heck_expr_type heck_expr_type;
 enum heck_expr_type {
 	EXPR_BINARY,
@@ -112,9 +116,10 @@ typedef struct heck_expr_ternary {
 heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b);
 
 struct heck_expr {
-	heck_expr_type type;
+	heck_expr_type type; // type is exclusive to flags because it can only have one value
 	const heck_data_type* data_type;
 	const expr_vtable* vtable; // resolve callback
+	uint8_t flags; // currently only stores resolved state
 	union {
 		heck_expr_unary* unary;
 		heck_expr_binary* binary;
@@ -135,7 +140,7 @@ void print_expr(heck_expr* expr);
 
 bool resolve_expr(heck_expr* expr, heck_scope* parent, heck_scope* global);
 
-heck_expr* create_expr(heck_expr_type expr_type, const expr_vtable* vtable);
+heck_expr* create_expr(heck_expr_type type, const expr_vtable* vtable);
 
 // precedence 1
 extern const expr_vtable expr_vtable_err;

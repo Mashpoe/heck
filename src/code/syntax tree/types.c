@@ -13,6 +13,7 @@
 heck_data_type* create_data_type(heck_type_name name) {
 	heck_data_type* t = malloc(sizeof(heck_data_type));
 	t->type_name = name;
+	t->flags = 0x0; // set all flags to false
 	
 	return t;
 }
@@ -82,12 +83,12 @@ inline void print_data_type(const heck_data_type* type) {
 	type->vtable->print(type);
 }
 
-const heck_data_type val_data_type_err		= { TYPE_ERR,		&type_vtable_err,		NULL };
-const heck_data_type val_data_type_gen		= { TYPE_GEN, 		&type_vtable_gen,		NULL };
-const heck_data_type val_data_type_int		= { TYPE_INT,		&type_vtable_int,		NULL };
-const heck_data_type val_data_type_float	= { TYPE_FLOAT, 	&type_vtable_float,		NULL };
-const heck_data_type val_data_type_bool		= { TYPE_BOOL,		&type_vtable_bool,		NULL };
-const heck_data_type val_data_type_string	= { TYPE_STRING,	&type_vtable_string,	NULL };
+const heck_data_type val_data_type_err		= { TYPE_ERR,		&type_vtable_err,	0x0, NULL };
+const heck_data_type val_data_type_gen		= { TYPE_GEN, 		&type_vtable_gen,	0x0, NULL };
+const heck_data_type val_data_type_int		= { TYPE_INT,		&type_vtable_int,	0x0, NULL };
+const heck_data_type val_data_type_float	= { TYPE_FLOAT, 	&type_vtable_float,	0x0, NULL };
+const heck_data_type val_data_type_bool		= { TYPE_BOOL,		&type_vtable_bool,	0x0, NULL };
+const heck_data_type val_data_type_string	= { TYPE_STRING,	&type_vtable_string,0x0, NULL };
 
 
 // primitives are already resolved, resolve methods return true

@@ -46,8 +46,8 @@ void step(parser* p) {
 	//return p->code->token_vec[++p->pos];
 	p->pos++;
 }
-extern void n_step(parser* p, int n);
-inline void n_step(parser* p, int n) {
+extern void step_n(parser* p, int n);
+inline void step_n(parser* p, int n) {
 	p->pos += n;
 }
 
@@ -80,8 +80,9 @@ inline bool peek_newline(parser* p) {
 //p is a parser*
 //force inlining via the preprocessor
 #define step(p)			((void)			((p)->pos++))
-#define n_step(p, n)	((void)			((p)->pos+=n))
+#define step_n(p, n)	((void)			((p)->pos+=(n)))
 #define peek(p)			((heck_token*)	((p)->code->token_vec[(p)->pos]))
+#define peek_n(p, n)	((heck_token*)	((p)->code->token_vec[(p)->pos+(n)]))
 #define previous(p)		((heck_token*)	((p)->code->token_vec[(p)->pos-1]))
 #define next(p)			((heck_token*)	((p)->code->token_vec[(p)->pos+1]))
 #define at_end(p)		((bool)			(peek(p)->type == TK_EOF))
@@ -136,14 +137,15 @@ void panic_until_match(parser* p, heck_tk_type type) {
 	}
 }
 
-void parser_error(parser* p, heck_token* tk, int ch_offset, const char* format, ...) {
+void parser_error(parser* p, heck_token* tk, bool panic, const char* format, ...) {
 	fputs("error: ", stderr);
 	va_list argptr;
 	va_start(argptr, format);
 	vfprintf(stderr, format, argptr);
 	va_end(argptr);
-	fprintf(stderr, " - ln %i ch %i\n", tk->ln, tk->ch + ch_offset);
-	panic_mode(p);
+	fprintf(stderr, " - ln %i ch %i\n", tk->ln, tk->ch);
+	if (panic)
+		panic_mode(p);
 }
 
 /*
@@ -154,10 +156,10 @@ void parser_error(parser* p, heck_token* tk, int ch_offset, const char* format, 
 
 // forward declarations
 // TODO: rename to parse_idf
-heck_idf identifier(parser* p, heck_scope* parent);
+heck_idf identifier(parser* p);
 
-// TODO: return TYPE_ERROR instead of null
-const heck_data_type* parse_data_type(parser* p, heck_scope* parent) {
+// returns NULL on failure, but it might be changed to type_error
+heck_data_type* parse_data_type(parser* p, heck_scope* parent) {
 	step(p);
 	
 	heck_data_type* t = NULL;
@@ -165,14 +167,14 @@ const heck_data_type* parse_data_type(parser* p, heck_scope* parent) {
 	switch (previous(p)->type) {
 		case TK_IDF: {
 			t = create_data_type(TYPE_CLASS);
-			t->type_value.class_type.value.name = identifier(p, parent);
+			t->type_value.class_type.value.name = identifier(p);
 			t->type_value.class_type.parent = parent;
 			
 			if (match(p, TK_COLON)) {
 				
 				if (!match(p, TK_SQR_L)) {
-					parser_error(p, peek(p), 0, "expected a type argument list");
-					return data_type_err;
+					parser_error(p, peek(p), true, "expected a type argument list");
+					return NULL;
 				}
 				
 				t->type_value.class_type.type_args.type_vec = vector_create();
@@ -186,7 +188,7 @@ const heck_data_type* parse_data_type(parser* p, heck_scope* parent) {
 						// we do not need to call panic_mode() because it was called by parse_type_depth
 						// don't print error; child type already did
 						free_data_type(t);
-						return data_type_err;
+						return NULL;
 					}
 					
 					vector_add(&t->type_value.class_type.type_args.type_vec, (heck_data_type*)type_arg);
@@ -195,9 +197,9 @@ const heck_data_type* parse_data_type(parser* p, heck_scope* parent) {
 					if (!match(p, TK_COMMA)) {
 						
 						if (!match(p, TK_SQR_R)) {
-							parser_error(p, peek(p), 0, "expected ']'");
+							parser_error(p, peek(p), true, "expected ']'");
 							free_data_type(t);
-							return data_type_err;
+							return NULL;
 						}
 						
 						break;
@@ -221,7 +223,7 @@ const heck_data_type* parse_data_type(parser* p, heck_scope* parent) {
 			heck_token* err_tk = previous(p);
 			fprintf(stderr, "error: expected a type, ln %i ch %i\n", err_tk->ln, err_tk->ch);
 			panic_mode(p);
-			return data_type_err;
+			return NULL;
 		}
 	}
 	
@@ -236,7 +238,7 @@ const heck_data_type* parse_data_type(parser* p, heck_scope* parent) {
 			fprintf(stderr, "error: expected ']'\n");
 			panic_mode(p);
 			free_data_type(t);
-			return data_type_err;
+			return NULL;
 		}
 		
 	}
@@ -261,7 +263,7 @@ heck_stmt* parse_declaration(parser* p) {
 // forward declarations:
 heck_expr* expression(parser* p, heck_scope* parent);
 
-heck_idf identifier(parser* p, heck_scope* parent) { // assumes an identifier was just found with match(p)
+heck_idf identifier(parser* p) { // assumes an identifier was just found with match(p)
 	
 	int len = 0, alloc = 1;
 	str_entry* idf = malloc(sizeof(str_entry) * (alloc + 1));
@@ -278,7 +280,7 @@ heck_idf identifier(parser* p, heck_scope* parent) { // assumes an identifier wa
 			this allows the parser to handle the dot on its own */
 		if (peek(p)->type == TK_DOT && next(p)->type == TK_IDF) {
 			// double step
-			n_step(p, 2);
+			step_n(p, 2);
 			continue;
 		}
 			
@@ -298,7 +300,7 @@ heck_expr* parse_func_expr(parser* p, heck_scope* parent) {
 
 heck_expr* primary_idf(parser* p, heck_scope* parent, idf_context context) { // assumes an idf was already matched
 	//heck_idf name = identifier(p);
-	heck_expr* idf_expr = create_expr_value(identifier(p, parent), context);
+	heck_expr* idf_expr = create_expr_value(identifier(p), context);
 		
 	if (match(p, TK_PAR_L)) { // function call
 		heck_expr* call = create_expr_call(idf_expr);
@@ -312,7 +314,7 @@ heck_expr* primary_idf(parser* p, heck_scope* parent, idf_context context) { // 
 			if (match(p, TK_PAR_R)) {
 				return call;
 			} else if (!match(p, TK_COMMA)) {
-				parser_error(p, peek(p), 0, "expected ')'");
+				parser_error(p, peek(p), true, "expected ')'");
 				break;
 			}
 		}
@@ -339,7 +341,7 @@ heck_expr* primary(parser* p, heck_scope* parent) {
 		if (match(p, TK_PAR_R)) {
 			return expr;
 		} else {
-			parser_error(p, peek(p), 0, "expected ')'");
+			parser_error(p, peek(p), true, "expected ')'");
 			return create_expr_err();
 		}
 	}
@@ -354,12 +356,12 @@ heck_expr* primary(parser* p, heck_scope* parent) {
 		if (match(p, TK_DOT) && match(p, TK_IDF)) {
 			return primary_idf(p, parent, ctx);
 		} else {
-			parser_error(p, peek(p), 0, "expected an identifier");
+			parser_error(p, peek(p), true, "expected an identifier");
 			return create_expr_err();
 		}
 	}
 
-	parser_error(p, peek(p), 0, "expected an expression");
+	parser_error(p, peek(p), true, "expected an expression");
 	return create_expr_err();
 }
 
@@ -382,7 +384,7 @@ heck_expr* unary(parser* p, heck_scope* parent) {
 				return create_expr_err();
 			if (data_type->type_name != TYPE_CLASS || data_type->type_value.class_type.type_args.type_vec == NULL) {
 				if (!match(p, TK_OP_GTR)) {
-					parser_error(p, peek(p), 0, "unexpected token");
+					parser_error(p, peek(p), true, "unexpected token");
 					return create_expr_err();
 				}
 			}
@@ -593,28 +595,66 @@ enum stmt_flag {
 // forward declarations
 void parse_statement(parser* p, heck_block* block, uint8_t flags);
 
+// returns NULL on failure
+heck_variable* variable_decl(parser* p, heck_scope* parent) {
+	if (!match(p, TK_IDF)) {
+		parser_error(p, peek(p), true, "expected an identifier");
+		return NULL;
+	}
+	
+	str_entry name = previous(p)->value.str_value;
+	heck_data_type* type;
+	heck_expr* value;
+	
+	if (match(p, TK_COLON)) {
+		type = parse_data_type(p, parent);
+		if (type == NULL)
+			// no need to report an error because parse_data_type already did
+			return NULL;
+	} else {
+		type = NULL;
+	}
+	
+	if (match(p, TK_OP_ASG)) {
+		// no need to worry about errors or returning null,
+		// expression errors are separate
+		value = expression(p, parent);
+	} else {
+		value = NULL;
+	}
+	
+	return create_variable(name, type, value);
+	
+}
+
 heck_stmt* let_statement(parser* p, heck_scope* parent) {
 	step(p);
 	
-	// TODO: add support for explicit type in let statement
-	if (match(p, TK_IDF)) {
-		str_entry name = previous(p)->value.str_value;
-		
-		// initialization is optional if the type is specified
-		// you get an error for using an uninitialized variable
-		return create_stmt_let(name, match(p, TK_OP_ASG) ? expression(p, parent) : NULL);
-//		if (match(p, TK_OP_ASG)) { // =
-//			return create_stmt_let(name, expression(p, parent));
-//		} else {
-//			// TODO: report expected '='
-//			heck_token* err_token = peek(p);
-//			fprintf(stderr, "error: expected '=', ln %i ch %i\n", err_token->ln, err_token->ch);
-//		}
-	} else {
-		// TODO: report expected identifier
+	heck_variable* variable = variable_decl(p, parent);
+	if (variable == NULL) {
+		panic_mode(p);
+		return create_stmt_err();
 	}
-	panic_mode(p);
-	return create_stmt_err();
+	
+	if (idf_map_item_exists(parent->names, variable->name)) {
+		// go back to the error token
+		int offset = -1; // the let token is at least one token behind
+		heck_token* current;
+		do {
+			current = peek_n(p, offset);
+			--offset;
+		} while(current->type != TK_KW_LET);
+		
+		parser_error(p, current, false, "variable %s was already declared in this scope", variable->name->value);
+		free_variable(variable);
+		return create_stmt_err();
+	}
+	
+	// add the variable to the scope
+	heck_name* var_name = name_create(IDF_VARIABLE, parent);
+	idf_map_set(parent->names, variable->name, var_name);
+	
+	return create_stmt_let(variable);
 }
 
 // parses a block using a given child scope
@@ -624,7 +664,7 @@ heck_block* parse_block(parser* p, heck_scope* child, uint8_t flags) {
 
 	for (;;) {
 		if (at_end(p)) {
-			parser_error(p, peek(p), 0, "unexpected EOF");
+			parser_error(p, peek(p), true, "unexpected EOF");
 			break;
 		} else if (match(p, TK_BRAC_R)) {
 			break;
@@ -632,7 +672,7 @@ heck_block* parse_block(parser* p, heck_scope* child, uint8_t flags) {
 			parse_statement(p, block, flags);
 			
 			if (!at_newline(p) && !match(p, TK_SEMI)) {
-				parser_error(p, peek(p), 0, "expected ; or newline");
+				parser_error(p, peek(p), true, "expected ; or newline");
 			}
 		}
 		
@@ -714,7 +754,7 @@ heck_stmt* if_statement(parser* p, heck_scope* parent, uint8_t flags) {
 bool parse_parameters(parser* p, heck_func* func, heck_scope* parent) {
 	
 	if (!match(p, TK_PAR_L)) {
-		parser_error(p, peek(p), 0, "expected (");
+		parser_error(p, peek(p), true, "expected (");
 		return false;
 	}
 	
@@ -723,64 +763,12 @@ bool parse_parameters(parser* p, heck_func* func, heck_scope* parent) {
 		
 		for (;;) {
 			
-			// create the parameter
-			const heck_data_type* param_type = parse_data_type(p, parent);
+			heck_variable* param = variable_decl(p, parent);
 			
-			if (param_type->type_name == TYPE_ERR) return false;
-			
-			heck_idf param_name = NULL;
-			if (match(p, TK_IDF)) {
-				param_name = identifier(p, parent);
-			} else if (param_type->type_name == TYPE_CLASS && ((heck_idf)param_type->type_value.class_type.value.name)[1] == NULL) {
-				// transfer ownership of the class identifier from param_type to param_name
-				param_name = param_type->type_value.class_type.value.name;
-				free((heck_data_type*)param_type);
-				// make param_type generic
-				param_type = data_type_gen;
-			} else {
-				parser_error(p, peek(p), 0, "expected a name for a function parameter");
-			}
-			
-			//heck_idf param_type = NULL;
-			//heck_idf param_name = identifier(p);
-			
-			if (!param_name) return false;
-			
-			if (param_name[1] != NULL) { // if element[1] is null than the identifier has one value
-				// TODO: report invalid parameter name (must not contain '.' separated values)
-				parser_error(p, peek(p), 0, "invalid parameter name (must not contain '.' separated values)");
-				
-				if (param_type != NULL) {
-					free((void*)param_type);
-				}
-				free((void*)param_name);
+			if (param == NULL) {
+				panic_mode(p);
 				return false;
 			}
-			
-			// check for duplicate parameter names
-			vec_size_t param_count = vector_size(func->param_vec);
-			for (vec_size_t i = 0; i < param_count; ++i) {
-				if (func->param_vec[i]->name == param_name[0]) {
-					heck_token* err_tk = previous(p);
-					fprintf(stderr, "error: duplicate parameter name, ln %i ch %i\n", err_tk->ln, err_tk->ch);
-					panic_mode(p);
-					return false;
-				}
-			}
-			
-			
-			heck_param* param = param_create(param_name[0]);
-			free((void*)param_name);
-			
-			param->type = param_type;
-			
-			// transfer ownership of the parameter's name string from param_name to param->name
-			param->name = param_name[0];
-			//free((void*)param_name);
-			
-			if (match(p, TK_OP_ASG)) { // handle default argument values (e.g. arg = expr)
-				param->def_val = expression(p, parent);
-			}//dddddd
 			
 			vector_add(&func->param_vec, param);
 			
@@ -808,11 +796,11 @@ void func_decl(parser* p, heck_scope* parent) {
 	heck_name* func_name; // can be either a function or a class in the case of operator overloading ??
 	heck_scope* func_scope; // the parent scope of the function (function names don't have child scopes)
 	if (match(p, TK_IDF)) {
-		func_idf = identifier(p, parent);
+		func_idf = identifier(p);
 		func_name = scope_get_child(parent, func_idf);
 		
 		if (func_name == NULL) {
-			parser_error(p, peek(p), 0, "unable to create function");
+			parser_error(p, peek(p), true, "unable to create function");
 			return;
 		}
 		
@@ -832,10 +820,11 @@ void func_decl(parser* p, heck_scope* parent) {
 	heck_func* func = NULL;
 	//heck_func_list* overload_list = NULL; // the list that we add the func to
 	
+	// check for an operator overload
 	if (func_idf == NULL || match(p, TK_DOT)) {
 		
 		if (!match(p, TK_KW_OPERATOR)) {
-			parser_error(p, peek(p), 0, "expected a function name");
+			parser_error(p, peek(p), true, "expected a function name");
 			return;
 		}
 		
@@ -885,7 +874,7 @@ void func_decl(parser* p, heck_scope* parent) {
 		// add to the correct class overload vector
 		if (!add_op_overload(func_name->value.class_value, &overload_type, func)) {
 			func_free(func);
-			parser_error(p, peek(p), 0, "duplicate operator overload declaration");
+			parser_error(p, peek(p), true, "duplicate operator overload declaration");
 			return;
 		}
 		
@@ -947,7 +936,7 @@ void func_decl(parser* p, heck_scope* parent) {
 		func->code = parse_block(p, block_scope, STMT_FLAG_FUNC);
 		
 		if (func->code->type == BLOCK_MAY_RETURN) {
-			parser_error(p, peek(p), 0, "function only returns in some cases");
+			parser_error(p, peek(p), true, "function only returns in some cases");
 		}
 		
 	} else {
@@ -955,7 +944,7 @@ void func_decl(parser* p, heck_scope* parent) {
 		// populate function with only an error
 		//_vector_add(&func->stmt_vec, heck_stmt*) = create_stmt_err();
 		
-		parser_error(p, peek(p), 0, "expected '}'");
+		parser_error(p, peek(p), true, "expected '}'");
 	}
 	
 	return;
@@ -969,7 +958,6 @@ heck_stmt* ret_statement(parser* p, heck_scope* parent) {
 	if (peek(p)->type == TK_SEMI || at_newline(p)) {
 		return create_stmt_ret(NULL);
 	}
-	heck_token* t = peek(p);
 	return create_stmt_ret(expression(p, parent));
 }
 
@@ -978,11 +966,11 @@ void class_decl(parser* p, heck_scope* parent) {
 	step(p);
 	
 	if (!match(p, TK_IDF)) {
-		parser_error(p, peek(p), 0, "expected an identifier");
+		parser_error(p, peek(p), true, "expected an identifier");
 		return;
 	}
 	
-	heck_idf class_idf = identifier(p, parent);
+	heck_idf class_idf = identifier(p);
 	
 	heck_name* class_name = scope_add_class(parent, class_idf);
 
@@ -1000,12 +988,12 @@ void class_decl(parser* p, heck_scope* parent) {
 			
 			if (match(p, TK_KW_FRIEND) && match(p, TK_IDF)) {
 				// friend will be resolved later
-				vector_add(&class->friend_vec, identifier(p, parent));
+				vector_add(&class->friend_vec, identifier(p));
 			} else if (match(p, TK_IDF)) {
 				// parent will be resolved later
-				vector_add(&class->parent_vec, identifier(p, parent));
+				vector_add(&class->parent_vec, identifier(p));
 			} else {
-				parser_error(p, peek(p), 0, "unexpected token");
+				parser_error(p, peek(p), true, "unexpected token");
 				return;
 			}
 			
@@ -1017,7 +1005,7 @@ void class_decl(parser* p, heck_scope* parent) {
 	}
 	
 	if (!match(p, TK_BRAC_L)) {
-		parser_error(p, peek(p), 0, "expected '{'");
+		parser_error(p, peek(p), true, "expected '{'");
 		return;
 	}
 	
@@ -1061,14 +1049,14 @@ heck_stmt* namespace(parser* p, heck_scope* parent) {
 	step(p);
 	
 	if (!match(p, TK_IDF)) {
-		parser_error(p, peek(p), 0, "expected an identifier");
+		parser_error(p, peek(p), true, "expected an identifier");
 		return create_stmt_err();
 	}
 	
-	heck_name* nmsp = scope_get_child(parent, identifier(p, parent));
+	heck_name* nmsp = scope_get_child(parent, identifier(p));
 	
 	if (nmsp == NULL) {
-		parser_error(p, peek(p), 0, "error: unable to create namespace");
+		parser_error(p, peek(p), true, "error: unable to create namespace");
 		return create_stmt_err();
 	}
 	
@@ -1098,7 +1086,6 @@ heck_stmt* namespace(parser* p, heck_scope* parent) {
 	return create_stmt_block(block);
 }
 
-// parses statements in the global scope
 void parse_statement(parser* p, heck_block* block, uint8_t flags) {
 		
 		heck_stmt* stmt = NULL;
@@ -1115,7 +1102,7 @@ void parse_statement(parser* p, heck_block* block, uint8_t flags) {
 				if (STMT_IN_GLOBAL(flags)) {
 					stmt = namespace(p, block->scope);
 				} else {
-					parser_error(p, peek(p), 0, "declaration of a namespace outside of the global scope");
+					parser_error(p, peek(p), true, "declaration of a namespace outside of the global scope");
 					return;
 				}
 				break;
@@ -1123,7 +1110,7 @@ void parse_statement(parser* p, heck_block* block, uint8_t flags) {
 //				if (STMT_IN_GLOBAL(flags) || flags == STMT_FLAG_FUNC) {
 //					func_decl(p, block->scope);
 //				} else {
-//					parser_error(p, peek(p), 0, "you cannot declare a function here");
+//					parser_error(p, peek(p), true, "you cannot declare a function here");
 //				}
 				
 				// currently in heck you can declare a function anywhere
@@ -1142,7 +1129,7 @@ void parse_statement(parser* p, heck_block* block, uint8_t flags) {
 				if (STMT_IN_FUNC(flags)) {
 					stmt = ret_statement(p, block->scope);
 				} else {
-					parser_error(p, t, 0, "return statement outside function");
+					parser_error(p, t, true, "return statement outside function");
 				}
 				return;
 				break;
@@ -1169,7 +1156,7 @@ bool heck_parse(heck_code* c) {
 		
 		// TODO: check for newline or ;
 		if (!at_newline(&p) && !match(&p, TK_SEMI)) {
-			parser_error(&p, peek(&p), 0, "expected ; or newline");
+			parser_error(&p, peek(&p), true, "expected ; or newline");
 		}
 	}
 	

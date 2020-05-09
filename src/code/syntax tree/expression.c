@@ -11,11 +11,12 @@
 #include "scope.h"
 #include "function.h"
 
-inline heck_expr* create_expr(heck_expr_type expr_type, const expr_vtable* vtable) {
+inline heck_expr* create_expr(heck_expr_type type, const expr_vtable* vtable) {
 	heck_expr* e = malloc(sizeof(heck_expr));
-	e->type = expr_type;
+	e->type = type;
 	e->vtable = vtable;
 	e->data_type = NULL; // or make TYPE_UNKNOWN
+	e->flags = 0x0; // set all flags to false
 	return e;
 }
 
@@ -424,7 +425,7 @@ bool resolve_expr_value(heck_expr* expr, heck_scope* parent, heck_scope* global)
 	}
 	
 	if (name->type == IDF_VARIABLE) {
-		if (name->value.var_value->data_type == NULL) {
+		if (name->value.var_value->type == NULL) {
 			fprintf(stderr, "error: use of invalid variable\n");
 			return false;
 		}

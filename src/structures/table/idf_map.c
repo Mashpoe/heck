@@ -77,15 +77,10 @@ static idf_entry* find_entry(idf_map* m, str_entry key) {
 	uint32_t index = key->hash % m->capacity;
 	for (;;) {
 		idf_entry* entry = &m->buckets[index];
-		
-		if (entry->key == NULL) {
-			
-			//if (!b->info.tombstone) commented out because we don't use tombstones
-			return entry;
 			
 		/*	our str_table ensures that str_obj address will be the same for matching strings
 		 so we can compare addresses with '==' */
-		} else if (entry->key == key) {
+		if (entry->key == key || entry->key == NULL) {
 			return entry;
 		}
 		
@@ -119,6 +114,10 @@ void idf_map_set(idf_map* m, str_entry key, void* input_val) {
 
 int idf_map_size(idf_map* m) {
 	return m->count;
+}
+
+inline bool idf_map_item_exists(idf_map* m, str_entry key) {
+	return find_entry(m, key)->key != NULL;
 }
 
 void idf_map_iterate(idf_map* m, map_callback callback, void* user_ptr) {

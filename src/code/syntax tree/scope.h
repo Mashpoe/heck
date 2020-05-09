@@ -40,9 +40,15 @@ typedef enum heck_access {
 	ACCESS_NAMESPACE, // public for classes in the same namespace
 } heck_access;
 
+typedef enum heck_name_flags {
+	NAME_RESOLVED = 0x01
+} heck_name_flags;
+
 // the children of a scope, used to map an identifier with a value
 // may be renamed to heck_nmsp for namespace, but that could end up being confusing
 typedef struct heck_name {
+	uint8_t flags;
+	
 	heck_scope* parent;
 	
 	heck_idf_type type;
@@ -52,7 +58,7 @@ typedef struct heck_name {
 	union {
 		heck_class* class_value;
 		heck_func_list func_value;
-		heck_expr* var_value;
+		heck_variable* var_value;
 	} value;
 	
 	struct heck_scope* child_scope; // optional, might be null

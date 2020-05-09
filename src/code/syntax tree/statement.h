@@ -26,13 +26,14 @@ typedef struct stmt_vtable stmt_vtable;
 typedef struct heck_stmt {
 	const stmt_vtable* vtable;
 	heck_stmt_type type;
+	uint8_t flags;
 	union {
-		struct heck_stmt_let* let_stmt;
+		struct heck_variable* var_value; // let statement
 		struct heck_stmt_if* if_stmt;
 		struct heck_stmt_class* class_stmt;
 		struct heck_stmt_func* func_stmt;
-		struct heck_block* block;
-		struct heck_expr* expr;
+		struct heck_block* block_value;
+		struct heck_expr* expr_value;
 	} value;
 } heck_stmt;
 
@@ -51,11 +52,13 @@ struct stmt_vtable {
 heck_stmt* create_stmt_expr(heck_expr* expr);
 
 // LET STATEMENT
-typedef struct heck_stmt_let {
+typedef struct heck_variable {
 	str_entry name;
+	heck_data_type* type;
 	heck_expr* value;
-} heck_stmt_let;
-heck_stmt* create_stmt_let(str_entry name, heck_expr* value);
+} heck_variable;
+heck_variable* create_variable(str_entry name, heck_data_type* type, heck_expr* value);
+heck_stmt* create_stmt_let(heck_variable* variable);
 
 // BLOCK OF CODE
 // block types are ordered from least to greatest precedence; do not change values/order
@@ -107,14 +110,19 @@ heck_stmt* create_stmt_ret(heck_expr* value);
 // ERROR
 heck_stmt* create_stmt_err(void);
 
-bool resolve_stmt(heck_stmt* stmt, heck_scope* parent, heck_scope* global);
 void free_stmt(heck_stmt* stmt);
+
 void print_stmt(heck_stmt* stmt, int indent);
+
+bool resolve_stmt(heck_stmt* stmt, heck_scope* parent, heck_scope* global);
+
+heck_stmt* create_stmt(heck_stmt_type type, const stmt_vtable* vtable);
 
 bool resolve_block(heck_block* block, heck_scope* global);
 void print_block(heck_block* block, int indent);
 
-
+void print_variable(heck_variable* variable);
+void free_variable(heck_variable* variable);
 
 // vtables
 extern const stmt_vtable stmt_vtable_expr;

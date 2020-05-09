@@ -19,11 +19,18 @@ typedef enum {
 	PRIM_STR,
 } heck_prim_type;*/
 
+
+enum data_type_flags {
+	TYPE_RESOLVED = 0x01
+};
+
+#define TYPE_IS_RESOLVED(type) (( (type)->flags & TYPE_RESOLVED) == TYPE_RESOLVED)
+
 typedef enum heck_qual_type {
-	QUAL_CONST = 1,
-	QUAL_STATIC = 2,
-	QUAL_UNIQUE = 4,
-	QUAL_SHARED = 8,
+	QUAL_CONST = 0x02, // starts at 2 so qualifiers can be stored alongside resolve flags
+	QUAL_STATIC = 0x04,
+	QUAL_UNIQUE = 0x08,
+	QUAL_SHARED = 0x10,
 } heck_qual_type;
 
 typedef enum heck_type_name {
@@ -65,6 +72,7 @@ typedef struct type_vtable type_vtable;
 struct heck_data_type {
 	heck_type_name type_name;
 	const type_vtable* vtable;
+	uint8_t flags; // stores resolved state and qualifiers, change to uint16_t if we run out of bits
 	union {
 		heck_class_type class_type;
 		heck_data_type* arr_type; // recursive structure
