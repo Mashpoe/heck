@@ -10,7 +10,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
-#include "code.h"
+#include "../code/code.h"
 
 // returns 0 on failure
 bool heck_scan(heck_code* c, FILE* f);
