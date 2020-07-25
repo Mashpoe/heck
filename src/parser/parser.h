@@ -1,6 +1,6 @@
 //
 //  parser.h
-//  CHeckScript
+//  Heck
 //
 //  Created by Mashpoe on 3/26/19.
 //

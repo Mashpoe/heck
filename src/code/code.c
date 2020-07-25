@@ -1,6 +1,6 @@
 //
 //  code.c
-//  CHeckScript
+//  Heck
 //
 //  Created by Mashpoe on 3/13/19.
 //
@@ -21,7 +21,6 @@ heck_code* heck_create() {
 	c->global = block_create(block_scope);
 	
 	c->strings = str_table_create();
-	c->types = type_table_create();
 	return c;
 }
 
@@ -37,7 +36,6 @@ void heck_free(heck_code* c) {
 	free_tokens(c);
 	vector_free(c->token_vec);
 	str_table_free(c->strings);
-	type_table_free(c->types);
 	free(c);
 }
 
@@ -71,6 +69,11 @@ void heck_print_tokens(heck_code* c) {
 	}
 	
 	printf("\n");
+}
+
+void heck_print_tree(heck_code* c) {
+	printf("global ");
+	print_block(c->global, 0);
 }
 
 bool heck_add_token(heck_code* c, heck_token* tk) {

@@ -1,6 +1,6 @@
 //
 //  types.h
-//  CHeckScript
+//  Heck
 //
 //  Created by Mashpoe on 3/19/19.
 //
@@ -34,7 +34,7 @@ typedef enum heck_qual_type {
 } heck_qual_type;
 
 typedef enum heck_type_name {
-	TYPE_ERR = 0,		// unable to deduce return type
+	TYPE_ERR = 0,		// unable to deduce type
 	
 	TYPE_INT,
 	TYPE_FLOAT,
@@ -76,7 +76,7 @@ struct heck_data_type {
 	union {
 		heck_class_type class_type;
 		heck_data_type* arr_type; // recursive structure
-		const heck_data_type* prim_arr_type;
+		heck_data_type* ref_type;
 	} type_value;
 };
 // resolve callback

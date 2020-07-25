@@ -1,6 +1,6 @@
 //
 //  token.c
-//  CHeckScript
+//  Heck
 //
 //  Created by Mashpoe on 3/20/19.
 //

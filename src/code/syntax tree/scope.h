@@ -1,6 +1,6 @@
 //
 //  scope.h
-//  CHeckScript
+//  Heck
 //
 //  Created by Mashpoe on 7/5/19.
 //

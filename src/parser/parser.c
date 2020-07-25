@@ -1,6 +1,6 @@
 //
 //  parser.c
-//  CHeckScript
+//  Heck
 //
 //  Created by Mashpoe on 3/26/19.
 //
@@ -34,9 +34,9 @@ struct parser {
 typedef void stmt_parser(parser*, heck_block*);
 
 // callbacks
-stmt_parser global_parse;
-stmt_parser func_parse;
-stmt_parser local_parse;
+//stmt_parser global_parse;
+//stmt_parser func_parse;
+//stmt_parser local_parse;
 
 #define _HECK_MACRO_STEPS
 
@@ -301,8 +301,9 @@ heck_expr* parse_func_expr(parser* p, heck_scope* parent) {
 heck_expr* primary_idf(parser* p, heck_scope* parent, idf_context context) { // assumes an idf was already matched
 	//heck_idf name = identifier(p);
 	heck_expr* idf_expr = create_expr_value(identifier(p), context);
-		
-	if (match(p, TK_PAR_L)) { // function call
+	
+	// function call
+	if (match(p, TK_PAR_L)) {
 		heck_expr* call = create_expr_call(idf_expr);
 		
 		if (match(p, TK_PAR_R))
@@ -1166,9 +1167,6 @@ bool heck_parse(heck_code* c) {
 	} else {
 		printf("failed to resolve :(\n");
 	}
-	
-	printf("global ");
-	print_block(c->global, 0);
 	
 	return p.success;
 }

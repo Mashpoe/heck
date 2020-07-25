@@ -21,16 +21,18 @@ typedef struct heck_literal {
 	} value;
 } heck_literal;
 
-heck_literal* create_literal_int(int val);
+heck_literal* create_literal_int(int value);
 
-heck_literal* create_literal_float(float val);
+heck_literal* create_literal_float(float value);
 
-heck_literal* create_literal_bool(bool val);
+heck_literal* create_literal_bool(bool value);
 
-heck_literal* create_literal_string(str_entry val);
+heck_literal* create_literal_string(str_entry value);
 
-void print_literal(heck_literal* value);
+heck_literal* copy_literal(heck_literal* literal);
 
-void free_literal(heck_literal* value);
+void free_literal(heck_literal* literal);
+
+void print_literal(heck_literal* literal);
 
 #endif /* literal_h */

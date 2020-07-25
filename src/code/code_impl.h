@@ -1,6 +1,6 @@
 //
 //  code_impl.h
-//  CHeckScript
+//  Heck
 //
 //  Created by Mashpoe on 3/13/19.
 //
@@ -17,14 +17,13 @@
 #include "scope.h"
 #include "vec.h"
 #include "str_table.h"
-#include "type_table.h"
+#include "literal.h"
 
 struct heck_code {
 	heck_token** token_vec; // token vector
 	heck_block* global; // code/syntax tree
 	
 	// these tables could be joined technically, but it might be better to separate them
-	type_table* types; // all unique data types
 	str_table* strings; // all unique strings and identifiers
 };
 

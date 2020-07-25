@@ -1,6 +1,6 @@
 //
 //  compiler.c
-//  CHeckScript
+//  Heck
 //
 //  Created by Mashpoe on 6/18/19.
 //

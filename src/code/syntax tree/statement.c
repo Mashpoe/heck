@@ -1,6 +1,6 @@
 //
 //  statement.c
-//  CHeckScript
+//  Heck
 //
 //  Created by Mashpoe on 6/11/19.
 //

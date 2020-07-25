@@ -1,6 +1,6 @@
 //
 //  tokentypes.h
-//  CHeckScript
+//  Heck
 //
 //  Created by Mashpoe on 3/12/19.
 //

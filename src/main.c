@@ -1,6 +1,6 @@
 //
 //  main.c
-//  CHeckScript
+//  Heck
 //
 //  Created by Mashpoe on 2/26/19.
 //
@@ -42,7 +42,9 @@ int main(int argc, const char * argv[]) {
 		heck_code* c = heck_create();
 		heck_scan(c, f);
 		//heck_print_tokens(c);
-		heck_parse(c);
+		heck_parse(c); // parsing includes resolving for now, since it completes the syntax tree
+		
+		heck_print_tree(c);
 		//printf("done.\n");
 		//heck_compile(c);
 		//printf("press ENTER to continue...");

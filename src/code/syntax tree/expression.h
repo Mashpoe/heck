@@ -1,6 +1,6 @@
 //
 //  expression.h
-//  CHeckScript
+//  Heck
 //
 //  Created by Mashpoe on 3/19/19.
 //
@@ -21,21 +21,23 @@
 #include "declarations.h"
 
 enum heck_expr_flags {
-	EXPR_RESOLVED = 0x01
+	//EXPR_RESOLVED = 0x01,
+	EXPR_CONST = 0x02,		// constexpr
 };
 
 typedef enum heck_expr_type heck_expr_type;
 enum heck_expr_type {
+	EXPR_ERR,		// error parsing
+	EXPR_RESOLVED,	// avoid copying resolvable template code
 	EXPR_BINARY,
 	EXPR_UNARY,
-	EXPR_LITERAL,
+	EXPR_LITERAL,	// always constexpr
 	EXPR_VALUE,		// value of a variable
 	EXPR_CALL,
 	EXPR_CALLBACK,
 	EXPR_ASG,
 	EXPR_TERNARY,
-	EXPR_CAST,
-	EXPR_ERR		// error parsing
+	EXPR_CAST
 };
 
 // heck_expr is a polymorphic structure with a "vtable"
@@ -43,11 +45,15 @@ typedef struct expr_vtable expr_vtable;
 typedef struct heck_expr heck_expr;
 
 // TODO: maybe make these callbacks take void pointers instead of heck_expr
-typedef bool (*expr_resolve)(heck_expr*, heck_scope* parent, heck_scope* global);
-typedef void (*expr_free)(heck_expr*);
-typedef void (*expr_print)(heck_expr*);
+// TODO: resolve_info* structures instead of parent and global among other parameters that will inevitably be added
+
+typedef bool		(*expr_resolve)(heck_expr*, heck_scope* parent, heck_scope* global);
+typedef heck_expr*	(*expr_copy)(heck_expr*); // for templates
+typedef void		(*expr_free)(heck_expr*);
+typedef void		(*expr_print)(heck_expr*);
 struct expr_vtable {
 	expr_resolve resolve;
+	expr_copy copy;
 	expr_free free;
 	expr_print print;
 };
@@ -79,17 +85,10 @@ typedef struct heck_expr_value {
 } heck_expr_value;
 heck_expr* create_expr_value(heck_idf name, idf_context context);
 
-//typedef struct heck_expr_callback {
-//	heck_idf name;
-//	heck_data_type** type_arg_vec;
-//	idf_context context;
-//} heck_expr_callback;
-//heck_expr* create_expr_callback(heck_idf name, idf_context context);
-
 // TODO: add support for any expression as the left operand
 // function call
 typedef struct heck_expr_call {
-	heck_expr* operand;
+	heck_expr* operand; // an expression that evaluates to a function, most likely expr_value
 	heck_expr** arg_vec; // arguments
 	heck_data_type** type_arg_vec; // type arguments (NULL if not applicable)
 	heck_func* func; // pointer to the function that gets called, set after resolving
@@ -132,21 +131,33 @@ struct heck_expr {
 	} value;
 };
 
+heck_expr* create_expr(heck_expr_type type, const expr_vtable* vtable);
+
 heck_expr* create_expr_err(void);
+
+bool resolve_expr(heck_expr* expr, heck_scope* parent, heck_scope* global);
+
+heck_expr* copy_expr(heck_expr* expr);
 
 void free_expr(heck_expr* expr);
 
 void print_expr(heck_expr* expr);
 
-bool resolve_expr(heck_expr* expr, heck_scope* parent, heck_scope* global);
-
-heck_expr* create_expr(heck_expr_type type, const expr_vtable* vtable);
+// misc vtables
+extern const expr_vtable expr_vtable_err;
+// represents an expression that has already been resolved. used to avoid copying in templates.
+// each expr_resolved owns an expr_resolved_ref, and the copy method returns a pointer to it.
+// this will free the owned expr_resolved_ref as well as the expression it owns
+extern const expr_vtable expr_vtable_resolved_owner;
+// references an expression that has already been resolved, rather than copying it.
+// does not free any data, expr_vtable_resolved_owner deals with that for us.
+// there is only one copy of an expr_resolved per resolved expression.
+// since expr_resolved_owner frees this structure, pointers to these can be passed around freely.
+extern const expr_vtable expr_vtable_resolved;
 
 // precedence 1
-extern const expr_vtable expr_vtable_err;
 extern const expr_vtable expr_vtable_literal;
 extern const expr_vtable expr_vtable_value;
-extern const expr_vtable expr_vtable_callback;
 extern const expr_vtable expr_vtable_post_incr;
 extern const expr_vtable expr_vtable_post_decr;
 extern const expr_vtable expr_vtable_call;
