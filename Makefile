@@ -1,19 +1,30 @@
+srctree = .
+IDIR = include
+
 CC = gcc
 LIBS =
-CFLAGS =
+CFLAGS = -I$(srctree)/$(IDIR)
 
-# recursive wildcard
-rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
+BDIR = build
+LDIR = lib
+SDIR = src
 
-# compile everything in src
-SRC=$(call rwildcard,src,*.c *.h)
-
-TARGET=heck
+TARGET = heck
+DEPS = $(shell find include/ -type f -name '*.h') $(shell find src/ -type f -name '*.h')
+SRC = $(shell find src/ -type f -name '*.c')
+OBJ = $(patsubst $(SDIR)/%.c, $(BDIR)/%.o, $(SRC))
 
 .PHONY: all clean
 
 all: $(TARGET)
 
-clean:;rm -f $(TARGET)
+clean:
+	rm -f $(TARGET)
+	rm -r $(BDIR)
 
-$(TARGET): $(SRC);$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+$(BDIR)/%.o: $(SDIR)/%.c $(DEPS)
+	mkdir -p "$(@D)"
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(TARGET): $(OBJ)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)

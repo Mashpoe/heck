@@ -6,12 +6,12 @@
 //
 
 #include <stdio.h>
-#include "structures/str.h"
-#include "structures/vec.h"
-#include "scanner/scanner.h"
-#include "parser/parser.h"
-#include "resolver/resolver.h"
-#include "compiler/compiler.h"
+#include <scanner.h>
+#include <parser.h>
+#include <resolver.h>
+#include <compiler.h>
+#include <str.h>
+#include "vec.h"
 
 #include <time.h>
 #include <string.h>
