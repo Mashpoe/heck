@@ -1,7 +1,7 @@
-# Heck (C Implementation)
+![Heck](https://heck-lang.github.io/assets/heck-logo-white-transparent-glow.png)
 
 Heck is a multi paradigm, statically typed, general purpose, compiled/JITed programming language with a C-style syntax.
 
-Heck is designed to be able to deduce types whenever possible. In most cases, the user should be able to write code as if it were a dynamically-typed language, but this is optional, which means the user can also be explicit about data types when they feel the need to.
+Heck utilizes an extremely smart set of safety checks as well as concise type inference in order to make your code simple, safe, and readable, without making any performance sacrifices.
 
-The documentaion on how the language itself works is on the [wiki](https://github.com/Mashpoe/heck/wiki), as this repo is currently just a work-in-progress C implementation.
+This repo is the first implementation of a compiler for the Heck programming language. The documentaion on how the language itself works is on the [wiki](https://github.com/Mashpoe/heck/wiki).
