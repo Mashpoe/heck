@@ -137,6 +137,10 @@ bool name_accessible(const heck_scope* parent, const heck_scope* child, const he
 
 heck_name* scope_resolve_idf(heck_idf idf, const heck_scope* parent) {
 	
+	if (parent->names == NULL) {
+		return NULL;
+	}
+
 	// find the parent of the idf
 	heck_name* name;
 	while (!idf_map_get(parent->names, idf[0], (void*)&name)) {

@@ -1,9 +1,12 @@
 srctree = .
 IDIR = include
 
+# external flags, e.g. "make FLAGS=-g"
+FLAGS =
+
 CC = gcc
 LIBS =
-CFLAGS = -I$(srctree)/$(IDIR)
+CFLAGS = -I$(srctree)/$(IDIR) $(FLAGS)
 
 BDIR = build
 LDIR = lib

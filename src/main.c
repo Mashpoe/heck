@@ -60,7 +60,7 @@ int main(int argc, const char * argv[]) {
 		//heck_print_tokens(c);
 		heck_parse(c); // parsing includes resolving for now, since it completes the syntax tree
 		
-		//heck_print_tree(c);
+		heck_print_tree(c);
 		//printf("done.\n");
 		//heck_compile(c);
 		//printf("press ENTER to continue...");
@@ -68,6 +68,9 @@ int main(int argc, const char * argv[]) {
 		heck_free(c);
 
 	  fclose(f);
+	} else {
+		printf("error: unable to open source file: %s\n", input_path);
+		return 1;
 	}
 
 
