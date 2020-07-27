@@ -10,8 +10,8 @@
 #ifndef idf_map_h
 #define idf_map_h
 
-#include <stdio.h>
 #include "str.h"
+#include <stdio.h>
 #include <stdbool.h>
 
 typedef struct idf_map idf_map;

@@ -11,6 +11,11 @@
 
 // calloc will set these to null
 typedef struct idf_entry {
+  // "next" must be at the start of the struct
+  // changing the order will break multiple functions
+  struct idf_entry* next;
+
+  // the order here is interchangable
 	str_entry key;
 	void* value;
 } idf_entry;
@@ -19,34 +24,41 @@ struct idf_map {
 	idf_entry* buckets;
 	int capacity;
 	int count;
+
+  // a linked list of all valid entries, in order
+  idf_entry* first;
+  // lets us know where to add the next element
+  idf_entry* last;
 };
 
 idf_map* idf_map_create(void) {
 	idf_map* m = malloc(sizeof(idf_map));
 	m->capacity = TABLE_DEFAULT_CAPACITY;
-	m->buckets = calloc(TABLE_DEFAULT_CAPACITY, sizeof(idf_entry));
 	m->count = 0;
+	m->buckets = calloc(TABLE_DEFAULT_CAPACITY, sizeof(idf_entry));
+  m->first = NULL;
+
+  // this prevents branching in idf_map_set.
+  // m->first will be treated as the "next" pointer in an imaginary idf_entry.
+  // when the first item is added, m->first will be set to the correct address.
+  m->last = (idf_entry*)&m->first;
 	return m;
 }
 
 void idf_map_free(idf_map* m) {
-	for (int i = 0; i < m->capacity; ++i) {
-		if (m->buckets[i].key != NULL) {
-			free((void*)m->buckets[i].value);
-		}
-	}
+  free(m->buckets);
 	free(m);
 }
 
 // puts an old bucket into a resized str_table
-static void resize_entry(idf_map* m, idf_entry* old_entry) {
+static idf_entry* resize_entry(idf_map* m, idf_entry* old_entry) {
 	u_int32_t index = old_entry->key->hash % m->capacity;
 	for (;;) {
 		idf_entry* entry = &m->buckets[index];
 		
 		if (entry->key == NULL) {
 			*entry = *old_entry; // copy data from old entry
-			break;
+      return entry;
 		}
 		
 		index = (index + 1) % m->capacity;
@@ -61,13 +73,15 @@ static void idf_map_resize(idf_map* m) {
 	m->capacity *= TABLE_RESIZE_FACTOR;
 	m->buckets = calloc(m->capacity, sizeof(idf_entry)); // initializes everything to 0
 	//printf("resize %i\n", t->capacity);
+
+  // same trick; avoids branching
+  m->last = (idf_entry*)&m->first;
 	
-	for (int i = 0; i < old_capacity; ++i) {
-		idf_entry* old_bucket = &old_buckets[i];
-		if (old_bucket->key == NULL) continue;
-		
-		resize_entry(m, old_bucket);
-	}
+  // assumes that an empty map won't be resized
+  do {
+    m->last->next = resize_entry(m, m->last->next);
+		m->last = m->last->next;
+  } while (m->last->next != NULL);
 	
 	free(old_buckets);
 }
@@ -107,6 +121,10 @@ void idf_map_set(idf_map* m, str_entry key, void* input_val) {
 	idf_entry* entry = find_entry(m, key);
 	entry->key = key;
 	entry->value = input_val;
+  entry->next = NULL;
+
+  m->last->next = entry;
+  m->last = entry;
 	
 	m->count++;
 	
@@ -121,7 +139,17 @@ inline bool idf_map_item_exists(idf_map* m, str_entry key) {
 }
 
 void idf_map_iterate(idf_map* m, map_callback callback, void* user_ptr) {
-	int count = m->count;
+
+  // loop through the linked list of valid entries
+  // this way we can skip over empty buckets
+  idf_entry* current = m->first;
+
+  while (current != NULL) {
+		callback(current->key, current->value, user_ptr);
+    current = current->next;
+  }
+
+	/*int count = m->count;
 	for (int i = 0; i < m->capacity; ++i) {
 		
 		// stop when we've gone through all entries
@@ -133,7 +161,6 @@ void idf_map_iterate(idf_map* m, map_callback callback, void* user_ptr) {
 		if (entry->key != NULL) {
 			count--;
 			//printf("ree");
-			callback(entry->key, entry->value, user_ptr);
 		}
-	}
+	}*/
 }

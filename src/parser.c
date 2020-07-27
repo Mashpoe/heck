@@ -638,7 +638,10 @@ heck_stmt* let_statement(parser* p, heck_scope* parent) {
 		return create_stmt_err();
 	}
 	
-	if (idf_map_item_exists(parent->names, variable->name)) {
+	if (parent->names == NULL) {
+    // create idf map and insert variable
+    parent->names = idf_map_create();
+  } else if (idf_map_item_exists(parent->names, variable->name)) {
 		// go back to the error token
 		int offset = -1; // the let token is at least one token behind
 		heck_token* current;

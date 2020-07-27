@@ -45,7 +45,9 @@ heck_scope* scope_create(heck_scope* parent) {
 }
 
 void scope_free(heck_scope* scope) {
-	// TODO: free the scope
+  if (scope->names != NULL) {
+	  idf_map_free(scope->names);
+  }
 }
 
 // use this function only when parsing a declaration or definition
