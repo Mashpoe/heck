@@ -285,7 +285,6 @@ bool resolve_stmt_let(heck_stmt* stmt, heck_scope* parent, heck_scope* global) {
 }
 void free_stmt_let(heck_stmt* stmt) {
 	free_variable(stmt->value.var_value);
-	free(stmt);
 }
 void print_stmt_let(heck_stmt* stmt, int indent) {
 	printf("let ");

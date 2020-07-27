@@ -34,6 +34,7 @@ void free_tokens(heck_code* c) {
 }
 
 void heck_free(heck_code* c) {
+  block_free(c->global);
 	free_tokens(c);
 	vector_free(c->token_vec);
 	str_table_free(c->strings);

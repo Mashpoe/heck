@@ -44,10 +44,41 @@ heck_scope* scope_create(heck_scope* parent) {
 	return scope;
 }
 
+void free_name_callback(str_entry key, void* value, void* user_ptr) {
+  heck_name* name = value;
+  printf("free %s\n", key->value);
+
+  switch(name->type) {
+    case IDF_VARIABLE:
+      // TODO: free variable
+      break;
+    case IDF_FUNCTION: {
+      heck_func_list* func_list = &name->value.func_value;
+      size_t num_overloads = vector_size(func_list->func_vec);
+      for (size_t i = num_overloads; i > 0; --i) {
+        func_free(func_list->func_vec[i]);
+      }
+      vector_free(func_list->func_vec);
+      break;
+    }
+    case IDF_UNDECLARED_CLASS:
+    case IDF_CLASS:
+      // TODO: free class
+      break;
+    default:
+      break;
+  }
+}
+
 void scope_free(heck_scope* scope) {
+  // free all items in the scope
+  idf_map_iterate(scope->names, free_name_callback, NULL);
+
+  // free the scope itself
   if (scope->names != NULL) {
 	  idf_map_free(scope->names);
   }
+  free(scope);
 }
 
 // use this function only when parsing a declaration or definition
