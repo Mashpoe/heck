@@ -46,7 +46,7 @@ heck_scope* scope_create(heck_scope* parent) {
 
 void free_name_callback(str_entry key, void* value, void* user_ptr) {
   heck_name* name = value;
-  printf("free %s\n", key->value);
+  // printf("free %s\n", key->value);
 
   switch(name->type) {
     case IDF_VARIABLE:
