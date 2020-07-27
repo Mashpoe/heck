@@ -57,6 +57,12 @@ struct expr_vtable {
 	expr_print print;
 };
 
+/* expression creation functions as well as vtable implementations have unique naming conventions:
+ * for example, free_expr_unary instead of expr_unary_free.
+ * this allows for better distinction between structures and faster autocomplete,
+ * because there are so many expression types compared to other types
+ */
+
 heck_expr* create_expr_res_type(heck_data_type* type);
 
 heck_expr* create_expr_literal(heck_literal* value);

@@ -47,6 +47,12 @@ struct stmt_vtable {
 	stmt_print print;
 };
 
+/* statement creation functions as well as vtable implementations have unique naming conventions:
+ * for example, free_stmt_expr instead of stmt_expr_free.
+ * this allows for better distinction between structures and faster autocomplete,
+ * because there are so many statement types compared to other types
+ */
+
 // EXPRESSION STATEMENT
 // just use a regular heck_expr* for expression statements
 heck_stmt* create_stmt_expr(heck_expr* expr);
