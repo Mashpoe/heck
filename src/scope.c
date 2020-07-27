@@ -71,13 +71,15 @@ void free_name_callback(str_entry key, void* value, void* user_ptr) {
 }
 
 void scope_free(heck_scope* scope) {
-  // free all items in the scope
-  idf_map_iterate(scope->names, free_name_callback, NULL);
 
-  // free the scope itself
   if (scope->names != NULL) {
+    // free all items in the scope
+    idf_map_iterate(scope->names, free_name_callback, NULL);
+
+    // free the scope itself
 	  idf_map_free(scope->names);
   }
+  
   free(scope);
 }
 
