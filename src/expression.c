@@ -12,17 +12,18 @@
 #include <stdio.h>
 #include "vec.h"
 
-inline heck_expr* create_expr(heck_expr_type type, const expr_vtable* vtable) {
-	heck_expr* e = malloc(sizeof(heck_expr));
-	e->type = type;
-	e->vtable = vtable;
-	e->data_type = NULL; // or make TYPE_UNKNOWN
-	e->flags = 0x0; // set all flags to false
-	return e;
+// todo: make init_expr(heck_expr* expr, type, vtable)
+void init_expr(heck_expr*, heck_expr_type, const expr_vtable*);
+inline void init_expr(heck_expr* expr, heck_expr_type type, const expr_vtable* vtable) {
+	expr->type = type;
+	expr->vtable = vtable;
+	expr->data_type = NULL; // or make TYPE_UNKNOWN
+	expr->flags = 0x0; // set all flags to false
 }
 
 heck_expr* create_expr_literal(heck_literal* value) {
-	heck_expr* e = create_expr(EXPR_LITERAL, &expr_vtable_literal);
+	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_literal*));
+  init_expr(e, EXPR_LITERAL, &expr_vtable_literal);
 	e->value.literal = value;
 	e->data_type = value->data_type;
 	e->flags = EXPR_CONST; // literals are constexpr
@@ -31,138 +32,93 @@ heck_expr* create_expr_literal(heck_literal* value) {
 }
 
 heck_expr* create_expr_cast(const heck_data_type* type, heck_expr* expr) {
-	heck_expr* e = create_expr(EXPR_CAST, &expr_vtable_cast);
+	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr*));
+  init_expr(e, EXPR_CAST, &expr_vtable_cast);
 	e->data_type = type;
 	e->value.expr = expr;
 	return e;
 }
 
 heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr* right, const expr_vtable* vtable) {
-	heck_expr* e = create_expr(EXPR_BINARY, vtable);
+	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_binary));
+  init_expr(e, EXPR_BINARY, vtable);
 	
-	heck_expr_binary* binary = malloc(sizeof(heck_expr_binary));
+	heck_expr_binary* binary = &e->value.binary;
 	binary->left = left;
 	binary->operator = operator;
 	binary->right = right;
-	
-	e->value.binary = binary;
 	
 	return e;
 }
 
 heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator, const expr_vtable* vtable) {
-	heck_expr* e = create_expr(EXPR_UNARY, vtable);
+	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_unary));
+  init_expr(e, EXPR_UNARY, vtable);
 	
-	heck_expr_unary* unary = malloc(sizeof(heck_expr_unary));
+	heck_expr_unary* unary = &e->value.unary;
 	unary->expr = expr;
 	unary->operator = operator;
-	
-	e->value.unary = unary;
 	
 	return e;
 }
 
 heck_expr* create_expr_value(heck_idf name, idf_context context) {
-	heck_expr* e = create_expr(EXPR_VALUE, &expr_vtable_value);
-	
-	heck_expr_value* value = malloc(sizeof(heck_expr_value));
-	value->name = name;
-	value->context = context;
+	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_value));
+  init_expr(e, EXPR_VALUE, &expr_vtable_value);
 	
 	// value :)
-	e->value.value = value;
+	heck_expr_value* value = &e->value.value;
+	value->name = name;
+	value->context = context;
 	
 	return e;
 }
 
 heck_expr* create_expr_call(heck_expr* operand) {
-	heck_expr* e = create_expr(EXPR_CALL, &expr_vtable_call);
+	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_call));
+  init_expr(e, EXPR_CALL, &expr_vtable_call);
 	
-	heck_expr_call* call = malloc(sizeof(heck_expr_call));
+	heck_expr_call* call = &e->value.call;
 //	call->name.name = name;
 //	call->name.context = context;
 	call->operand = operand;
 	call->arg_vec = vector_create();
 	call->type_arg_vec = NULL;
 	
-	e->value.call = call;
-	
 	return e;
 }
 
 heck_expr* create_expr_asg(heck_expr* left, heck_expr* right) {
-	heck_expr* e = create_expr(EXPR_BINARY, &expr_vtable_asg);
+	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_binary));
+  init_expr(e, EXPR_BINARY, &expr_vtable_asg);
 	
-	heck_expr_binary* asg = malloc(sizeof(heck_expr_binary));
+	heck_expr_binary* asg = &e->value.binary;
 	asg->left = left;
 	asg->right = right;
-	
-	e->value.binary = asg;
 	
 	return e;
 }
 
 heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b) {
-	heck_expr* e = create_expr(EXPR_TERNARY, &expr_vtable_ternary);
+	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_ternary));
+  init_expr(e, EXPR_TERNARY, &expr_vtable_ternary);
 	
-	heck_expr_ternary* ternary = malloc(sizeof(heck_expr_ternary));
+	heck_expr_ternary* ternary = &e->value.ternary;
 	ternary->condition = condition;
 	ternary->value_a = value_a;
 	ternary->value_b = value_b;
-	
-	e->value.ternary = ternary;
 	
 	return e;
 }
 
 heck_expr* create_expr_err() {
-	heck_expr* e = create_expr(EXPR_ERR, &expr_vtable_err);
+	heck_expr* e = malloc(EXPR_SIZE/* + 0*/);
+  init_expr(e, EXPR_ERR, &expr_vtable_err);
 	
 	e->value.expr = NULL;
 	
 	return e;
 }
-
-//void free_expr(heck_expr* expr) {
-//	switch (expr->type) {
-//		case EXPR_BINARY:
-//			free_expr(((heck_expr_binary*)expr)->left);
-//			free_expr(((heck_expr_binary*)expr)->right);
-//			break;
-//		case EXPR_UNARY:
-//			free_expr(((heck_expr_unary*)expr)->expr);
-//			break;
-//		case EXPR_VALUE: // fallthrough
-//			// literal & identifier data is stored in token list and does not need to be freed
-//			// just free the vector
-//			vector_free(expr->expr);
-//		case EXPR_CALL: // fallthrough
-//			for (vec_size_t i = vector_size(((heck_expr_call*)expr)->arg_vec); i-- > 0;) {
-//				free_expr(((heck_expr_call*)expr)->arg_vec[i]);
-//			}
-//			vector_free(((heck_expr_call*)expr)->arg_vec);
-//		case EXPR_LITERAL:
-//		case EXPR_ERR:
-//			break;
-//		case EXPR_ASG: {
-//			heck_expr_asg* asg = (heck_expr_asg*)expr;
-//			free_expr(asg->value);
-//			free((void*)asg->name);
-//			break;
-//		}
-//		case EXPR_TERNARY:
-//			free_expr(((heck_expr_ternary*)expr)->condition);
-//			free_expr(((heck_expr_ternary*)expr)->value_a);
-//			free_expr(((heck_expr_ternary*)expr)->value_b);
-//			break;
-//		case EXPR_CAST:
-//			break;
-//		case EXPR_CALLBACK:
-//			break;
-//	}
-//
-//	free(expr);
-//}
 
 //
 // internal use only, for quickly checking binary expressions, doesn't actually fully resolve the expression
@@ -170,7 +126,7 @@ heck_expr* create_expr_err() {
 //
 bool resolve_expr_binary(heck_expr* expr, heck_scope* parent, heck_scope* global);
 inline bool resolve_expr_binary(heck_expr* expr, heck_scope* parent, heck_scope* global) {
-	heck_expr_binary* binary = expr->value.binary;
+	heck_expr_binary* binary = &expr->value.binary;
 	return (
 		  binary->left->vtable->resolve(binary->left, parent, global) &&
 		  binary->right->vtable->resolve(binary->right, parent, global)
@@ -595,7 +551,7 @@ bool resolve_expr_err(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 bool resolve_expr_literal(heck_expr* expr, heck_scope* parent, heck_scope* global) { return true; }
 bool resolve_expr_value(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 	// try to find the identifier
-	heck_name* name = scope_resolve_value(expr->value.value, parent, global);
+	heck_name* name = scope_resolve_value(&expr->value.value, parent, global);
 	
 	if (name == NULL) {
 		fprintf(stderr, "error: use of undeclared identifier\n");
@@ -610,7 +566,6 @@ bool resolve_expr_value(heck_expr* expr, heck_scope* parent, heck_scope* global)
 		return true;
 	}
 	
-	
 	return false;
 }
 bool resolve_expr_callback(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
@@ -619,7 +574,7 @@ bool resolve_expr_post_incr(heck_expr* expr, heck_scope* parent, heck_scope* glo
 bool resolve_expr_post_decr(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 bool resolve_expr_call(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 	
-	heck_expr_call* func_call  = expr->value.call;
+	heck_expr_call* func_call = &expr->value.call;
 	
 	// find function
 	//heck_scope* func_scope = scope_resolve_value(&func_call->, parent, global);
@@ -682,7 +637,7 @@ bool resolve_expr_mult(heck_expr* expr, heck_scope* parent, heck_scope* global) 
 	if (!resolve_expr_binary(expr, parent, global))
 		return false;
 	
-	heck_expr_binary* binary = expr->value.binary;
+	heck_expr_binary* binary = &expr->value.binary;
 
 	// check if types are numeric
 	if (data_type_is_numeric(binary->left->data_type) && data_type_is_numeric(binary->right->data_type)) {
@@ -722,7 +677,7 @@ bool resolve_expr_gtr_eq(heck_expr* expr, heck_scope* parent, heck_scope* global
 
 // precedence 10
 bool resolve_expr_eq(heck_expr* expr, heck_scope* parent, heck_scope* global) {
-	heck_expr_binary* eq_expr = expr->value.binary;
+	heck_expr_binary* eq_expr = &expr->value.binary;
 	
 	if (!resolve_expr(eq_expr->left, parent, global) || !resolve_expr(eq_expr->right, parent, global))
 		return false;
@@ -734,7 +689,7 @@ bool resolve_expr_n_eq(heck_expr* expr, heck_scope* parent, heck_scope* global) 
 
 // precedence 11
 bool resolve_expr_and(heck_expr* expr, heck_scope* parent, heck_scope* global) {
-	heck_expr_binary* or_expr = expr->value.binary;
+	heck_expr_binary* or_expr = &expr->value.binary;
 	
 	// values can be truthy or falsy as long as they can be resolved (unless operator bool() is deleted)
 	return resolve_expr(or_expr->left, parent, global) && resolve_expr(or_expr->right, parent, global);
@@ -752,7 +707,7 @@ bool resolve_expr_ternary(heck_expr* expr, heck_scope* parent, heck_scope* globa
 // precedence 15
 bool resolve_expr_asg(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 	
-	heck_expr_binary* asg = expr->value.binary;
+	heck_expr_binary* asg = &expr->value.binary;
 	
 	/*
 	 *	TODO: check if it's a expr_value
@@ -799,16 +754,16 @@ heck_expr* copy_expr_err(heck_expr* expr) {
 
 // only used for unresolvable literals in function templates
 heck_expr* copy_expr_literal(heck_expr* expr) {
-	return create_expr_literal(copy_literal((expr->value.literal)));
+	return create_expr_literal(copy_literal((&expr->value.literal)));
 }
 
 heck_expr* copy_expr_value(heck_expr* expr) {
-	heck_expr_value* value = expr->value.value; // value
+	heck_expr_value* value = &expr->value.value; // value
 	return create_expr_value(value->name, value->context);
 }
 
 heck_expr* copy_expr_call(heck_expr* expr) {
-	heck_expr_call* call = expr->value.call;
+	heck_expr_call* call = &expr->value.call;
 //	heck_expr* new_call = create_expr_call(call->)
 	return NULL;
 }
@@ -822,21 +777,21 @@ heck_expr* copy_expr_cast(heck_expr* expr) {
 }
 
 heck_expr* copy_expr_unary(heck_expr* expr) {
-	heck_expr_unary* orig_val = expr->value.unary;
+	heck_expr_unary* orig_val = &expr->value.unary;
 	heck_expr* copy = create_expr_unary(orig_val->expr, orig_val->operator, expr->vtable);
 	copy->flags = expr->flags;
 	return copy;
 }
 
 heck_expr* copy_expr_binary(heck_expr* expr) {
-	heck_expr_binary* orig_value = expr->value.binary;
+	heck_expr_binary* orig_value = &expr->value.binary;
 	heck_expr* copy = create_expr_binary(orig_value->left, orig_value->operator, orig_value->right, expr->vtable);
 	copy->flags = expr->flags;
 	return copy;
 }
 
 heck_expr* copy_expr_ternary(heck_expr* expr) {
-	heck_expr_ternary* orig_value = expr->value.ternary;
+	heck_expr_ternary* orig_value = &expr->value.ternary;
 	heck_expr* copy = create_expr_ternary(orig_value->condition, orig_value->value_a, orig_value->value_b);
 	copy->flags = expr->flags;
 	return copy;
@@ -893,12 +848,12 @@ void print_value_idf(heck_expr_value* value) {
 
 void print_expr_value(heck_expr* expr) {
 	fputs("[", stdout);
-	print_value_idf(expr->value.value);
+	print_value_idf(&expr->value.value);
 	fputs("]", stdout);
 }
 
 void print_expr_call(heck_expr* expr) {
-	heck_expr_call* call = expr->value.call;
+	heck_expr_call* call = &expr->value.call;
 	putc('[', stdout);
 	print_expr(call->operand);
 	putc('(', stdout);
@@ -917,7 +872,7 @@ void print_expr_call(heck_expr* expr) {
 }
 
 void print_expr_arr_access(heck_expr* expr) {
-	heck_expr_arr_access* arr_access = expr->value.arr_access;
+	heck_expr_arr_access* arr_access = &expr->value.arr_access;
 	print_expr(arr_access->operand);
 	putc('[', stdout);
 	print_expr(arr_access->value);
@@ -934,7 +889,7 @@ void print_expr_cast(heck_expr* expr) {
 
 void print_expr_binary(heck_expr* expr) {
 	fputs("(", stdout);
-	heck_expr_binary* binary = expr->value.binary;
+	heck_expr_binary* binary = &expr->value.binary;
 	print_expr(binary->left);
 	fputs(" @op ", stdout);
 	print_expr(binary->right);
@@ -943,13 +898,13 @@ void print_expr_binary(heck_expr* expr) {
 
 void print_expr_unary(heck_expr* expr) {
 	fputs("(@op", stdout);
-	heck_expr_unary* unary = expr->value.unary;
+	heck_expr_unary* unary = &expr->value.unary;
 	print_expr(unary->expr);
 	fputs(")", stdout);
 }
 
 void print_expr_asg(heck_expr* expr) {
-	heck_expr_binary* asg = expr->value.binary;
+	heck_expr_binary* asg = &expr->value.binary;
 	fputs("[", stdout);
 	print_expr(asg->left);
 	fputs("] = ", stdout);
@@ -957,7 +912,7 @@ void print_expr_asg(heck_expr* expr) {
 }
 
 void print_expr_ternary(heck_expr* expr) {
-	heck_expr_ternary* ternary = expr->value.ternary;
+	heck_expr_ternary* ternary = &expr->value.ternary;
 	fputs("[", stdout);
 	print_expr(ternary->condition);
 	fputs("] ? [", stdout);
@@ -966,73 +921,3 @@ void print_expr_ternary(heck_expr* expr) {
 	print_expr(ternary->value_b);
 	fputs("]", stdout);
 }
-/*
- void print_expr(heck_expr* expr) {
- switch (expr->type) {
- 
- case EXPR_BINARY: {
- printf("(");
- heck_expr_binary* binary = expr->expr;
- print_expr(binary->left);
- printf(" @op ");
- print_expr(binary->right);
- printf(")");
- break;
- }
- case EXPR_UNARY: {
- printf("(");
- heck_expr_unary* unary = expr->expr;
- printf(" @op ");
- print_expr(unary->expr);
- printf(")");
- break;
- }
- case EXPR_LITERAL: {
- print_literal(expr->expr);
- break;
- }
- case EXPR_VALUE: {
- printf("[");
- print_expr_value(expr->expr);
- printf("]");
- break;
- }
- case EXPR_CALL: {
- heck_expr_call* call = expr->expr;
- printf("[");
- print_expr_value(&call->name);
- printf("(");
- for (vec_size_t i = 0; i < vector_size(call->arg_vec); ++i) {
- print_expr(call->arg_vec[i]);
- if (i < vector_size(call->arg_vec) - 1) {
- printf(", ");
- }
- }
- printf(")]");
- break;
- }
- case EXPR_ASG: {
- heck_expr_asg* asg = expr->expr;
- printf("[");
- print_expr_value(asg->name);
- printf("] = ");
- print_expr(asg->value);
- break;
- }
- case EXPR_TERNARY: {
- heck_expr_ternary* ternary = expr->expr;
- printf("[");
- print_expr(ternary->condition);
- printf("] ? [");
- print_expr(ternary->value_a);
- printf("] : [");
- print_expr(ternary->value_b);
- printf("]");
- break;
- }
- case EXPR_ERR:
- printf(" @error ");
- break;
- }
- }
-*/

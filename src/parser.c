@@ -311,7 +311,7 @@ heck_expr* primary_idf(parser* p, heck_scope* parent, idf_context context) { // 
 			return call;
 		
 		for (;;) {
-			vector_add(&call->value.call->arg_vec, expression(p, parent));
+			vector_add(&call->value.call.arg_vec, expression(p, parent));
 			
 			if (match(p, TK_PAR_R)) {
 				return call;

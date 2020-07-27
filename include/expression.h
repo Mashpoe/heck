@@ -19,6 +19,10 @@
 
 #include "declarations.h"
 
+// heck_expr is a polymorphic structure with a "vtable"
+typedef struct expr_vtable expr_vtable;
+typedef struct heck_expr heck_expr;
+
 enum heck_expr_flags {
 	//EXPR_RESOLVED = 0x01,
 	EXPR_CONST = 0x02,		// constexpr
@@ -38,10 +42,6 @@ enum heck_expr_type {
 	EXPR_TERNARY,
 	EXPR_CAST
 };
-
-// heck_expr is a polymorphic structure with a "vtable"
-typedef struct expr_vtable expr_vtable;
-typedef struct heck_expr heck_expr;
 
 // TODO: maybe make these callbacks take void pointers instead of heck_expr
 // TODO: resolve_info* structures instead of parent and global among other parameters that will inevitably be added
@@ -119,24 +119,32 @@ typedef struct heck_expr_ternary {
 } heck_expr_ternary;
 heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b);
 
+typedef union {
+  heck_expr_unary unary;
+  heck_expr_binary binary;
+  heck_expr_ternary ternary;
+  heck_expr_call call;
+  heck_expr_arr_access arr_access;
+  heck_expr_value value;
+  heck_literal* literal;
+  heck_expr* expr; // used for cast expression, cast type is stored in parent ^^
+} expr_data;
+
 struct heck_expr {
 	heck_expr_type type; // type is exclusive to flags because it can only have one value
 	const heck_data_type* data_type;
 	const expr_vtable* vtable; // resolve callback
 	u_int8_t flags; // currently only stores resolved state
-	union {
-		heck_expr_unary* unary;
-		heck_expr_binary* binary;
-		heck_expr_ternary* ternary;
-		heck_expr_call* call;
-		heck_expr_arr_access* arr_access;
-		heck_expr_value* value;
-		heck_literal* literal;
-		heck_expr* expr; // used for cast expression, cast type is stored in parent ^^
-	} value;
+
+  // heck_expr objects will be specifically allocated to store the correct item
+	expr_data value;
 };
 
-heck_expr* create_expr(heck_expr_type type, const expr_vtable* vtable);
+enum {
+  EXPR_SIZE = sizeof(heck_expr) - sizeof(expr_data)
+};
+
+//heck_expr* create_expr(heck_expr_type type, const expr_vtable* vtable);
 
 heck_expr* create_expr_err(void);
 
