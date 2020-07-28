@@ -55,7 +55,7 @@ void free_name_callback(str_entry key, void* value, void* user_ptr) {
     case IDF_FUNCTION: {
       heck_func_list* func_list = &name->value.func_value;
       size_t num_overloads = vector_size(func_list->func_vec);
-      for (size_t i = num_overloads; i > 0; --i) {
+      for (size_t i = 0; i < num_overloads; ++i) {
         func_free(func_list->func_vec[i]);
       }
       vector_free(func_list->func_vec);
