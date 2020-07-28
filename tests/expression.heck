@@ -1,6 +1,12 @@
 1 + 1
 
+func print(a: string) {
+
+}
+
 print("foo")
+
+let ternary = 4
 
 ternary == true ? 5 : 6
 

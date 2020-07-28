@@ -657,6 +657,7 @@ heck_stmt* let_statement(parser* p, heck_scope* parent) {
 	
 	// add the variable to the scope
 	heck_name* var_name = name_create(IDF_VARIABLE, parent);
+	var_name->value.var_value = variable;
 	idf_map_set(parent->names, variable->name, var_name);
 	
 	return create_stmt_let(variable);

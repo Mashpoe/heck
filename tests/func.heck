@@ -1,0 +1,5 @@
+func test(arg1: int, arg2: int){
+  arg1 + arg2
+}
+let a = 2
+test(a, 2)
