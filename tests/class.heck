@@ -1,0 +1,14 @@
+class class1 {
+
+  func doThing() {
+
+  }
+
+  class class2 {
+
+    let data = 2
+
+  }
+
+}
+

@@ -305,12 +305,16 @@ void print_stmt_block(heck_stmt* stmt, int indent) {
 bool resolve_stmt_if(heck_stmt* stmt, heck_scope* parent, heck_scope* global) {
 	heck_if_node* node = (stmt->value.if_stmt)->contents;
 
-	bool success = true;
+  bool success = true;
 	do {
 		// this avoids branching.
 		// if one node/block fails to resolve, success will remain false,
 		// since true * false = false and false * false = false
 		success *= resolve_block(node->code, global);
+
+    if (node->condition != NULL)
+      success *= resolve_expr(node->condition, parent, global);
+
 	} while ((node = node->next)); // will evaluate to false if node->next == NULL
 
 	return success;

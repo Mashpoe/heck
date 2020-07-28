@@ -683,7 +683,7 @@ bool resolve_expr_eq(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 		return false;
 	
 	// TODO: support casting and overloaded asg operators
-	return eq_expr->left->data_type == eq_expr->right->data_type;
+	return data_type_cmp(eq_expr->left->data_type, eq_expr->right->data_type);
 }
 bool resolve_expr_n_eq(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 
@@ -708,34 +708,21 @@ bool resolve_expr_ternary(heck_expr* expr, heck_scope* parent, heck_scope* globa
 bool resolve_expr_asg(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 	
 	heck_expr_binary* asg = &expr->value.binary;
+
+  if (!resolve_expr_binary(expr, parent, global))
+    return false;
 	
 	/*
 	 *	TODO: check if it's a expr_value
 	 *	otherwise, check if the data type is a temporary reference
 	 */
-	
-	// for now, just return false
-	return false;
-	
-	/*heck_scope* left = scope_resolve_value(asg->name, parent, global);
-	
-	if (left == NULL || left->type != IDF_VARIABLE)
-		return false;
-	
-	// find the type of the left operand
-	const heck_data_type* type = ((heck_expr*)left->value)->data_type;
-	// TODO: should an erroneous type be NULL, TYPE_ERR, or is either ok
-	if (type == NULL || type->type_name == TYPE_ERR) {
-		// TODO: line number
-		fprintf(stderr, "error: unable to assign to variable of unknown type\n");
-		return false;
-	}
-	
-	if (!resolve_expr(asg->value, parent, global))
-		return false;
-	
-	return type == asg->value->data_type;
-	 */
+
+  if (asg->left->type != EXPR_VALUE) {
+		fprintf(stderr, "error: unable to assign to variable\n");
+    return false;
+  }
+
+  return data_type_cmp(asg->left->data_type, asg->right->data_type);
 	
 }
 

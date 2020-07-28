@@ -1,4 +1,4 @@
-let testVar = 2
+let testVar = true
 
 testVar + 1
 
