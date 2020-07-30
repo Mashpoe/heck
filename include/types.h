@@ -82,7 +82,7 @@ struct heck_data_type {
 // resolve callback
 typedef heck_data_type* (*type_resolve)(heck_data_type*, heck_scope* parent, heck_scope* global);
 typedef void (*type_free)(heck_data_type*);
-typedef void (*type_print)(const heck_data_type*);
+typedef void (*type_print)(FILE*, const heck_data_type*);
 struct type_vtable {
 	type_resolve resolve;
 	type_free free;
@@ -120,6 +120,7 @@ extern const heck_data_type val_data_type_string;
 #define data_type_string	&val_data_type_string
 
 bool data_type_cmp(const heck_data_type* a, const heck_data_type* b);
+bool data_type_is_convertable(const heck_data_type* to, const heck_data_type from);
 bool data_type_is_numeric(const heck_data_type* type);
 /*
 typedef enum heck_literal_type {
@@ -131,5 +132,6 @@ typedef enum heck_literal_type {
 } heck_literal_type;*/
 
 void print_data_type(const heck_data_type* type);
+void fprint_data_type(const heck_data_type* type, FILE* f);
 
 #endif /* types_h */

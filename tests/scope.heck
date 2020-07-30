@@ -1,0 +1,11 @@
+func hello()
+
+hello()
+
+
+func world()
+
+func world() {
+
+}
+

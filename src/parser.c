@@ -20,6 +20,7 @@
 #include "vec.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 
 
@@ -221,9 +222,7 @@ heck_data_type* parse_data_type(parser* p, heck_scope* parent) {
 			break;
 		}
 		default: {
-			heck_token* err_tk = previous(p);
-			fprintf(stderr, "error: expected a type, ln %i ch %i\n", err_tk->ln, err_tk->ch);
-			panic_mode(p);
+      parser_error(p, previous(p), true, "expected a type, ln %i ch %i\n");
 			return NULL;
 		}
 	}
@@ -236,7 +235,7 @@ heck_data_type* parse_data_type(parser* p, heck_scope* parent) {
 			t->type_value.arr_type = temp;
 			t->vtable = &type_vtable_arr;
 		} else {
-			fprintf(stderr, "error: expected ']'\n");
+			fputs(stderr, "error: expected ']'\n");
 			panic_mode(p);
 			free_data_type(t);
 			return NULL;
@@ -605,16 +604,16 @@ heck_variable* variable_decl(parser* p, heck_scope* parent) {
 	}
 	
 	str_entry name = previous(p)->value.str_value;
-	heck_data_type* type;
+	heck_data_type* data_type;
 	heck_expr* value;
 	
 	if (match(p, TK_COLON)) {
-		type = parse_data_type(p, parent);
-		if (type == NULL)
+		data_type = parse_data_type(p, parent);
+		if (data_type == NULL)
 			// no need to report an error because parse_data_type already did
 			return NULL;
 	} else {
-		type = NULL;
+		data_type = NULL;
 	}
 	
 	if (match(p, TK_OP_ASG)) {
@@ -625,7 +624,7 @@ heck_variable* variable_decl(parser* p, heck_scope* parent) {
 		value = NULL;
 	}
 	
-	return create_variable(name, type, value);
+	return create_variable(name, data_type, value);
 	
 }
 
@@ -902,9 +901,9 @@ void func_decl(parser* p, heck_scope* parent) {
 			if (func_name->child_scope != NULL) {
 			//if (idf_map_size(func_scope->names) > 0) {
 				
-				fprintf(stderr, "error: unable to create child scope for a function: ");
-				fprint_idf(stderr, func_idf);
-				fprintf(stderr, "\n");
+				fputs("error: unable to create child scope for a function: ", stderr);
+				fprint_idf(func_idf, stderr);
+				fputc('\n', stderr);
 				return;
 			}
 			
@@ -915,9 +914,9 @@ void func_decl(parser* p, heck_scope* parent) {
 			
 			// check if this is a unique overload
 			if (func_overload_exists(&func_name->value.func_value, func)) {
-				fprintf(stderr, "error: function has already been declared with the same parameters: ");
-				fprint_idf(stderr, func_idf);
-				fprintf(stderr, "\n");
+				fputs("error: function has already been declared with the same parameters: ", stderr);
+				fprint_idf(func_idf, stderr);
+				fputc('\n', stderr);
 				return;
 			}
 			
@@ -1128,9 +1127,6 @@ void parse_statement(parser* p, heck_block* block, u_int8_t flags) {
 				return;
 				break;
 			case TK_KW_RETURN:
-				//stmt = ret_statement(p);
-	//			fprintf(stderr, "error: return statement outside function, ln %i ch %i\n", t->ln, t->ch);
-	//			panic_mode(p);
 				
 				if (STMT_IN_FUNC(flags)) {
 					stmt = ret_statement(p, block->scope);
@@ -1172,6 +1168,9 @@ bool heck_parse(heck_code* c) {
 	} else {
 		printf("failed to resolve :(\n");
 	}
+
+  fflush(stderr);
+  fflush(stdout);
 	
 	return p.success;
 }

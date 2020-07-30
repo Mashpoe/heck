@@ -59,5 +59,7 @@ dkms.conf
 *.xcodeproj/
 DerivedData/
 .replit
+run.sh
+rundb.sh
 *.code-workspace
 .vscode/

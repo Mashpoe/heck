@@ -22,6 +22,9 @@ heck_code* heck_create() {
 	c->global = block_create(block_scope);
 	
 	c->strings = str_table_create();
+
+  c->data_types = vector_create();
+
 	return c;
 }
 
@@ -33,8 +36,17 @@ void free_tokens(heck_code* c) {
 	}
 }
 
+void free_data_types(heck_code* c) {
+  size_t num_data_types = vector_size(c->data_types);
+  for (int i = 0; i < num_data_types; ++i) {
+    free_data_type(c->data_types[i]);
+  }
+}
+
 void heck_free(heck_code* c) {
   block_free(c->global);
+  free_data_types(c);
+  vector_free(c->data_types);
 	free_tokens(c);
 	vector_free(c->token_vec);
 	str_table_free(c->strings);

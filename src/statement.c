@@ -26,10 +26,10 @@ heck_stmt* create_stmt_expr(heck_expr* expr) {
 	return s;
 }
 
-heck_variable* create_variable(str_entry name, heck_data_type* type, heck_expr* value) {
+heck_variable* create_variable(str_entry name, heck_data_type* data_type, heck_expr* value) {
 	heck_variable* variable = malloc(sizeof(heck_variable));
 	variable->name = name;
-	variable->type = type;
+	variable->data_type = data_type;
 	variable->value = value;
 	return variable;
 }
@@ -173,9 +173,9 @@ void print_block(heck_block* block, int indent) {
 
 void print_variable(heck_variable* variable) {
 	printf("[%s", variable->name->value);
-	if (variable->type != NULL) {
+	if (variable->data_type != NULL) {
 		printf(": ");
-		print_data_type(variable->type);
+		print_data_type(variable->data_type);
 	}
 	printf("]");
 	
@@ -188,8 +188,8 @@ void print_variable(heck_variable* variable) {
 void free_variable(heck_variable* variable) {
 	// we only need to free type and value.
 	// name is a str_entry and will be freed automatically
-	if (variable->type != NULL)
-		free_data_type(variable->type);
+	if (variable->data_type != NULL)
+		free_data_type(variable->data_type);
 	
 	if (variable->value != NULL)
 		free_expr(variable->value);
@@ -266,21 +266,28 @@ void print_stmt_expr(heck_stmt* stmt, int indent) {
 bool resolve_stmt_let(heck_stmt* stmt, heck_scope* parent, heck_scope* global) {
 	
 	heck_variable* variable = stmt->value.var_value;
+
+  // uninitialized variables must have a type
+  if (variable->value == NULL) {
+    return variable->data_type != NULL;
+  }
+
+  if (resolve_expr(variable->value, parent, global)) {
+    
+    if (variable->data_type == NULL) {
+      variable->data_type = variable->value->data_type;
+    } else {
+      
+      // make sure the data type matches value
+      return data_type_cmp(variable->data_type, variable->value->data_type);
+
+    }
+
+  } else {
+    return false;
+  }
 	
-	
-//	// check for variable in current scope
-//	if (idf_map_item_exists(parent->names, variable->name)) {
-//		fprintf(stderr, "error: variable %s was already declared in this scope\n", variable->name->value);
-//		return false;
-//	}
-//
-//	// create the new variable
-//	heck_name* var_name = name_create(IDF_VARIABLE, parent);
-//	var_name->value.var_value = variable;
-//
-//	idf_map_set(parent->names, variable->name, variable);
-	
-	return variable->value == NULL || resolve_expr(variable->value, parent, global);
+	return true;
 		
 }
 void free_stmt_let(heck_stmt* stmt) {

@@ -279,17 +279,17 @@ heck_name* scope_add_class(heck_scope* parent, heck_idf idf) {
 		if (child->child_scope->names == NULL) {
 			child->child_scope->names = idf_map_create();
 		} else {
-			fprintf(stderr, "error: redefinition of class ");
-			fprint_idf(stderr, idf);
-			fprintf(stderr, "\n");
+			fputs( "error: redefinition of class ", stderr);
+			fprint_idf(idf, stderr);
+			fputc('\n', stderr);
 			return NULL;
 		}
 
 	// another class definition exists, but there is no class declaration
 	} else if (child->type == IDF_UNDECLARED_CLASS) {
-		fprintf(stderr, "error: redefinition of class ");
-		fprint_idf(stderr, idf);
-		fprintf(stderr, "\n");
+		fputs("error: redefinition of class ", stderr);
+		fprint_idf(idf, stderr);
+		fputc('\n', stderr);
 		return NULL;
 	}
 

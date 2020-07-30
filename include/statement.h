@@ -60,7 +60,7 @@ heck_stmt* create_stmt_expr(heck_expr* expr);
 // LET STATEMENT
 typedef struct heck_variable {
 	str_entry name;
-	heck_data_type* type;
+	heck_data_type* data_type;
 	heck_expr* value;
 } heck_variable;
 heck_variable* create_variable(str_entry name, heck_data_type* type, heck_expr* value);

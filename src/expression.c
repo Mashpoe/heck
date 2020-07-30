@@ -558,15 +558,15 @@ bool resolve_expr_value(heck_expr* expr, heck_scope* parent, heck_scope* global)
 		return false;
 	}
 	
-	if (name->type == IDF_VARIABLE) {
-		if (name->value.var_value->type == NULL) {
+  // TODO: support callbacks
+	if (name->type != IDF_VARIABLE || name->value.var_value->data_type == NULL) {
 			fprintf(stderr, "error: use of invalid variable\n");
 			return false;
-		}
-		return true;
-	}
+  }
+
+  expr->data_type = name->value.var_value->data_type;
 	
-	return false;
+	return true;
 }
 bool resolve_expr_callback(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 bool resolve_expr_unary(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
@@ -628,6 +628,8 @@ bool resolve_expr_cast(heck_expr* expr, heck_scope* parent, heck_scope* global) 
 	
 	// TODO: check if types are convertable
 	fputs("error: unable to resolve type cast", stderr);
+
+  // cast already has data type set
 	
 	return false;
 }
@@ -645,6 +647,8 @@ bool resolve_expr_mult(heck_expr* expr, heck_scope* parent, heck_scope* global) 
 		return true;
 	}
 	// TODO: check for operator overloads
+
+  expr->data_type = binary->left->data_type;
 	
 	return false;
 	
@@ -679,20 +683,38 @@ bool resolve_expr_gtr_eq(heck_expr* expr, heck_scope* parent, heck_scope* global
 bool resolve_expr_eq(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 	heck_expr_binary* eq_expr = &expr->value.binary;
 	
-	if (!resolve_expr(eq_expr->left, parent, global) || !resolve_expr(eq_expr->right, parent, global))
-		return false;
-	
+  if (!resolve_expr_binary(expr, parent, global))
+    return false;
+
 	// TODO: support casting and overloaded asg operators
+  if (!data_type_cmp(eq_expr->left->data_type, eq_expr->right->data_type))
+    return false;
+
+  expr->data_type = data_type_bool;
+	
 	return data_type_cmp(eq_expr->left->data_type, eq_expr->right->data_type);
 }
 bool resolve_expr_n_eq(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
 
 // precedence 11
 bool resolve_expr_and(heck_expr* expr, heck_scope* parent, heck_scope* global) {
-	heck_expr_binary* or_expr = &expr->value.binary;
+	heck_expr_binary* binary = &expr->value.binary;
+
+  if (!resolve_expr_binary(expr, parent, global))
+    return false;
+  
+  // cannot check truthiness of void
+  if (binary->left->data_type->type_name == TYPE_VOID ||
+      binary->right->data_type->type_name == TYPE_VOID) {
+    
+		fprintf(stderr, "error: cannot check truthiness of void\n");
+    return false;
+  }
+
+  expr->data_type = data_type_bool;
 	
 	// values can be truthy or falsy as long as they can be resolved (unless operator bool() is deleted)
-	return resolve_expr(or_expr->left, parent, global) && resolve_expr(or_expr->right, parent, global);
+	return true;
 }
 
 // precedence 12
@@ -722,8 +744,20 @@ bool resolve_expr_asg(heck_expr* expr, heck_scope* parent, heck_scope* global) {
     return false;
   }
 
-  return data_type_cmp(asg->left->data_type, asg->right->data_type);
+  if (!data_type_cmp(asg->left->data_type, asg->right->data_type)) {
+		fputs("error: unable to convert ", stderr);
+    fprint_data_type(asg->left->data_type, stderr);
+    fputs(" to ", stderr);
+    fprint_data_type(asg->right->data_type, stderr);
+    fputc('\n', stderr);
+    
+    return false;
+  }
+
+  // TODO: free each type once
+  expr->data_type = asg->left->data_type;
 	
+  return true;
 }
 
 //

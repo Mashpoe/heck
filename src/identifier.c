@@ -32,18 +32,18 @@ inline void free_idf(heck_idf idf) {
 }
 
 void print_idf(heck_idf idf) {
-	fprint_idf(stdout, idf);
+	fprint_idf(idf, stdout);
 }
 
-void fprint_idf(FILE* f, heck_idf idf) {
+void fprint_idf(heck_idf idf, FILE* f) {
 	
 	// print first element
-	fprintf(f, "%s", idf[0]->value);
+	fputs(idf[0]->value, f);
 	
 	// print extra elements if any exist
 	int i = 1;
 	while (idf[i] != NULL) {
-		fprintf(f, ".");
-		fprintf(f, "%s", idf[i++]->value);
+		fputc('.', stderr);
+		fputs(idf[i++]->value, f);
 	}
 }
