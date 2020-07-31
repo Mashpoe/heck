@@ -176,7 +176,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 	
 	file_pos fp = {
 		.ln = 1,
-		.ch = 0,
+		.ch = 1,
 		.size = 0,
 		.pos = 0,
 		.file = NULL,
