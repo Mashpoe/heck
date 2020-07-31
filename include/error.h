@@ -9,9 +9,17 @@
 #define error_h
 
 #include "token.h"
-#include "declarations.h"
+#include "identifier.h"
+#include <stdarg.h>
 
-void heck_error(void);
+// custom print format:
+// {i} = int
+// {s} = const char*
+// {t} = const heck_data_type*
+// {I} = heck_idf
+void heck_report_error(const char* filename, heck_token* tk, const char* format, ...);
+
+void heck_vreport_error(const char* filename, heck_token* tk, const char* format, va_list args);
 
 const char* get_idf_type_string(heck_idf_type type);
 

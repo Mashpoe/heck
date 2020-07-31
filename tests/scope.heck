@@ -1,11 +1,20 @@
-func hello()
-
-hello()
-
-
-func world()
-
-func world() {
+/*func hello() {
 
 }
 
+extern hello()
+
+
+world()
+
+func world() {
+
+}*/
+
+class oof {
+
+}
+;
+namespace oof {
+
+}

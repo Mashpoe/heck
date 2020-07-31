@@ -8,22 +8,24 @@
 #include <expression.h>
 #include <scope.h>
 #include <function.h>
+#include <error.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "vec.h"
 
 // todo: make init_expr(heck_expr* expr, type, vtable)
-void init_expr(heck_expr*, heck_expr_type, const expr_vtable*);
-inline void init_expr(heck_expr* expr, heck_expr_type type, const expr_vtable* vtable) {
+void init_expr(heck_expr*, heck_expr_type, const expr_vtable*, heck_token* start_tk);
+inline void init_expr(heck_expr* expr, heck_expr_type type, const expr_vtable* vtable, heck_token* start_tk) {
+  expr->start_tk = start_tk;
 	expr->type = type;
 	expr->vtable = vtable;
 	expr->data_type = NULL; // or make TYPE_UNKNOWN
 	expr->flags = 0x0; // set all flags to false
 }
 
-heck_expr* create_expr_literal(heck_literal* value) {
+heck_expr* create_expr_literal(heck_literal* value, heck_token* start_tk) {
 	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_literal*));
-  init_expr(e, EXPR_LITERAL, &expr_vtable_literal);
+  init_expr(e, EXPR_LITERAL, &expr_vtable_literal, start_tk);
 	e->value.literal = value;
 	e->data_type = value->data_type;
 	e->flags = EXPR_CONST; // literals are constexpr
@@ -31,17 +33,17 @@ heck_expr* create_expr_literal(heck_literal* value) {
 	return e;
 }
 
-heck_expr* create_expr_cast(const heck_data_type* type, heck_expr* expr) {
+heck_expr* create_expr_cast(const heck_data_type* type, heck_expr* expr, heck_token* start_tk) {
 	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr*));
-  init_expr(e, EXPR_CAST, &expr_vtable_cast);
+  init_expr(e, EXPR_CAST, &expr_vtable_cast, start_tk);
 	e->data_type = type;
 	e->value.expr = expr;
 	return e;
 }
 
-heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr* right, const expr_vtable* vtable) {
+heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr* right, const expr_vtable* vtable, heck_token* start_tk) {
 	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_binary));
-  init_expr(e, EXPR_BINARY, vtable);
+  init_expr(e, EXPR_BINARY, vtable, start_tk);
 	
 	heck_expr_binary* binary = &e->value.binary;
 	binary->left = left;
@@ -51,9 +53,9 @@ heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr*
 	return e;
 }
 
-heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator, const expr_vtable* vtable) {
+heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator, const expr_vtable* vtable, heck_token* start_tk) {
 	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_unary));
-  init_expr(e, EXPR_UNARY, vtable);
+  init_expr(e, EXPR_UNARY, vtable, start_tk);
 	
 	heck_expr_unary* unary = &e->value.unary;
 	unary->expr = expr;
@@ -62,9 +64,9 @@ heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator, const expr_
 	return e;
 }
 
-heck_expr* create_expr_value(heck_idf name, idf_context context) {
+heck_expr* create_expr_value(heck_idf name, idf_context context, heck_token* start_tk) {
 	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_value));
-  init_expr(e, EXPR_VALUE, &expr_vtable_value);
+  init_expr(e, EXPR_VALUE, &expr_vtable_value, start_tk);
 	
 	// value :)
 	heck_expr_value* value = &e->value.value;
@@ -74,9 +76,9 @@ heck_expr* create_expr_value(heck_idf name, idf_context context) {
 	return e;
 }
 
-heck_expr* create_expr_call(heck_expr* operand) {
+heck_expr* create_expr_call(heck_expr* operand, heck_token* start_tk) {
 	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_call));
-  init_expr(e, EXPR_CALL, &expr_vtable_call);
+  init_expr(e, EXPR_CALL, &expr_vtable_call, start_tk);
 	
 	heck_expr_call* call = &e->value.call;
 //	call->name.name = name;
@@ -88,9 +90,9 @@ heck_expr* create_expr_call(heck_expr* operand) {
 	return e;
 }
 
-heck_expr* create_expr_asg(heck_expr* left, heck_expr* right) {
+heck_expr* create_expr_asg(heck_expr* left, heck_expr* right, heck_token* start_tk) {
 	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_binary));
-  init_expr(e, EXPR_BINARY, &expr_vtable_asg);
+  init_expr(e, EXPR_BINARY, &expr_vtable_asg, start_tk);
 	
 	heck_expr_binary* asg = &e->value.binary;
 	asg->left = left;
@@ -99,9 +101,9 @@ heck_expr* create_expr_asg(heck_expr* left, heck_expr* right) {
 	return e;
 }
 
-heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b) {
+heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b, heck_token* start_tk) {
 	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_ternary));
-  init_expr(e, EXPR_TERNARY, &expr_vtable_ternary);
+  init_expr(e, EXPR_TERNARY, &expr_vtable_ternary, start_tk);
 	
 	heck_expr_ternary* ternary = &e->value.ternary;
 	ternary->condition = condition;
@@ -111,9 +113,9 @@ heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_ex
 	return e;
 }
 
-heck_expr* create_expr_err() {
+heck_expr* create_expr_err(heck_token* start_tk) {
 	heck_expr* e = malloc(EXPR_SIZE/* + 0*/);
-  init_expr(e, EXPR_ERR, &expr_vtable_err);
+  init_expr(e, EXPR_ERR, &expr_vtable_err, start_tk);
 	
 	e->value.expr = NULL;
 	
@@ -554,13 +556,13 @@ bool resolve_expr_value(heck_expr* expr, heck_scope* parent, heck_scope* global)
 	heck_name* name = scope_resolve_value(&expr->value.value, parent, global);
 	
 	if (name == NULL) {
-		fprintf(stderr, "error: use of undeclared identifier\n");
+    heck_report_error(NULL, expr->start_tk, "use of undeclared identifier \"{I}\"", expr->value.value.name);
 		return false;
 	}
 	
   // TODO: support callbacks
 	if (name->type != IDF_VARIABLE || name->value.var_value->data_type == NULL) {
-			fprintf(stderr, "error: use of invalid variable\n");
+      heck_report_error(NULL, expr->start_tk, "use of invalid variable \"{I}\"", expr->value.value.name);
 			return false;
   }
 
@@ -740,16 +742,20 @@ bool resolve_expr_asg(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 	 */
 
   if (asg->left->type != EXPR_VALUE) {
-		fprintf(stderr, "error: unable to assign to variable\n");
+		fprintf(stderr, "error: munable to assign to variable\n");
     return false;
   }
 
   if (!data_type_cmp(asg->left->data_type, asg->right->data_type)) {
-		fputs("error: unable to convert ", stderr);
-    fprint_data_type(asg->left->data_type, stderr);
-    fputs(" to ", stderr);
-    fprint_data_type(asg->right->data_type, stderr);
-    fputc('\n', stderr);
+		// fputs("error: unable to convert ", stderr);
+    // fprint_data_type(asg->left->data_type, stderr);
+    // fputs(" to ", stderr);
+    // fprint_data_type(asg->right->data_type, stderr);
+    // fputc('\n', stderr);
+    /*heck_fprint_fmt(stderr, "error: unable to convert {t} to {t}\n",
+      asg->right->data_type, asg->left->data_type);*/
+
+    heck_report_error(NULL, expr->start_tk, "unable to convert {t} to {t}", asg->right->data_type, asg->left->data_type);
     
     return false;
   }
@@ -770,17 +776,17 @@ inline heck_expr* copy_expr(heck_expr* expr) {
 
 // TODO: make one static expr_err instead of copying
 heck_expr* copy_expr_err(heck_expr* expr) {
-	return create_expr_err();
+	return create_expr_err(expr->start_tk);
 }
 
 // only used for unresolvable literals in function templates
 heck_expr* copy_expr_literal(heck_expr* expr) {
-	return create_expr_literal(copy_literal((&expr->value.literal)));
+	return create_expr_literal(copy_literal((&expr->value.literal)), expr->start_tk);
 }
 
 heck_expr* copy_expr_value(heck_expr* expr) {
 	heck_expr_value* value = &expr->value.value; // value
-	return create_expr_value(value->name, value->context);
+	return create_expr_value(value->name, value->context, expr->start_tk);
 }
 
 heck_expr* copy_expr_call(heck_expr* expr) {
@@ -799,21 +805,21 @@ heck_expr* copy_expr_cast(heck_expr* expr) {
 
 heck_expr* copy_expr_unary(heck_expr* expr) {
 	heck_expr_unary* orig_val = &expr->value.unary;
-	heck_expr* copy = create_expr_unary(orig_val->expr, orig_val->operator, expr->vtable);
+	heck_expr* copy = create_expr_unary(orig_val->expr, orig_val->operator, expr->vtable, expr->start_tk);
 	copy->flags = expr->flags;
 	return copy;
 }
 
 heck_expr* copy_expr_binary(heck_expr* expr) {
 	heck_expr_binary* orig_value = &expr->value.binary;
-	heck_expr* copy = create_expr_binary(orig_value->left, orig_value->operator, orig_value->right, expr->vtable);
+	heck_expr* copy = create_expr_binary(orig_value->left, orig_value->operator, orig_value->right, expr->vtable, expr->start_tk);
 	copy->flags = expr->flags;
 	return copy;
 }
 
 heck_expr* copy_expr_ternary(heck_expr* expr) {
 	heck_expr_ternary* orig_value = &expr->value.ternary;
-	heck_expr* copy = create_expr_ternary(orig_value->condition, orig_value->value_a, orig_value->value_b);
+	heck_expr* copy = create_expr_ternary(orig_value->condition, orig_value->value_a, orig_value->value_b, expr->start_tk);
 	copy->flags = expr->flags;
 	return copy;
 }

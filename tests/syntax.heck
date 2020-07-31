@@ -1,2 +1,13 @@
-let a: int
+
+class oof {
+
+}
+
+namespace oof {
+
+}
+
+let a;
 a = "hello"
+
+5 + a.b.c.d

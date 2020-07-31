@@ -1,5 +1,13 @@
-let testVar = true
+let var1 = true
 
-testVar + 1
+var1 = false
 
-//print("testVar")
+let var2 = 1
+
+var2 = 2
+
+let var3 = "meme"
+
+var3 = "oof"
+
+var1 = 4

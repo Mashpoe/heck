@@ -59,6 +59,7 @@ typedef struct heck_type_arg_list {
 	heck_data_type** type_vec;
 } heck_type_arg_list;
 
+// TODO: store start token for error line numbers
 typedef struct heck_class_type {
 	union {
 		heck_idf name;
