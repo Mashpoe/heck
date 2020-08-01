@@ -1,5 +1,8 @@
+/**/
+
 func 尺print(a: string) {
   return a
 }
+
 
 尺print("hello尺 world")

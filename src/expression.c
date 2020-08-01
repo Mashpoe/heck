@@ -841,7 +841,7 @@ heck_expr* copy_expr_err(heck_expr* expr) {
 
 // only used for unresolvable literals in function templates
 heck_expr* copy_expr_literal(heck_expr* expr) {
-	return create_expr_literal(copy_literal((&expr->value.literal)), expr->start_tk);
+	return create_expr_literal(copy_literal((expr->value.literal)), expr->start_tk);
 }
 
 heck_expr* copy_expr_value(heck_expr* expr) {
