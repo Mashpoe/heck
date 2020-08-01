@@ -1011,7 +1011,7 @@ void class_decl(parser* p, heck_scope* parent) {
 				if (let_stmt->type == EXPR_ERR)
 					break;
 				
-				scope_add_decl(class_name->child_scope, let_stmt);
+				// scope_add_decl(class_name->child_scope, let_stmt);
 				
 				break;
 			}

@@ -11,3 +11,34 @@ let a;
 a = "hello"
 
 5 + a.b.c.d
+
+
+let x: int
+
+x
+
+{
+  x
+  y
+}
+
+if (true) {
+  x = 5
+} else {
+  x = 5
+  x
+}
+
+let z: int
+
+if (true) {
+  //z
+  z = 5
+} else {
+  z = 4
+  z
+}
+
+z = 4
+
+z

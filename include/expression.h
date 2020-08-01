@@ -85,10 +85,11 @@ heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator, const expr_
 
 // variable/variable value
 typedef struct heck_expr_value {
-	heck_idf name;
+	heck_idf idf;
+  heck_name* name; // set at resolve
 	idf_context context;
 } heck_expr_value;
-heck_expr* create_expr_value(heck_idf name, idf_context context, heck_token* start_tk);
+heck_expr* create_expr_value(heck_idf idf, idf_context context, heck_token* start_tk);
 
 // TODO: add support for any expression as the left operand
 // function call

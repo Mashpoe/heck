@@ -64,13 +64,14 @@ heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator, const expr_
 	return e;
 }
 
-heck_expr* create_expr_value(heck_idf name, idf_context context, heck_token* start_tk) {
+heck_expr* create_expr_value(heck_idf idf, idf_context context, heck_token* start_tk) {
 	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_value));
   init_expr(e, EXPR_VALUE, &expr_vtable_value, start_tk);
 	
 	// value :)
 	heck_expr_value* value = &e->value.value;
-	value->name = name;
+	value->idf = idf;
+  value->name = NULL;
 	value->context = context;
 	
 	return e;
@@ -81,8 +82,6 @@ heck_expr* create_expr_call(heck_expr* operand, heck_token* start_tk) {
   init_expr(e, EXPR_CALL, &expr_vtable_call, start_tk);
 	
 	heck_expr_call* call = &e->value.call;
-//	call->name.name = name;
-//	call->name.context = context;
 	call->operand = operand;
 	call->arg_vec = vector_create();
 	call->type_arg_vec = NULL;
@@ -135,6 +134,42 @@ inline bool resolve_expr_binary(heck_expr* expr, heck_scope* parent, heck_scope*
 	);
 }
 
+// expects a heck_expr_value.
+// will successfully resolve even if the value isn't a variable.
+// do not confuse with resolve_expr_value, this function is for internal use.
+bool resolve_value(heck_expr* expr, heck_scope* parent, heck_scope* global) {
+  
+  // try to find the identifier
+	heck_name* name = scope_resolve_value(&expr->value.value, parent, global);
+	
+	if (name == NULL) {
+    heck_report_error(NULL, expr->start_tk, "use of undeclared identifier \"{I}\"", expr->value.value.idf);
+		return false;
+	}
+
+  heck_expr_value* value = &expr->value.value;
+
+  if (name->type == IDF_VARIABLE) {
+
+    if (name->value.var_value->data_type == NULL) {
+      heck_report_error(NULL, expr->start_tk, "use of invalid variable \"{I}\"", value->idf);
+      return false;
+    }
+
+    // set data type
+    expr->data_type = name->value.var_value->data_type;
+
+  } else {
+    // TODO: support callbacks
+    heck_report_error(NULL, expr->start_tk, "invalid use of {s} {I}", get_idf_type_string(value->name->type), value->idf);
+  }
+
+  // set name
+  expr->value.value.name = name;
+
+  return true;
+}
+
 /************************
  * all vtable definitions
  ************************/
@@ -151,7 +186,7 @@ void print_expr_binary(heck_expr* expr);
  * precedence 1
  */
 
-// error (always resolves to true)
+// error (always resolves to false)
 bool resolve_expr_err(heck_expr* expr, heck_scope* parent, heck_scope* global);
 heck_expr* copy_expr_err(heck_expr* expr);
 void free_expr_err(heck_expr* expr);
@@ -552,22 +587,18 @@ bool resolve_expr_err(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 // literals are always resolved immediatley during scanning
 bool resolve_expr_literal(heck_expr* expr, heck_scope* parent, heck_scope* global) { return true; }
 bool resolve_expr_value(heck_expr* expr, heck_scope* parent, heck_scope* global) {
+	
 	// try to find the identifier
-	heck_name* name = scope_resolve_value(&expr->value.value, parent, global);
-	
-	if (name == NULL) {
-    heck_report_error(NULL, expr->start_tk, "use of undeclared identifier \"{I}\"", expr->value.value.name);
+	if (!resolve_value(expr, parent, global))
 		return false;
-	}
-	
-  // TODO: support callbacks
-	if (name->type != IDF_VARIABLE || name->value.var_value->data_type == NULL) {
-      heck_report_error(NULL, expr->start_tk, "use of invalid variable \"{I}\"", expr->value.value.name);
-			return false;
+
+	heck_name* name = expr->value.value.name;
+
+  if (name->type == IDF_VARIABLE && !scope_var_is_init(parent, name)) {
+    heck_report_error(NULL, expr->start_tk, "use of uninitialized variable \"{I}\"", expr->value.value.idf);
+    return false;
   }
 
-  expr->data_type = name->value.var_value->data_type;
-	
 	return true;
 }
 bool resolve_expr_callback(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
@@ -733,16 +764,45 @@ bool resolve_expr_asg(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 	
 	heck_expr_binary* asg = &expr->value.binary;
 
-  if (!resolve_expr_binary(expr, parent, global))
+  if (!resolve_expr(asg->right, parent, global))
     return false;
+
+  //if (!resolve_expr_binary(expr, parent, global))
+  // return false;
 	
 	/*
 	 *	TODO: check if it's a expr_value
-	 *	otherwise, check if the data type is a temporary reference
+	 *	otherwise, check if it's an lvalue
 	 */
 
-  if (asg->left->type != EXPR_VALUE) {
-		fprintf(stderr, "error: munable to assign to variable\n");
+  // mutability check and initialize check
+  if (asg->left->type == EXPR_VALUE) {
+
+    // will report error on its own
+    if (!resolve_value(asg->left, parent, global))
+      return false;
+
+    heck_expr_value* value = &asg->left->value.value;
+
+    if (value->name->type != IDF_VARIABLE) {
+      heck_report_error(NULL, expr->start_tk, "unable to assign to {s} {I}", get_idf_type_string(value->name->type), value->idf);
+      return false;
+    }
+    
+    // TODO: check for mutability
+
+    // check for initialization
+    if (!scope_var_is_init(parent, value->name)) {
+      // if the variable hasn't been initialized,
+      // declare it as initialized for this scope
+      if (parent->var_inits == NULL)
+        parent->var_inits = vector_create();
+      
+      vector_add(&parent->var_inits, value->name);
+    }
+
+  } else { // TODO: resolve and handle other types of lvalues
+    heck_report_error(NULL, expr->start_tk, "unable to assign to expression");
     return false;
   }
 
@@ -786,7 +846,7 @@ heck_expr* copy_expr_literal(heck_expr* expr) {
 
 heck_expr* copy_expr_value(heck_expr* expr) {
 	heck_expr_value* value = &expr->value.value; // value
-	return create_expr_value(value->name, value->context, expr->start_tk);
+	return create_expr_value(value->idf, value->context, expr->start_tk);
 }
 
 heck_expr* copy_expr_call(heck_expr* expr) {
@@ -870,7 +930,7 @@ void print_value_idf(heck_expr_value* value) {
 	} else if (value->context == CONTEXT_THIS) {
 		fputs("this.", stdout);
 	}
-	print_idf(value->name);
+	print_idf(value->idf);
 }
 
 void print_expr_value(heck_expr* expr) {

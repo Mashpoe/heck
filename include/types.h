@@ -83,7 +83,7 @@ struct heck_data_type {
 // resolve callback
 typedef heck_data_type* (*type_resolve)(heck_data_type*, heck_scope* parent, heck_scope* global);
 typedef void (*type_free)(heck_data_type*);
-typedef void (*type_print)(FILE*, const heck_data_type*);
+typedef void (*type_print)(const heck_data_type*, FILE*);
 struct type_vtable {
 	type_resolve resolve;
 	type_free free;

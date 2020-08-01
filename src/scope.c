@@ -30,7 +30,7 @@ heck_scope* scope_create(heck_scope* parent) {
 	
 	heck_scope* scope = malloc(sizeof(heck_scope));
 	scope->names = NULL;
-	scope->decl_vec = NULL;
+	//scope->decl_vec = NULL;
 	
 	scope->parent = parent;
 	if (parent == NULL) {
@@ -79,7 +79,10 @@ void scope_free(heck_scope* scope) {
     // free the scope itself
 	  idf_map_free(scope->names);
   }
-  
+
+  if (scope->var_inits != NULL)
+    vector_free(scope->var_inits);
+    
   free(scope);
 }
 
@@ -171,14 +174,10 @@ bool name_accessible(const heck_scope* parent, const heck_scope* child, const he
 }
 
 heck_name* scope_resolve_idf(heck_idf idf, const heck_scope* parent) {
-	
-	if (parent->names == NULL) {
-		return NULL;
-	}
 
 	// find the parent of the idf
 	heck_name* name;
-	while (!idf_map_get(parent->names, idf[0], (void*)&name)) {
+	while (parent->names == NULL || !idf_map_get(parent->names, idf[0], (void*)&name)) {
 		
 		// we have likely reached the global scope if parent->parent == NULL
 		if (parent->parent == NULL)
@@ -214,40 +213,24 @@ heck_name* scope_resolve_idf(heck_idf idf, const heck_scope* parent) {
 heck_name* scope_resolve_value(heck_expr_value* value, const heck_scope* parent, const heck_scope* global) {
 	switch (value->context) {
 		case CONTEXT_LOCAL:
-			return scope_resolve_idf(value->name, parent);
+			return scope_resolve_idf(value->idf, parent);
 		case CONTEXT_THIS:
 			if (parent->class == NULL || parent->class->child_scope == NULL)
 				return NULL;
-			return scope_resolve_idf(value->name, parent->class->child_scope);
+			return scope_resolve_idf(value->idf, parent->class->child_scope);
 		case CONTEXT_GLOBAL:
-			return scope_resolve_idf(value->name, global);
+			return scope_resolve_idf(value->idf, global);
 	}
 }
 
-void scope_add_decl(heck_scope* scope, heck_stmt* decl) {
+// void scope_add_decl(heck_scope* scope, heck_stmt* decl) {
 	
-	if (scope->decl_vec == NULL)
-		scope->decl_vec = vector_create();
+// 	if (scope->decl_vec == NULL)
+// 		scope->decl_vec = vector_create();
 	
-	vector_add(&scope->decl_vec, decl);
+// 	vector_add(&scope->decl_vec, decl);
 	
-}
-
-/*heck_scope* create_nmsp(void) {
-	return scope_create(IDF_NAMESPACE);
-}
-heck_scope* add_nmsp_idf(heck_scope* scope, heck_scope* child, heck_idf name) {
-	
-	// create a child, populate it with the namespace
-	heck_scope* child_scope = scope_get_child(scope, name);
-	child_scope->value = child;
-	
-	return child_scope;
-}*/
-
-//heck_scope* add_class_idf(heck_scope* scope, heck_stmt_class* child, heck_idf name) {
-//	return NULL;
-//}
+// }
 
 heck_name* scope_add_class(heck_scope* parent, heck_idf idf) {
 	heck_name* child = scope_get_child(parent, idf);
@@ -300,11 +283,36 @@ heck_name* scope_add_class(heck_scope* parent, heck_idf idf) {
 
 // this could be made into a macro as a ternary expression
 //#define scope_is_class(scope) ((scope)->class == NULL ? false : (scope)->class->child_scope == (scope))
-inline bool scope_is_class(heck_scope* scope) {
+bool scope_is_class(heck_scope* scope) {
 	if (scope->class == NULL)
 		return false;
 	
 	return scope->class->child_scope == scope;
+}
+
+bool scope_var_is_init(heck_scope* scope, heck_name* var_name) {
+  if (var_name->value.var_value->value == true)
+    return true;
+
+  do {
+
+    if (scope->var_inits != NULL) {
+      
+      vec_size_t num_inits = vector_size(scope->var_inits);
+
+      for (vec_size_t i = 0; i < num_inits; ++i) {
+        if (scope->var_inits[i] == var_name)
+          return true;
+      }
+
+    }
+
+    scope = scope->parent;
+
+  // possibly remove && scope != NULL
+  } while(scope != var_name->parent && scope != NULL);
+
+  return false;
 }
 
 // TODO: add vtables

@@ -74,7 +74,8 @@ typedef struct heck_scope {
 	// map of heck_name*s, NULL if empty
 	idf_map* names;
 	
-	heck_stmt** decl_vec;
+  // every variable that gets initialized in this scope
+	heck_name** var_inits;
 } heck_scope;
 heck_scope* scope_create(heck_scope* parent);
 void scope_free(heck_scope* scope);
@@ -87,18 +88,20 @@ heck_name* scope_resolve_idf(heck_idf idf, const heck_scope* parent);
 heck_name* scope_resolve_value(heck_expr_value* value, const heck_scope* parent, const heck_scope* global);
 
 // add a declaration statement (class members, classes, or functions that belong to the scope)
-void scope_add_decl(heck_scope* scope, heck_stmt* decl);
+//void scope_add_decl(heck_scope* scope, heck_stmt* decl);
 
 // vvv TYPES OF CHILD NAMES vvv
 
 // NAMESPACE
 heck_name* create_nmsp(void);
-heck_name* add_nmsp_idf(heck_scope* scope, heck_scope* child, heck_idf class_idf);
+// heck_name* add_nmsp_idf(heck_scope* scope, heck_scope* child, heck_idf class_idf);
 
 // CLASS
 // creates a class within a given scope
-heck_name* scope_add_class(heck_scope* scope, heck_idf name);
+heck_name* scope_add_class(heck_scope* scope, heck_idf idf);
 bool scope_is_class(heck_scope* scope);
+// check if a variable has been initialized in a given scope
+bool scope_var_is_init(heck_scope* scope, heck_name* var_name);
 //heck_scope* add_class_idf(heck_scope* scope, heck_stmt_class* child, heck_idf name);
 
 //bool resolve_scope(heck_scope* scope, heck_scope* global);
