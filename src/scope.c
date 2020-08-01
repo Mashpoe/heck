@@ -31,6 +31,7 @@ heck_scope* scope_create(heck_scope* parent) {
 	heck_scope* scope = malloc(sizeof(heck_scope));
 	scope->names = NULL;
 	//scope->decl_vec = NULL;
+  scope->var_inits = NULL;
 	
 	scope->parent = parent;
 	if (parent == NULL) {
