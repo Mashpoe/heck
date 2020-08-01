@@ -292,7 +292,7 @@ bool scope_is_class(heck_scope* scope) {
 }
 
 bool scope_var_is_init(heck_scope* scope, heck_name* var_name) {
-  if (var_name->value.var_value->value == true)
+  if (var_name->value.var_value->value != NULL)
     return true;
 
   do {
