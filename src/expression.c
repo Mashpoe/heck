@@ -161,7 +161,7 @@ bool resolve_value(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 
   } else {
     // TODO: support callbacks
-    heck_report_error(NULL, expr->start_tk, "invalid use of {s} {I}", get_idf_type_string(value->name->type), value->idf);
+    heck_report_error(NULL, expr->start_tk, "invalid use of {s} {I}", get_idf_type_string(name->type), value->idf);
   }
 
   // set name
