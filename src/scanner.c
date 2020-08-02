@@ -33,44 +33,88 @@ struct file_pos {
 // handles '\n', '\r', and '\r\n' line endings. It doesn't care if they're mixed
 // it won't pass over the last character of the newline (so it can be processed)
 // also deals with escaped newlines
+// bool match_newline(file_pos* fp) {
+	
+// 	 // an attempt at handling all cases with minimal branching
+	
+// 	// handle escaping backslash
+// 	size_t new_pos = fp->pos;
+// 	bool escaped = fp->file[new_pos] == '\\';
+// 	if (escaped)
+// 		++new_pos;
+	
+// 	// handle the various line endings
+// 	if (fp->file[new_pos] == '\r') {
+// 		if (fp->file[new_pos + 1] == '\n')
+// 			++new_pos;
+// 	} else if (fp->file[new_pos] != '\n') {
+		
+// 		// most of the time there won't be a newline
+// 		// exit the function quickly
+		
+// 		return false;
+// 	}
+	
+// 	if (escaped)
+// 		++new_pos;
+	
+// 	// there was clearly a newline, update position
+// 	fp->pos = new_pos;
+// 	++fp->ln;
+// 	fp->ch = 0;
+	
+// 	return !escaped;
+// }
+
+// continue to pass over escaped and unescaped newlines
+// will return true if at least one newline is unescaped
 bool match_newline(file_pos* fp) {
-	
-	 // an attempt at handling all cases with minimal branching
-	
-	// handle escaping backslash
+
+	bool matched = false;
+
 	size_t new_pos = fp->pos;
-	bool escaped = fp->file[new_pos] == '\\';
-	if (escaped)
-		++new_pos;
+
+	for (;;) {
 	
-	// handle the various line endings
-	if (fp->file[new_pos] == '\r') {
-		if (fp->file[new_pos + 1] == '\n')
+		// handle escaping backslash
+		bool escaped = fp->file[new_pos] == '\\';
+		if (escaped)
 			++new_pos;
-	} else if (fp->file[new_pos] != '\n') {
+
+		// handle the various line endings
+		if (fp->file[new_pos] == '\r') {
+			if (fp->file[new_pos + 1] == '\n')
+				++new_pos;
+		} else if (fp->file[new_pos] != '\n') {
 		
-		// most of the time there won't be a newline
-		// exit the function quickly
+			// most of the time there won't be a newline
+			// exit the function quickly
 		
-		return false;
+			return false;
+		}
+
+		// there was clearly a newline, update position
+		++fp->ln;
+		fp->ch = 0;
+
+		if (escaped) {
+			++new_pos;
+		} else {
+			matched = true;
+			break;
+		}
 	}
-	
-	if (escaped)
-		++new_pos;
-	
-	// there was clearly a newline, update position
+
 	fp->pos = new_pos;
-	++fp->ln;
-	fp->ch = 0;
-	
-	return !escaped;
+
+	return matched;
 }
 
 int scan_step(file_pos* fp) {
 	
 	++fp->pos;
 	++fp->ch;
-	
+
 	// check for a newline
 	if (match_newline(fp))
 		return fp->current = '\n'; // return '\n' no-matter what line ending was found
@@ -82,48 +126,27 @@ int scan_peek_next(file_pos* fp) {
 	return fp->file[fp->pos+1];
 }
 
-// set do_step to true if you want to step past the string if it matches
-// will only match strings in the current line
+// do not match strings that contain newlines because it will not update fp->ln...
+// this function does not deal with escaped newlines...
 bool match_str(file_pos* fp, char* s) {
 	int s_pos = 0;
 	
 	size_t l_pos = fp->pos;
 	
-	// how many escaped newlines have we passed while matching the string?
-	//int escaped_newlines = 0;
-	
 	while (s[s_pos] != '\0') {
-		if (s[s_pos] != fp->file[l_pos]) {
-			// check for escaped newline
-			if (fp->file[l_pos] == '\\') {
-				
-				++l_pos;
-				
-				/*
-				if (fp->file[l_pos] == '\n') {
-					escaped_newlines++;
-					l_pos += 2; // advance past the
-					continue;
-				} else if (fp->file[l_pos] == '\r') {
-					escaped_newlines++;
-					l_pos += 2;
-					if (fp->file[l_pos] == '\n')
-						l_pos++;
-					continue;
-				}*/
-				
-			}
+		if (s[s_pos] != fp->file[l_pos])
 			return false;
-		}
 		++l_pos;
 		++s_pos;
 	}
 	
-	// if you ever add support for escaped newlines (by uncommenting the code above),
-	// you need to properly update fp->ln and fp->ch (which can't be l_pos)
 	fp->ch += s_pos;
 	fp->pos = l_pos;
 	fp->current = fp->file[fp->pos];
+
+	// check for a newline
+	if (match_newline(fp))
+		fp->current = '\n'; // return '\n' no-matter what line ending was found
 	
 	return true;
 }
@@ -198,7 +221,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 	buffer = NULL;
 	
 	// initialize scanner state
-	match_newline(&fp); // prevents the scanner from ignoring a potential newline at the beginning of a file
+	match_newline(&fp); // prevents the scanner from ignoring newlines at the beginning of a file
 	fp.current = fp.file[fp.pos]; // initialize fp.current (must use fp.pos in case of matched newline)
 	
 	while (fp.current != '\0') {
@@ -393,9 +416,16 @@ bool heck_scan(heck_code* c, FILE* f) {
 				break;
 			}
 			case '\\': {
+
+				// first check for escaped newline.
+				// this can be an issue if there are multiple escaped newlines in a row
+				// size_t temp_pos = fp.pos;
+				// match_newline(&fp);
+				// // escaped newlines return false, so we have to check if pos increased
+				// if (fp.pos > temp_pos)
+				// 	break;
 				
 				// there shouldn't be any escape sequences here, match_newline() already handles escaped newlines
-				
 				fprintf(stderr, "error: unexpected escape sequence, ln %i ch %i\n", fp.ln, fp.ch);
 				
 				add_token_err(c, &fp);
