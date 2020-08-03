@@ -1,0 +1,21 @@
+
+/*
+
+*/
+
+\
+\
+
+/*
+
+*/\
+
+
+fu\
+nc 尺print(a: string) {
+  return a
+}
+
+尺pri\
+nt("hello尺\
+ world")

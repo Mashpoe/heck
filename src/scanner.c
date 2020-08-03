@@ -30,50 +30,18 @@ struct file_pos {
 	int tk_ch;
 };
 
-// handles '\n', '\r', and '\r\n' line endings. It doesn't care if they're mixed
-// it won't pass over the last character of the newline (so it can be processed)
-// also deals with escaped newlines
-// bool match_newline(file_pos* fp) {
-	
-// 	 // an attempt at handling all cases with minimal branching
-	
-// 	// handle escaping backslash
-// 	size_t new_pos = fp->pos;
-// 	bool escaped = fp->file[new_pos] == '\\';
-// 	if (escaped)
-// 		++new_pos;
-	
-// 	// handle the various line endings
-// 	if (fp->file[new_pos] == '\r') {
-// 		if (fp->file[new_pos + 1] == '\n')
-// 			++new_pos;
-// 	} else if (fp->file[new_pos] != '\n') {
-		
-// 		// most of the time there won't be a newline
-// 		// exit the function quickly
-		
-// 		return false;
-// 	}
-	
-// 	if (escaped)
-// 		++new_pos;
-	
-// 	// there was clearly a newline, update position
-// 	fp->pos = new_pos;
-// 	++fp->ln;
-// 	fp->ch = 0;
-	
-// 	return !escaped;
-// }
-
-// continue to pass over escaped and unescaped newlines
-// will return true if at least one newline is unescaped
+// handles '\n', '\r', and '\r\n' line endings
+// line endings can be mixed in a file (not worth checking)
+// handles escaped and unescaped newlines
+// won't pass over the last character of an unescaped newline (so it can be processed)
+// returns true if an unescaped newline is found
 bool match_newline(file_pos* fp) {
 
-	bool matched = false;
-
+	// look ahead and update pos if a newline is found
 	size_t new_pos = fp->pos;
 
+	// the loop restarts after an escaped newline has been found
+	// this prevents any following newlines from being missed
 	for (;;) {
 	
 		// handle escaping backslash
@@ -88,26 +56,29 @@ bool match_newline(file_pos* fp) {
 		} else if (fp->file[new_pos] != '\n') {
 		
 			// most of the time there won't be a newline
-			// exit the function quickly
-		
-			return false;
+			// exit the loop quickly
+			break;
 		}
 
 		// there was clearly a newline, update position
 		++fp->ln;
 		fp->ch = 0;
 
+		// the newline was escaped, so we'll pass over it
 		if (escaped) {
 			++new_pos;
-		} else {
-			matched = true;
-			break;
+			continue;
 		}
+		
+		// an unescaped newline was found, return true
+		fp->pos = new_pos;
+		return true;
 	}
 
+	// no unescaped newlines were found
+	// escaped newlines may have been passed over
 	fp->pos = new_pos;
-
-	return matched;
+	return false;
 }
 
 int scan_step(file_pos* fp) {
