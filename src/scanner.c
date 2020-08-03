@@ -71,7 +71,9 @@ bool match_newline(file_pos* fp) {
 		}
 		
 		// an unescaped newline was found, return true
+		// set current to '\n' so all newlines are read the same
 		fp->pos = new_pos;
+		fp->current = '\n';
 		return true;
 	}
 
@@ -87,8 +89,9 @@ int scan_step(file_pos* fp) {
 	++fp->ch;
 
 	// check for a newline
+	// match_newline automatically sets fp->current to '\n'
 	if (match_newline(fp))
-		return fp->current = '\n'; // return '\n' no-matter what line ending was found
+		return fp->current;
 	
 	return fp->current = fp->file[fp->pos];
 }
