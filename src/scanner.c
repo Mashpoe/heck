@@ -100,27 +100,24 @@ int scan_peek_next(file_pos* fp) {
 	return fp->file[fp->pos+1];
 }
 
-// do not match strings that contain newlines because it will not update fp->ln...
-// this function does not deal with escaped newlines...
+// can match any string, including strings with newlines
+// ignores escaped newlines in the file
 bool match_str(file_pos* fp, char* s) {
+
+	// go back in case the match fails partway through
+	file_pos temp = *fp;
+
 	int s_pos = 0;
 	
-	size_t l_pos = fp->pos;
-	
 	while (s[s_pos] != '\0') {
-		if (s[s_pos] != fp->file[l_pos])
+		if (temp.current != s[s_pos])
 			return false;
-		++l_pos;
+		scan_step(&temp);
 		++s_pos;
 	}
-	
-	fp->ch += s_pos;
-	fp->pos = l_pos;
-	fp->current = fp->file[fp->pos];
 
-	// check for a newline
-	if (match_newline(fp))
-		fp->current = '\n'; // return '\n' no-matter what line ending was found
+	// apply changes
+	*fp = temp;
 	
 	return true;
 }
@@ -206,7 +203,6 @@ bool heck_scan(heck_code* c, FILE* f) {
 		
 		switch (fp.current) {
 			case '\n': // semicolons and newlines can separate statements
-				//add_token(c, &fp, TK_ENDL, NULL);
 			case '\r':
 			case '\t': // fallthrough
 			case ' ': { // ignore tabs, spaces, and newlines
@@ -390,14 +386,6 @@ bool heck_scan(heck_code* c, FILE* f) {
 				break;
 			}
 			case '\\': {
-
-				// first check for escaped newline.
-				// this can be an issue if there are multiple escaped newlines in a row
-				// size_t temp_pos = fp.pos;
-				// match_newline(&fp);
-				// // escaped newlines return false, so we have to check if pos increased
-				// if (fp.pos > temp_pos)
-				// 	break;
 				
 				// there shouldn't be any escape sequences here, match_newline() already handles escaped newlines
 				fprintf(stderr, "error: unexpected escape sequence, ln %i ch %i\n", fp.ln, fp.ch);
@@ -437,106 +425,101 @@ bool heck_scan(heck_code* c, FILE* f) {
 						   (unsigned char)fp.current >= 0xC0)			// start of unicode character
 				{
 					
-					int len, alloc;
-					char* token = str_create(&len, &alloc, NULL);
-					do {
-						token = str_add_char(token, &len, &alloc, fp.current);
-						scan_step(&fp);
-					} while(fp.current != '\0' &&
-							(isalnum(fp.current) || fp.current == '_' ||	// identifiers can start with 'A'-'z' or '_'
-							(unsigned char)fp.current >= 0x80));			// start or body of unicode character
-					
 					// check for keywords
-					// if you have a better way to do this (that's still readable) go right ahead
-					if (strcmp(token, "if") == 0) {
+					if (match_str(&fp, "if")) {
 						add_token(c, &fp, TK_KW_IF);
 						
-					} else if (strcmp(token, "else") == 0) {
+					} else if (match_str(&fp, "else")) {
 						add_token(c, &fp, TK_KW_ELSE);
 						
-					} else if (strcmp(token, "do") == 0) {
+					} else if (match_str(&fp, "do")) {
 						add_token(c, &fp, TK_KW_DO);
 						
-					} else if (strcmp(token, "while") == 0) {
+					} else if (match_str(&fp, "while")) {
 						add_token(c, &fp, TK_KW_WHILE);
 						
-					} else if (strcmp(token, "for") == 0) {
+					} else if (match_str(&fp, "for")) {
 						add_token(c, &fp, TK_KW_FOR);
 						
-					} else if (strcmp(token, "switch") == 0) {
+					} else if (match_str(&fp, "switch")) {
 						add_token(c, &fp, TK_KW_SWITCH);
 						
-					} else if (strcmp(token, "case") == 0) {
+					} else if (match_str(&fp, "case")) {
 						add_token(c, &fp, TK_KW_CASE);
 						
-					} else if (strcmp(token, "let") == 0) {
+					} else if (match_str(&fp, "let")) {
 						add_token(c, &fp, TK_KW_LET);
 						
-					} else if (strcmp(token, "func") == 0) {
+					} else if (match_str(&fp, "func")) {
 						add_token(c, &fp, TK_KW_FUNC);
 
-					} else if (strcmp(token, "class") == 0) {
+					} else if (match_str(&fp, "class")) {
 						add_token(c, &fp, TK_KW_CLASS);
 
-					} else if (strcmp(token, "namespace") == 0) {
+					} else if (match_str(&fp, "namespace")) {
 						add_token(c, &fp, TK_KW_NAMESPACE);
 
-					} else if (strcmp(token, "public") == 0) {
+					} else if (match_str(&fp, "public")) {
 						add_token(c, &fp, TK_KW_PUBLIC);
 
-					} else if (strcmp(token, "private") == 0) {
+					} else if (match_str(&fp, "private")) {
 						add_token(c, &fp, TK_KW_PRIVATE);
 
-					} else if (strcmp(token, "protected") == 0) {
+					} else if (match_str(&fp, "protected")) {
 						add_token(c, &fp, TK_KW_PROTECTED);
 
-					} else if (strcmp(token, "friend") == 0) {
+					} else if (match_str(&fp, "friend")) {
 						add_token(c, &fp, TK_KW_FRIEND);
 
-					} else if (strcmp(token, "operator") == 0) {
+					} else if (match_str(&fp, "operator")) {
 						add_token(c, &fp, TK_KW_OPERATOR);
 						
-					} else if (strcmp(token, "return") == 0) {
+					} else if (match_str(&fp, "return")) {
 						add_token(c, &fp, TK_KW_RETURN);
 						
-					} else if (strcmp(token, "true") == 0) {
+					} else if (match_str(&fp, "true")) {
 						add_token_bool(c, &fp, true);
 						
-					} else if (strcmp(token, "false") == 0) {
+					} else if (match_str(&fp, "false")) {
 						add_token_bool(c, &fp, true);
 						
-					} else if (strcmp(token, "null") == 0) {
+					} else if (match_str(&fp, "null")) {
 						add_token(c, &fp, TK_KW_NULL);
 						
-					} else if (strcmp(token, "global") == 0) {
+					} else if (match_str(&fp, "global")) {
 						add_token_ctx(c, &fp, CONTEXT_GLOBAL);
 							
-					} else if (strcmp(token, "this") == 0) {
+					} else if (match_str(&fp, "this")) {
 						add_token_ctx(c, &fp, CONTEXT_THIS);
 					
-					} else if (strcmp(token, "int") == 0) {
+					} else if (match_str(&fp, "int")) {
 						add_token_prim(c, &fp, data_type_int);
 						
-					} else if (strcmp(token, "float") == 0) {
+					} else if (match_str(&fp, "float")) {
 						add_token_prim(c, &fp, data_type_float);
 						
-					} else if (strcmp(token, "bool") == 0) {
+					} else if (match_str(&fp, "bool")) {
 						add_token_prim(c, &fp, data_type_bool);
 						
-					} else if (strcmp(token, "string") == 0) {
+					} else if (match_str(&fp, "string")) {
 						add_token_prim(c, &fp, data_type_string);
 					} else { // it's an identifier and not a keyword
 						
-						str_entry idf_str = create_str_entry(token, len);
-						token = NULL;
-						
-						idf_str = str_table_get_entry(c->strings, idf_str);
-						add_token_idf(c, &fp, idf_str);
-						
-						continue; // prevent the string from being freed
+						int len, alloc;
+						char* token = str_create(&len, &alloc, NULL);
+						do {
+							token = str_add_char(token, &len, &alloc, fp.current);
+							scan_step(&fp);
+						} while (fp.current != '\0' &&
+								(isalnum(fp.current) || fp.current == '_' ||	// identifiers can start with 'A'-'z' or '_'
+								(unsigned char)fp.current >= 0x80));			// start or body of unicode character
+
+							str_entry idf_str = create_str_entry(token, len);
+							token = NULL;
+							
+							idf_str = str_table_get_entry(c->strings, idf_str);
+							add_token_idf(c, &fp, idf_str);
 					}
-					
-					free(token);
 					
 					continue; // avoid step at the end
 					
