@@ -11,16 +11,16 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-void heck_report_error(const char* filename, heck_token* tk, const char* format, ...) {
+void heck_report_error(const char* filename, heck_file_pos* fp, const char* format, ...) {
   va_list args;
 	va_start(args, format);
 
-  heck_vreport_error(filename, tk, format, args);
+  heck_vreport_error(filename, fp, format, args);
 
 	va_end(args);
 }
 
-void heck_vreport_error(const char* filename, heck_token* tk, const char* format, va_list args) {
+void heck_vreport_error(const char* filename, heck_file_pos* fp, const char* format, va_list args) {
 
   fputs("error:", stderr);
 
@@ -28,8 +28,8 @@ void heck_vreport_error(const char* filename, heck_token* tk, const char* format
     fprintf(stderr, "%s:", filename);
   }
 
-  if (tk != NULL) {
-    fprintf(stderr, "%i:%i:", tk->ln, tk->ch);
+  if (fp != NULL) {
+    fprintf(stderr, "%i:%i:", fp->ln, fp->ch);
   }
 
   fputc(' ', stderr);

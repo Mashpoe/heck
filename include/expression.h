@@ -63,25 +63,25 @@ struct expr_vtable {
  * because there are so many expression types compared to other types
  */
 
-heck_expr* create_expr_res_type(heck_data_type* type, heck_token* start_tk);
+heck_expr* create_expr_res_type(heck_data_type* type, heck_file_pos* fp);
 
-heck_expr* create_expr_literal(heck_literal* value, heck_token* start_tk);
+heck_expr* create_expr_literal(heck_literal* value, heck_file_pos* fp);
 
-heck_expr* create_expr_cast(const heck_data_type* type, heck_expr* expr, heck_token* start_tk);
+heck_expr* create_expr_cast(const heck_data_type* type, heck_expr* expr, heck_file_pos* fp);
 
 typedef struct heck_expr_binary {
 	heck_expr* left;
 	heck_tk_type operator;
 	heck_expr* right;
 } heck_expr_binary;
-heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr* right, const expr_vtable* vtable, heck_token* start_tk);
+heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr* right, const expr_vtable* vtable, heck_file_pos* fp);
 
 // ++, --, !, -(number)
 typedef struct heck_expr_unary {
 	heck_expr* expr;
 	heck_tk_type operator;
 } heck_expr_unary;
-heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator, const expr_vtable* vtable, heck_token* start_tk);
+heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator, const expr_vtable* vtable, heck_file_pos* fp);
 
 // variable/variable value
 typedef struct heck_expr_value {
@@ -89,7 +89,7 @@ typedef struct heck_expr_value {
   heck_name* name; // set at resolve
 	idf_context context;
 } heck_expr_value;
-heck_expr* create_expr_value(heck_idf idf, idf_context context, heck_token* start_tk);
+heck_expr* create_expr_value(heck_idf idf, idf_context context, heck_file_pos* fp);
 
 // TODO: add support for any expression as the left operand
 // function call
@@ -99,7 +99,7 @@ typedef struct heck_expr_call {
 	heck_data_type** type_arg_vec; // type arguments (NULL if not applicable)
 	heck_func* func; // pointer to the function that gets called, set after resolving
 } heck_expr_call;
-heck_expr* create_expr_call(heck_expr* operand, heck_token* start_tk);
+heck_expr* create_expr_call(heck_expr* operand, heck_file_pos* fp);
 
 // array access
 typedef struct heck_expr_arr_access {
@@ -111,14 +111,14 @@ typedef struct heck_expr_arr_access {
 //	heck_expr_value* name;
 //	heck_expr* value;
 //} heck_expr_asg;
-heck_expr* create_expr_asg(heck_expr* left, heck_expr* right, heck_token* start_tk);
+heck_expr* create_expr_asg(heck_expr* left, heck_expr* right, heck_file_pos* fp);
 
 typedef struct heck_expr_ternary {
 	heck_expr* condition;
 	heck_expr* value_a;
 	heck_expr* value_b;
 } heck_expr_ternary;
-heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b, heck_token* start_tk);
+heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b, heck_file_pos* fp);
 
 typedef union {
   heck_expr_unary unary;
@@ -132,7 +132,7 @@ typedef union {
 } expr_data;
 
 struct heck_expr {
-  heck_token* start_tk; // the first token in the expr
+  heck_file_pos* fp; // the starting line and character of the expr
 	heck_expr_type type; // type is exclusive to flags because it can only have one value
 	const heck_data_type* data_type;
 	const expr_vtable* vtable; // resolve callback
@@ -148,7 +148,7 @@ enum {
 
 //heck_expr* create_expr(heck_expr_type type, const expr_vtable* vtable);
 
-heck_expr* create_expr_err(heck_token* start_tk);
+heck_expr* create_expr_err(heck_file_pos* fp);
 
 bool resolve_expr(heck_expr* expr, heck_scope* parent, heck_scope* global);
 

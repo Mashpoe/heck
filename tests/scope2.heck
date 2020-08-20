@@ -1,0 +1,25 @@
+
+func lol() {
+  let x = 2
+}
+
+func lol(a: int, b: int) {
+  return a + b
+}
+
+extern func test_decl(a: int) -> int
+
+func as int() {}
+
+class a {
+  func as int() {}
+  extern func as bool()
+  extern func operator+()
+  func operator-() {}
+}
+
+/*func a.as bool() {
+  
+}*/
+
+x = 3

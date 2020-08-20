@@ -1,0 +1,20 @@
+let a = oof()
+
+func oof() {
+  // error: use of invalid variable "a"
+  return a
+}
+
+let b: int = oof2()
+
+func oof2() {
+  // error: use of uninitialized variable "b"
+  return b
+}
+
+func oof3() {
+  // error: use of invalid variable "c"
+  return c
+}
+
+let c = oof3()

@@ -1,0 +1,14 @@
+class MyStr {
+  let val = "default value"
+
+  func as &char() {
+    return val
+  }
+}
+
+let a = MyStr()
+
+let b = a as &char
+
+// error: implicit cast not defined
+let c: &char = a

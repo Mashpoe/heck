@@ -39,6 +39,9 @@ void heck_vfprint_fmt(FILE* f, const char* format, va_list args) {
       // print in-between characters
       fprintf(f, "%.*s", end - start, format + start);
       switch (format[end + 1]) {
+        case PRINT_CHAR:
+          fputc(va_arg(args, char), stderr);
+        break;
         case PRINT_STRING:
           fprintf(f, "%s", va_arg(args, const char*));
         break;

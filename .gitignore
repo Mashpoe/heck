@@ -1,6 +1,7 @@
 # Build files
 build/
 heck
+emsdk/
 
 # Prerequisites
 *.d

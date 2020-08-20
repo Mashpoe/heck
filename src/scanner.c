@@ -4,9 +4,6 @@
 //
 //  Created by Mashpoe on 3/12/19.
 //
-//  This file has good and bad aspects, feel free to rearrange or replace altogether the massive switch statement
-//	You'll know it when you see it ;)
-//
 
 #include <scanner.h>
 #include <code_impl.h>
@@ -15,20 +12,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include <str.h>
+#include <error.h>
 #include "vec.h"
 
-typedef struct file_pos file_pos;
-
-struct file_pos {
-	int ln;
-	int ch;
+typedef struct file_pos {
 	size_t size;
 	size_t pos;
 	const char* file;
-	int current; // current char
-	int tk_ln; // where the current token starts
-	int tk_ch;
-};
+  // current char
+	int current;
+  // the position of the current character
+	heck_file_pos ch_fp;
+  // the position of the current token
+	heck_file_pos tk_fp;
+} file_pos;
 
 // handles '\n', '\r', and '\r\n' line endings
 // line endings can be mixed in a file (not worth checking)
@@ -61,8 +58,8 @@ bool match_newline(file_pos* fp) {
 		}
 
 		// there was clearly a newline, update position
-		++fp->ln;
-		fp->ch = 0;
+		++fp->ch_fp.ln;
+		fp->ch_fp.ch = 0;
 
 		// the newline was escaped, so we'll pass over it
 		if (escaped) {
@@ -86,7 +83,7 @@ bool match_newline(file_pos* fp) {
 int scan_step(file_pos* fp) {
 	
 	++fp->pos;
-	++fp->ch;
+	++fp->ch_fp.ch;
 
 	// check for a newline
 	// match_newline automatically sets fp->current to '\n'
@@ -141,8 +138,7 @@ bool is_space_line_end(file_pos* fp) {
 
 heck_token* add_token(heck_code* c, file_pos* fp, enum heck_tk_type type) {
 	heck_token* tk = malloc(sizeof(heck_token));
-	tk->ln = fp->tk_ln;
-	tk->ch = fp->tk_ch;
+	tk->fp = fp->tk_fp;
 	tk->type = type;
 	
 	vector_add(&c->token_vec, tk);
@@ -169,14 +165,12 @@ float parse_float(heck_code* c, file_pos* fp, int whole);
 bool heck_scan(heck_code* c, FILE* f) {
 	
 	file_pos fp = {
-		.ln = 1,
-		.ch = 1,
 		.size = 0,
 		.pos = 0,
 		.file = NULL,
 		.current = '\0',
-		.tk_ln = 1,
-		.tk_ch = 0
+		.ch_fp = {.ln = 0, .ch = 0},
+		.tk_fp = {.ln = 0, .ch = 0},
 	};
 	
 	// load the file into memory
@@ -198,8 +192,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 	while (fp.current != '\0') {
 		
 		// make copies of ln and ch so we know where the token begins
-		fp.tk_ln = fp.ln;
-		fp.tk_ch = fp.ch;
+		fp.tk_fp = fp.ch_fp;
 		
 		switch (fp.current) {
 			case '\n': // semicolons and newlines can separate statements
@@ -372,7 +365,9 @@ bool heck_scan(heck_code* c, FILE* f) {
 					add_token(c, &fp, TK_OP_DECR); // increment
 				} else if (match_str(&fp, "-=")) {
 					add_token(c, &fp, TK_OP_SUB_ASG); // subtraction assignment
-				} else {
+				} else if (match_str(&fp, "->")) {
+          add_token(c, &fp, TK_ARROW); // arrow for return type
+        } else {
 					add_token(c, &fp, TK_OP_SUB); // subtraction
 				}
 				break;
@@ -388,7 +383,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 			case '\\': {
 				
 				// there shouldn't be any escape sequences here, match_newline() already handles escaped newlines
-				fprintf(stderr, "error: unexpected escape sequence, ln %i ch %i\n", fp.ln, fp.ch);
+        heck_report_error(NULL, &fp.ch_fp, "unexpected escape sequence");
 				
 				add_token_err(c, &fp);
 				break;
@@ -446,6 +441,9 @@ bool heck_scan(heck_code* c, FILE* f) {
 						
 					} else if (match_str(&fp, "case")) {
 						add_token(c, &fp, TK_KW_CASE);
+					
+					} else if (match_str(&fp, "extern")) {
+						add_token(c, &fp, TK_KW_EXTERN);
 						
 					} else if (match_str(&fp, "let")) {
 						add_token(c, &fp, TK_KW_LET);
@@ -473,6 +471,12 @@ bool heck_scan(heck_code* c, FILE* f) {
 
 					} else if (match_str(&fp, "operator")) {
 						add_token(c, &fp, TK_KW_OPERATOR);
+
+					} else if (match_str(&fp, "implicit")) {
+						add_token(c, &fp, TK_KW_IMPLICIT);
+
+					} else if (match_str(&fp, "as")) {
+						add_token(c, &fp, TK_KW_AS);
 						
 					} else if (match_str(&fp, "return")) {
 						add_token(c, &fp, TK_KW_RETURN);
@@ -482,9 +486,6 @@ bool heck_scan(heck_code* c, FILE* f) {
 						
 					} else if (match_str(&fp, "false")) {
 						add_token_bool(c, &fp, true);
-						
-					} else if (match_str(&fp, "null")) {
-						add_token(c, &fp, TK_KW_NULL);
 						
 					} else if (match_str(&fp, "global")) {
 						add_token_ctx(c, &fp, CONTEXT_GLOBAL);
@@ -503,6 +504,20 @@ bool heck_scan(heck_code* c, FILE* f) {
 						
 					} else if (match_str(&fp, "string")) {
 						add_token_prim(c, &fp, data_type_string);
+					
+          // the following keywords are reserved but not in use
+					} else if (match_str(&fp, "null")) {
+						add_token(c, &fp, TK_KW_NULL);
+
+					} else if (match_str(&fp, "none")) {
+						add_token(c, &fp, TK_KW_NONE);
+					
+					} else if (match_str(&fp, "generic")) {
+						add_token(c, &fp, TK_KW_GENERIC);
+					
+					} else if (match_str(&fp, "is")) {
+						add_token(c, &fp, TK_KW_IS);
+
 					} else { // it's an identifier and not a keyword
 						
 						int len, alloc;
@@ -528,7 +543,6 @@ bool heck_scan(heck_code* c, FILE* f) {
 				}
 			}
 		}
-		
 		
 		// step by default, can be overridden with continue;
 		scan_step(&fp);
@@ -556,8 +570,8 @@ bool parse_string(heck_code* c, file_pos* fp) {
 	while (scan_step(fp) != quote || ch_escaped) {
 		
 		if (is_end(fp)) {
-			
-			fprintf(stderr, "error: expected terminating quote, ln %i ch %i\n", fp->ln, fp->ch);
+      
+      heck_report_error(NULL, &fp->ch_fp, "expected terminating quote");
 			
 			add_token_err(c, fp);
 			
@@ -595,7 +609,7 @@ bool parse_string(heck_code* c, file_pos* fp) {
 				default: {
 					
 					// TODO: format certain character values
-					fprintf(stderr, "error: invalid escape sequence: %c, ln %i ch %i\n", fp->current, fp->ln, fp->ch);
+          heck_report_error(NULL, &fp->ch_fp, "invalid escape sequence: {c}", fp->current);
 					
 					// seek to the end of the string or line, whichever comes first
 					do {

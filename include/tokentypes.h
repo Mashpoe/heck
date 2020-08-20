@@ -27,6 +27,8 @@ typedef enum heck_tk_type {
 	//TK_AGL_L,		// NULL (angle brackets)
 	//TK_AGL_R,		// NULL
 	TK_COMMA,		// NULL
+	TK_DOT,			// NULL (.)
+  TK_ARROW,   // NULL (->)
 	
 	TK_LITERAL,		// heck_literal*
 	
@@ -92,13 +94,10 @@ typedef enum heck_tk_type {
 	TK_Q_MARK,		// ?
 	TK_COLON,		// :
 	
-	TK_DOT,			// .
-	
 	// ALL KEYWORDS (NULL)
 	
 	TK_KW_TRUE,
 	TK_KW_FALSE,
-	TK_KW_NULL,
 	TK_KW_IF,
 	TK_KW_ELSE,
 	TK_KW_DO,
@@ -106,9 +105,12 @@ typedef enum heck_tk_type {
 	TK_KW_FOR,
 	TK_KW_SWITCH,
 	TK_KW_CASE,
+	TK_KW_EXTERN,
 	TK_KW_LET,
 	TK_KW_FUNC,
 	TK_KW_OPERATOR,
+  TK_KW_IMPLICIT,
+  TK_KW_AS,
 	TK_KW_RETURN,
 	TK_KW_CLASS,
 	TK_KW_PUBLIC,
@@ -122,6 +124,12 @@ typedef enum heck_tk_type {
 	
 	// ALL TYPES
 	TK_PRIM_TYPE,		// primitive data type (heck_prim_type)
+
+  // UNUSED BUT RESERVED
+	TK_KW_NULL,
+	TK_KW_NONE,
+	TK_KW_GENERIC, // if used, remove this entry and emit a primitive type "gen"
+	TK_KW_IS, // compare references, ignore operator overloading
 } heck_tk_type;
 
 #endif /* tokentypes_h */

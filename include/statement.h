@@ -63,7 +63,8 @@ typedef struct heck_variable {
 	heck_data_type* data_type;
 	heck_expr* value;
 } heck_variable;
-heck_variable* create_variable(str_entry name, heck_data_type* type, heck_expr* value);
+heck_variable* variable_create(str_entry name, heck_data_type* type, heck_expr* value);
+void variable_free(heck_variable* variable);
 heck_stmt* create_stmt_let(heck_variable* variable);
 
 // BLOCK OF CODE

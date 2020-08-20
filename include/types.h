@@ -96,6 +96,7 @@ void free_data_type(heck_data_type* type);
 
 extern const type_vtable type_vtable_err;
 extern const type_vtable type_vtable_gen;
+extern const type_vtable type_vtable_void;
 extern const type_vtable type_vtable_int;
 extern const type_vtable type_vtable_float;
 extern const type_vtable type_vtable_bool;
@@ -109,12 +110,14 @@ extern const type_vtable type_vtable_class_args;
 // it saves resources because they don't have to be entered into the type table
 extern const heck_data_type val_data_type_err;
 extern const heck_data_type val_data_type_gen;
+extern const heck_data_type val_data_type_void;
 extern const heck_data_type val_data_type_int;
 extern const heck_data_type val_data_type_float;
 extern const heck_data_type val_data_type_bool;
 extern const heck_data_type val_data_type_string;
 #define data_type_err		&val_data_type_err
 #define data_type_gen		&val_data_type_gen
+#define data_type_void  &val_data_type_void
 #define data_type_int		&val_data_type_int
 #define data_type_float		&val_data_type_float
 #define data_type_bool		&val_data_type_bool

@@ -1,14 +1,17 @@
-class class1 {
+class Villager {
 
-  func doThing() {
+  x: int
+  y: int
 
-  }
-
-  class class2 {
-
-    let data = 2
-
+  func setCoords(newX: int, newY: int) {
+    x = newX
+    y = newY
   }
 
 }
 
+let v = Villager()
+
+if (nearZombie) {
+  v.setCoords(v.x + 1, v.y + 1)
+}

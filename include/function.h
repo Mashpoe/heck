@@ -14,11 +14,17 @@
 #include "types.h"
 #include "declarations.h"
 
-typedef struct heck_scope heck_scope;
+// function declaration, e.g. extern func x
+typedef struct heck_func_decl heck_func_decl;
+// function declaration with definition, e.g. func x
+typedef struct heck_func heck_func;
 
 // list of overloads for a function with a given name
 typedef struct heck_func_list {
-	heck_func** func_vec;
+  // all extern declarations
+  heck_func_decl* decl_vec;
+  // all function definitions
+	heck_func** def_vec;
 } heck_func_list;
 
 // TODO: rename
@@ -45,30 +51,39 @@ typedef union heck_func_value {
 //} heck_param;
 //heck_param* param_create(str_entry name);
 
+// FUNCTION DECLARATION
+struct heck_func_decl {
+  heck_file_pos* fp;
+  heck_variable** param_vec;
+  heck_data_type* return_type;
+};
+void free_decl_data(heck_func_decl* decl);
+
 // FUNCTION
-typedef struct heck_func {
+struct heck_func {
 	// TODO: bitmask these bois
 	bool declared; // heck_func implied definition, so we just need to check if there is a declaration
 	bool generic; // if it's generic, use value.gen_inst_vec
+  
+  // argument and return types
+  heck_func_decl decl;
 	
-	// if param types are generic, a new overload is added to the function's name
-	// each time the function is compiled
-	heck_variable** param_vec;
-	
+  // TODO: remove
 	heck_func_value value;
 	
 	heck_block* code;
-	
-	heck_data_type* return_type;
-} heck_func;
-heck_func* func_create(heck_scope* parent, bool declared);
+};
+
+// decl is copied by this function
+heck_func* func_create(heck_scope* parent, heck_func_decl* decl, bool declared);
 void func_free(heck_func* func);
 
 bool func_add_overload(heck_func_list* list, heck_func* func);
 heck_scope* scope_add_func(heck_scope* scope, heck_func* func, heck_idf name);
 
 // finds the correct definition/overload for a given call
-heck_func* func_match_def(heck_scope* scope, heck_expr_call* call);
+// returns NULL if there is no match
+heck_func* func_match_def(heck_name* func_name, heck_expr_call* call);
 
 // checks if a definition matches a given argument list
 // finds the best match with the precedence exact=>generic=>castable
@@ -76,7 +91,16 @@ bool func_overload_exists(heck_func_list* list, heck_func* func);
 
 bool func_def_resolve(heck_func* func);
 
+void print_func_decl(heck_func_decl* decl);
+
 // prints all definitions/declarations for a given function
+void print_func_list(heck_func_list* list, const char* name, int indent);
+
+// for extern decls
+void print_func_decls(heck_func_list* list, const char* name, int indent);
+
+// for regular function declarations
+void print_func_def(heck_func* func, const char* name, int indent);
 void print_func_defs(heck_func_list* list, const char* name, int indent);
 
 #endif /* function_h */

@@ -55,12 +55,24 @@ void free_name_callback(str_entry key, void* value, void* user_ptr) {
       break;
     case IDF_FUNCTION: {
       heck_func_list* func_list = &name->value.func_value;
-      size_t num_overloads = vector_size(func_list->func_vec);
-      for (size_t i = 0; i < num_overloads; ++i) {
-        func_free(func_list->func_vec[i]);
+
+      if (func_list->decl_vec != NULL) {
+        size_t num_decls = vector_size(func_list->decl_vec);
+        for (size_t i = 0; i < num_decls; ++i) {
+          free_decl_data(&func_list->decl_vec[i]);
+        }
+        vector_free(func_list->decl_vec);
       }
-      vector_free(func_list->func_vec);
-      break;
+
+      if (func_list->def_vec != NULL) {
+        size_t num_defs = vector_size(func_list->def_vec);
+        for (size_t i = 0; i < num_defs; ++i) {
+          func_free(func_list->def_vec[i]);
+        }
+        vector_free(func_list->def_vec);
+        break;
+      }
+
     }
     case IDF_UNDECLARED_CLASS:
     case IDF_CLASS:
@@ -233,55 +245,6 @@ heck_name* scope_resolve_value(heck_expr_value* value, const heck_scope* parent,
 	
 // }
 
-heck_name* scope_add_class(heck_scope* parent, heck_idf idf) {
-	heck_name* child = scope_get_child(parent, idf);
-	if (child == NULL)
-		return NULL;
-	
-	if (child->type == IDF_UNDECLARED) {
-		
-		// assume things will be declared in the class, create a scope and names map
-		if (child->child_scope == NULL) {
-			child->child_scope = scope_create(parent);
-			child->child_scope->names = idf_map_create();
-		} else if (child->child_scope->names == NULL) {
-			child->child_scope->names = idf_map_create();
-		}
-		
-		child->type = IDF_CLASS;
-		child->child_scope->class = child;
-
-		// if idf has one value (e.g. name instead of classA.classB.name)
-		if (idf[1] == NULL) {
-			child->type = IDF_CLASS;
-		} else {
-			child->type = IDF_UNDECLARED_CLASS;
-		}
-	} else if (child->type == IDF_CLASS) {
-
-		// if map is null then it was just a forward declaration
-		if (child->child_scope->names == NULL) {
-			child->child_scope->names = idf_map_create();
-		} else {
-			fputs( "error: redefinition of class ", stderr);
-			fprint_idf(idf, stderr);
-			fputc('\n', stderr);
-			return NULL;
-		}
-
-	// another class definition exists, but there is no class declaration
-	} else if (child->type == IDF_UNDECLARED_CLASS) {
-		fputs("error: redefinition of class ", stderr);
-		fprint_idf(idf, stderr);
-		fputc('\n', stderr);
-		return NULL;
-	}
-
-	child->value.class_value = class_create();
-
-	return child;
-}
-
 // this could be made into a macro as a ternary expression
 //#define scope_is_class(scope) ((scope)->class == NULL ? false : (scope)->class->child_scope == (scope))
 bool scope_is_class(heck_scope* scope) {
@@ -341,6 +304,7 @@ void print_idf_map(str_entry key, void* value, void* user_ptr) {
 	heck_name* name = (heck_name*)value;
 	switch (name->type) {
 		case IDF_FUNCTION:
+      print_func_decls(&name->value.func_value, key->value, indent);
 			print_func_defs(&name->value.func_value, key->value, indent);
 			return;
 			break;

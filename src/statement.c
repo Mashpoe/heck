@@ -26,12 +26,22 @@ heck_stmt* create_stmt_expr(heck_expr* expr) {
 	return s;
 }
 
-heck_variable* create_variable(str_entry name, heck_data_type* data_type, heck_expr* value) {
+heck_variable* variable_create(str_entry name, heck_data_type* data_type, heck_expr* value) {
 	heck_variable* variable = malloc(sizeof(heck_variable));
 	variable->name = name;
 	variable->data_type = data_type;
 	variable->value = value;
 	return variable;
+}
+
+void variable_free(heck_variable* variable) {
+  if (variable->data_type != NULL)
+    free_data_type(variable->data_type);
+  
+  if (variable->value != NULL)
+    free_expr(variable->value);
+
+  free(variable);
 }
 
 heck_stmt* create_stmt_let(heck_variable* variable) {

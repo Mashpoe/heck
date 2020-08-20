@@ -95,6 +95,7 @@ inline void fprint_data_type(const heck_data_type* type, FILE* f) {
 
 const heck_data_type val_data_type_err		= { TYPE_ERR,		&type_vtable_err,	0x0, NULL };
 const heck_data_type val_data_type_gen		= { TYPE_GEN, 		&type_vtable_gen,	0x0, NULL };
+const heck_data_type val_data_type_void		= { TYPE_VOID, 		&type_vtable_void,	0x0, NULL };
 const heck_data_type val_data_type_int		= { TYPE_INT,		&type_vtable_int,	0x0, NULL };
 const heck_data_type val_data_type_float	= { TYPE_FLOAT, 	&type_vtable_float,	0x0, NULL };
 const heck_data_type val_data_type_bool		= { TYPE_BOOL,		&type_vtable_bool,	0x0, NULL };
@@ -111,6 +112,9 @@ const type_vtable type_vtable_err = { resolve_type_err, free_type_prim, print_ty
 // generic
 void print_type_gen(const heck_data_type* type, FILE* f);
 const type_vtable type_vtable_gen = { resolve_type_err, free_type_prim, print_type_gen };
+// void
+void print_type_void(const heck_data_type* type, FILE* f);
+const type_vtable type_vtable_void = { resolve_type_err, free_type_prim, print_type_void };
 // int
 void print_type_int(const heck_data_type* type, FILE* f);
 const type_vtable type_vtable_int = { resolve_type_prim, free_type_prim, print_type_int };
@@ -216,6 +220,9 @@ void print_type_err(const heck_data_type* type, FILE* f) {
 }
 void print_type_gen(const heck_data_type* type, FILE* f) {
 	fputs("generic", f);
+}
+void print_type_void(const heck_data_type* type, FILE* f) {
+	fputs("void", f);
 }
 void print_type_int(const heck_data_type* type, FILE* f) {
 	fputs("int", f);

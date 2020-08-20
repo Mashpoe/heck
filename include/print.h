@@ -13,9 +13,10 @@
 
 enum {
   PRINT_INT = 'i',
+  PRINT_CHAR = 'c',
   PRINT_STRING = 's',
   PRINT_DATA_TYPE = 't',
-  PRINT_IDF = 'I'
+  PRINT_IDF = 'I',
 };
 
 // custom print format:

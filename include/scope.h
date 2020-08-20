@@ -44,7 +44,7 @@ typedef enum heck_name_flags {
 	NAME_RESOLVED = 0x01
 } heck_name_flags;
 
-// the children of a scope, used to map an identifier with a value
+// the children of a scope, used to map an identifier to a value
 // may be renamed to heck_nmsp for namespace, but that could end up being confusing
 typedef struct heck_name {
 	u_int8_t flags;
@@ -97,8 +97,6 @@ heck_name* create_nmsp(void);
 // heck_name* add_nmsp_idf(heck_scope* scope, heck_scope* child, heck_idf class_idf);
 
 // CLASS
-// creates a class within a given scope
-heck_name* scope_add_class(heck_scope* scope, heck_idf idf);
 bool scope_is_class(heck_scope* scope);
 // check if a variable has been initialized in a given scope
 bool scope_var_is_init(heck_scope* scope, heck_name* var_name);

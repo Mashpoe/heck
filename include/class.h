@@ -9,30 +9,20 @@
 #define class_h
 
 #include <stdbool.h>
-#include "declarations.h"
 #include "scope.h"
+#include "operator.h"
 #include "identifier.h"
-//
-//// e.g. operator bool()
-//typedef struct cast_overload {
-//	heck_data_type* type;
-//	heck_func_list overloads;
-//} cast_overload;
-//
-//typedef struct op_overload {
-//	heck_tk_type op;
-//	heck_func_list overloads;
-//} op_overload;
 
 typedef struct heck_class {
 	heck_idf* friend_vec; // friend classes
 	heck_idf* parent_vec; // parent classes
 	// TODO: add type parameter/argument
 	
+  // TODO: make flags
 	bool resolved;
 	
-	// overloads
-	heck_op_overload* op_overloads;
+	// operator and conversion overloads
+  heck_operator_list operators;
 	
 	// store let statements and some function statements to be resolved after parsing
 	//heck_stmt** declarations; // no

@@ -68,9 +68,9 @@ void heck_print_tokens(heck_code* c) {
 			indent--;
 		}
 		
-		if (c->token_vec[i]->ln > ln) {
+		if (c->token_vec[i]->fp.ln > ln) {
 			
-			while (ln < c->token_vec[i]->ln) {
+			while (ln < c->token_vec[i]->fp.ln) {
 				ln++;
 				printf("\n% 3d| ", ln);
 			}

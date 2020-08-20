@@ -38,7 +38,7 @@ void heck_print_token(heck_token* tk) {
 		case TK_LITERAL:
 			print_literal(tk->value.literal_value);
 		case TK_ERR:
-			printf("\nerr: ln %i ch %i - %s\n", tk->ln, tk->ch, (char*)tk->value.str_value);
+			printf("\nerr: ln %i ch %i - %s\n", tk->fp.ln, tk->fp.ch, (char*)tk->value.str_value);
 			break;
 		case TK_KW_IF:
 			printf("if ");
