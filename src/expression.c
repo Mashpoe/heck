@@ -640,10 +640,6 @@ bool resolve_expr_call(heck_expr* expr, heck_scope* parent, heck_scope* global) 
     }
     
     if (args_resolved) {
-      // resolve overload types if not already resolved
-      if (!func_name_resolve(name, parent, global)) {
-        success = false;
-      }
 
       // try to find a matching overload/def
       heck_func* def = func_match_def(name, func_call);

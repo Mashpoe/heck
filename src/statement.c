@@ -147,16 +147,16 @@ heck_stmt* create_stmt_err(void) {
 
 bool resolve_block(heck_block* block, heck_scope* global) {
 	// store status in bool so we can continue resolving even when we come across an error
-	bool result = true;
+	bool success = scope_resolve_names(block->scope, global);
 	
 	vec_size_t size = vector_size(block->stmt_vec);
 	for (vec_size_t i = 0; i < size; ++i) {
 		heck_stmt* current = block->stmt_vec[i];
 		if (!current->vtable->resolve(current, block->scope, global))
-			result = false;
+			success = false;
 	}
 	
-	return result;
+	return success;
 }
 
 void print_block(heck_block* block, int indent) {

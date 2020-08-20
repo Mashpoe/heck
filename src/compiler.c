@@ -96,22 +96,21 @@ heck_data_type* compile_func_call(heck_code* c, heck_expr_call* call) {
 	
 	return create_data_type(TYPE_ERR);
 }
+*/
 
+
+// assumes everything was resolved
+// there shouldn't be any issues
+// generates wasm in binary format
 bool heck_compile(heck_code* c) {
 	
-	wasm_code* code = wasm_code_create();
+  // func decls go at the beginning of a file
+	wasm_code* func_decls = wasm_code_create();
 	
-	$wasm(code, $magic, $version);
+  // init wasm object
+	$wasm(func_decls, $magic, $version);
 	
-	unsigned long num_stmts = vector_size(c->syntax_tree_vec);
-	for (unsigned long i = 0; i < num_stmts; ++i) {
-		if (c->syntax_tree_vec[i]->type == STMT_EXPR) {
-			print_data_type(compile_expr(c, c->syntax_tree_vec[i]->value));
-			printf("\n");
-		}
-		
-	}
+	wasm_code* func_defs = wasm_code_create();
 	
 	return true;
 }
-*/

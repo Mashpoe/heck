@@ -89,6 +89,7 @@ bool name_accessible(const heck_scope* parent, const heck_scope* child, const he
 // returns null if the scope couldn't be resolved or access wasn't allowed
 heck_name* scope_resolve_idf(heck_idf idf, const heck_scope* parent);
 heck_name* scope_resolve_value(heck_expr_value* value, const heck_scope* parent, const heck_scope* global);
+bool scope_resolve_names(heck_scope* scope, const heck_scope* global);
 
 // add a declaration statement (class members, classes, or functions that belong to the scope)
 //void scope_add_decl(heck_scope* scope, heck_stmt* decl);

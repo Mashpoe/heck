@@ -13,5 +13,3 @@ foo(50)
 // should not resolve
 foo(2, 3, 5)
 foo("hello")
-
-

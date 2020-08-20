@@ -54,7 +54,7 @@ void func_free(heck_func* func) {
 
 // TODO: check for duplicates, match defs and decls
 // for now we'll just resolve param and return types
-bool func_name_resolve(heck_name* func_name, heck_scope* parent, heck_scope* global) {
+bool func_resolve_name(heck_name* func_name, heck_scope* global) {
 
   if (func_name->flags & NAME_RESOLVED)
     return true;
@@ -87,7 +87,7 @@ bool func_name_resolve(heck_name* func_name, heck_scope* parent, heck_scope* glo
 
         if (param_type != NULL) {
           // multiplication sets success to false on failure
-          if (!resolve_data_type(param_type, parent, global)) {
+          if (!resolve_data_type(param_type, func_name->parent, global)) {
             success = false;
           }
         }
@@ -101,7 +101,7 @@ bool func_name_resolve(heck_name* func_name, heck_scope* parent, heck_scope* glo
 
     if (return_type != NULL) {
       // multiplication sets success to false on failure
-      if (!resolve_data_type(return_type, parent, global)) {
+      if (!resolve_data_type(return_type, func_name->parent, global)) {
         success = false;
       }
     }

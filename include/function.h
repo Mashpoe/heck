@@ -83,7 +83,7 @@ void func_free(heck_func* func);
 // resolve param and return types 
 // match declarations with definitions
 // check for duplicates
-bool func_name_resolve(heck_name* func_name, heck_scope* parent, heck_scope* global);
+bool func_resolve_name(heck_name* func_name, heck_scope* global);
 
 // finds the correct definition/overload for a given call
 // returns NULL if there is no match

@@ -236,6 +236,47 @@ heck_name* scope_resolve_value(heck_expr_value* value, const heck_scope* parent,
 	}
 }
 
+// helper struct for resolve_name_callback
+typedef struct resolve_name_data {
+  heck_scope* global;
+  bool success;
+} resolve_name_data;
+void resolve_name_callback(str_entry key, void* value, void* user_ptr) {
+  heck_name* name = value;
+  resolve_name_data* data = user_ptr;
+  
+  switch (name->type) {
+    case IDF_FUNCTION: {
+      data->success *= func_resolve_name(name, data->global);
+      break;
+    }
+    case IDF_UNDECLARED_CLASS:
+      data->success = false;
+      // fallthrough
+    case IDF_CLASS: {
+      data->success *= scope_resolve_names(name->child_scope, data->global);
+      // TODO: resolve operator overloads
+      break;
+    }
+  }
+  
+}
+
+bool scope_resolve_names(heck_scope* scope, const heck_scope* global) {
+
+	if (scope->names == NULL)
+    return true; // nothing to resolve
+  
+  resolve_name_data data = {
+    .global = global,
+    .success = true
+  };
+  idf_map_iterate(scope->names, resolve_name_callback, (void*)&data);
+
+  return data.success;
+
+}
+
 // void scope_add_decl(heck_scope* scope, heck_stmt* decl) {
 	
 // 	if (scope->decl_vec == NULL)
