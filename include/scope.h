@@ -41,7 +41,10 @@ typedef enum heck_access {
 } heck_access;
 
 typedef enum heck_name_flags {
-	NAME_RESOLVED = 0x01
+  // for function/class/variable
+	NAME_RESOLVED = 0x01,
+  // prevents future resolve attempts
+  NAME_RESOLVE_FAILED = 0x02
 } heck_name_flags;
 
 // the children of a scope, used to map an identifier to a value

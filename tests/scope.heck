@@ -1,20 +1,17 @@
-/*func hello() {
+func foo(a: int, b: int) {
 
 }
 
-extern hello()
-
-
-world()
-
-func world() {
-
-}*/
-
-class oof {
+func foo(a: int) {
 
 }
-;
-namespace oof {
 
-}
+// should resolve
+foo(2, 3)
+foo(50)
+
+// should not resolve
+foo(2, 3, 5)
+foo("hello")
+
+

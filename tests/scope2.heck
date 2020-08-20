@@ -18,8 +18,9 @@ class a {
   func operator-() {}
 }
 
-/*func a.as bool() {
+// TODO: fix "conversion overload outside of class"
+func a.as bool() {
   
-}*/
+}
 
 x = 3

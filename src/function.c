@@ -52,6 +52,66 @@ void func_free(heck_func* func) {
   free(func);
 }
 
+// TODO: check for duplicates, match defs and decls
+// for now we'll just resolve param and return types
+bool func_name_resolve(heck_name* func_name, heck_scope* parent, heck_scope* global) {
+
+  if (func_name->flags & NAME_RESOLVED)
+    return true;
+
+  if (func_name->flags & NAME_RESOLVE_FAILED)
+    // return true because the error was dealt with after the first attempt
+    return true;
+
+  heck_func_list* func_list = &func_name->value.func_value;
+  if (func_list->def_vec == NULL) {
+    // no definitions; nothing to call
+    return false;
+  }
+
+  bool success = true;
+
+  // resolve def return and param types
+  vec_size_t num_defs = vector_size(func_list->def_vec);
+  for (int i = 0; i < num_defs; ++i) {
+
+    heck_func_decl* decl = &func_list->def_vec[i]->decl;
+
+    // resolve all parameters
+    if (decl->param_vec != NULL) {
+      
+      vec_size_t num_params = vector_size(decl->param_vec);
+      for (int i = 0; i < num_params; ++i) {
+        
+        heck_data_type* param_type = decl->param_vec[i]->data_type;
+
+        if (param_type != NULL) {
+          // multiplication sets success to false on failure
+          if (!resolve_data_type(param_type, parent, global)) {
+            success = false;
+          }
+        }
+
+      }
+
+    }
+
+    // resolve return type
+    heck_data_type* return_type = decl->return_type;
+
+    if (return_type != NULL) {
+      // multiplication sets success to false on failure
+      if (!resolve_data_type(return_type, parent, global)) {
+        success = false;
+      }
+    }
+
+  }
+
+  return success;
+
+}
+
 // bool func_overload_exists(heck_func_list* list, heck_func* func) {
 // 	vec_size_t def_count = vector_size(list->func_vec);
 // 	vec_size_t param_count = vector_size(func->param_vec);
@@ -78,6 +138,53 @@ void func_free(heck_func* func) {
 // }
 
 heck_func* func_match_def(heck_name* func_name, heck_expr_call* call) {
+
+  heck_func_list* func_list = &func_name->value.func_value;
+  if (func_list->def_vec == NULL) {
+    // no definitions; nothing to call
+    return NULL;
+  }
+
+  vec_size_t arg_count;
+  if (call->arg_vec == NULL) {
+    arg_count = 0;
+  } else {
+    arg_count = vector_size(call->arg_vec);
+  }
+  
+  vec_size_t def_count = vector_size(func_list->def_vec);
+  for (vec_size_t i = 0; i < def_count; ++i) {
+
+    heck_func* func_def = func_list->def_vec[i];
+    heck_func_decl* decl = &func_def->decl;
+    vec_size_t param_count;
+    if (decl->param_vec == NULL) {
+      param_count = 0;
+    } else {
+      param_count = vector_size(decl->param_vec);
+    }
+
+    if (arg_count != param_count)
+      continue;
+    
+    bool match = true;
+    
+    for (vec_size_t i = 0; i < param_count; ++i) {
+      if (call->arg_vec[i]->data_type == NULL || decl->param_vec[i]->data_type == NULL) {
+        match = false;
+        break;
+      }
+
+      // check for matching parameter types
+      if (!data_type_cmp(call->arg_vec[i]->data_type, decl->param_vec[i]->data_type)) {
+        match = false;
+        break;
+      }
+    }
+    
+    if (match)
+      return func_def;
+  }
 
   return NULL;
 

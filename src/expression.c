@@ -85,6 +85,7 @@ heck_expr* create_expr_call(heck_expr* operand, heck_file_pos* fp) {
 	call->operand = operand;
 	call->arg_vec = vector_create();
 	call->type_arg_vec = NULL;
+  call->func = NULL;
 	
 	return e;
 }
@@ -611,6 +612,17 @@ bool resolve_expr_call(heck_expr* expr, heck_scope* parent, heck_scope* global) 
 
   heck_expr* operand = func_call->operand;
 
+  bool success = true;
+
+  bool args_resolved = true;
+  if (func_call->arg_vec != NULL) {
+    vec_size_t num_args = vector_size(func_call->arg_vec);
+    for (int i = 0; i < num_args; ++i) {
+      args_resolved *= resolve_expr(func_call->arg_vec[i], parent, global);
+    }
+  }
+  success *= args_resolved;
+
   if (operand->type == EXPR_VALUE) {
 
     // try to find the identifier
@@ -626,13 +638,33 @@ bool resolve_expr_call(heck_expr* expr, heck_scope* parent, heck_scope* global) 
       heck_report_error(NULL, expr->fp, "call to \"{s}\" \"{I}\"", get_idf_type_string(name->type), operand->value.value.idf);
       return false;
     }
-
-    // try to find a matching overload
     
+    if (args_resolved) {
+      // resolve overload types if not already resolved
+      if (!func_name_resolve(name, parent, global)) {
+        success = false;
+      }
+
+      // try to find a matching overload/def
+      heck_func* def = func_match_def(name, func_call);
+
+      if (def == NULL) {
+        return false;
+      }
+
+      func_call->func = def;
+      return true;
+
+    }
 
   } else {
     // TODO: check for callback function type
+    // just return false for now
+    heck_report_error(NULL, expr->fp, "callbacks are not yet supported");
+    return false;
   }
+
+  return success;
 	
 	// find function
 	//heck_scope* func_scope = scope_resolve_value(&func_call->, parent, global);
@@ -640,8 +672,8 @@ bool resolve_expr_call(heck_expr* expr, heck_scope* parent, heck_scope* global) 
 	//if (func_scope == NULL)
 	//	return false;
 	
-	if (!resolve_expr(func_call->operand, parent, global))
-		return false;
+	// if (!resolve_expr(func_call->operand, parent, global))
+	// 	return false;
 	
 	/*
 	 *	TODO: check if it's a function type
@@ -650,7 +682,7 @@ bool resolve_expr_call(heck_expr* expr, heck_scope* parent, heck_scope* global) 
 	 */
 	
 	// just return false for now
-	return false;
+	// return false;
 	
 //	// locate correct overload
 //	func_call->func = func_match_def(func_scope, func_call);
@@ -980,7 +1012,7 @@ void print_expr_call(heck_expr* expr) {
 			++i;
 		}
 	}
-	fputs(")]", stdout);
+  printf(")%s]", call->func != NULL ? "[resolved]" : "");
 }
 
 void print_expr_arr_access(heck_expr* expr) {

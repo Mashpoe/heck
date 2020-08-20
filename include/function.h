@@ -78,8 +78,12 @@ struct heck_func {
 heck_func* func_create(heck_scope* parent, heck_func_decl* decl, bool declared);
 void func_free(heck_func* func);
 
-bool func_add_overload(heck_func_list* list, heck_func* func);
-heck_scope* scope_add_func(heck_scope* scope, heck_func* func, heck_idf name);
+//bool func_add_overload(heck_func_list* list, heck_func* func);
+
+// resolve param and return types 
+// match declarations with definitions
+// check for duplicates
+bool func_name_resolve(heck_name* func_name, heck_scope* parent, heck_scope* global);
 
 // finds the correct definition/overload for a given call
 // returns NULL if there is no match
