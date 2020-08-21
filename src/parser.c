@@ -609,6 +609,7 @@ void extern_decl(parser* p, heck_scope* parent);
 
 // returns NULL on failure
 heck_variable* variable_decl(parser* p, heck_scope* parent) {
+  heck_token* start_tk = peek(p);
 
 	if (!match(p, TK_IDF)) {
 		parser_error(p, peek(p), true, "expected an identifier");
@@ -635,9 +636,30 @@ heck_variable* variable_decl(parser* p, heck_scope* parent) {
 	} else {
 		value = NULL;
 	}
+
+  // try to add the variable to the scope
+  heck_name* var_name = NULL;
 	
-	return variable_create(name, data_type, value);
+	if (parent->names == NULL) {
+    // create idf map and insert variable
+    parent->names = idf_map_create();
+    
+  } else if (idf_map_get(parent->names, name, &var_name)) {
+
+		parser_error(p, start_tk, false, "cannot create variable with the same name as {s} \"{s}\"", get_idf_type_string(var_name->type), name->value);
+    
+		return NULL;
+	}
+
+  // create the variable
+	heck_variable* variable = variable_create(name, data_type, value);
 	
+	// add the variable to the scope
+	var_name = name_create(IDF_VARIABLE, parent);
+	var_name->value.var_value = variable;
+	idf_map_set(parent->names, variable->name, var_name);
+
+  return variable;
 }
 
 heck_stmt* let_statement(parser* p, heck_scope* parent) {
@@ -650,25 +672,6 @@ heck_stmt* let_statement(parser* p, heck_scope* parent) {
 		panic_mode(p);
 		return create_stmt_err();
 	}
-
-  heck_name* var_name = NULL;
-	
-	if (parent->names == NULL) {
-    // create idf map and insert variable
-    parent->names = idf_map_create();
-    
-  } else if (idf_map_get(parent->names, variable->name, &var_name)) {
-
-		parser_error(p, start_tk, false, "cannot create variable with the same name as {s} \"{s}\"", get_idf_type_string(var_name->type), variable->name->value);
-    
-		free_variable(variable);
-		return create_stmt_err();
-	}
-	
-	// add the variable to the scope
-	var_name = name_create(IDF_VARIABLE, parent);
-	var_name->value.var_value = variable;
-	idf_map_set(parent->names, variable->name, var_name);
 	
 	return create_stmt_let(variable);
 }
@@ -740,7 +743,8 @@ heck_stmt* if_statement(parser* p, heck_scope* parent, u_int8_t flags) {
 					type = BLOCK_MAY_RETURN;
 					break;
 				default:
-					if (type == BLOCK_RETURNS) type = BLOCK_MAY_RETURN;
+					if (type == BLOCK_RETURNS)
+            type = BLOCK_MAY_RETURN;
 					break;
 			}
 			
@@ -753,15 +757,23 @@ heck_stmt* if_statement(parser* p, heck_scope* parent, u_int8_t flags) {
 		if (match(p, TK_KW_IF)) {
 			node->next = create_if_node(expression(p, parent), parent);
 		} else {
-			node->next = create_if_node(NULL, NULL); // pass in NULL or parent
+			node->next = create_if_node(NULL, parent);
 			last = true;
 		}
 		
 		node = node->next;
 		
 	}
+
+  // if there is no else condition, the block might not return
+  if (type == BLOCK_RETURNS && node->condition != NULL) {
+    type = BLOCK_MAY_RETURN;
+    printf("reeeeeeee\n");
+  } else {
+    printf("mememememememe\n");
+  }
 	
-	(s->value.if_stmt)->type = type;
+	s->value.if_stmt->type = type;
 	
 	return s;
 }
@@ -782,7 +794,8 @@ bool parse_parameters(parser* p, heck_func_decl* decl, heck_scope* parent) {
 		
 		for (;;) {
 			
-			heck_variable* param = variable_decl(p, parent);
+      // use decl->scope for parent to put parameters in the same scope
+			heck_variable* param = variable_decl(p, decl->scope);
 			
 			if (param == NULL) {
 				panic_mode(p);
@@ -835,13 +848,15 @@ heck_name* get_operator_class(parser* p, heck_name* func_name) {
   heck_name* name = func_name;
 
   // find the class the operator/conversion overload belongs to
-  if (name != NULL && name->type == IDF_UNDECLARED) {
+  if (name->type == IDF_CLASS || name->type == IDF_UNDECLARED_CLASS) {
+	  return name;
+  } else if (name->type == IDF_UNDECLARED) {
     // implicitly create class
     name->type = IDF_UNDECLARED_CLASS;
     name->value.class_value = class_create();
     
   } else if (scope_is_class(name->parent)) {
-    name = name->parent->class;
+    name = name->parent->parent_class;
   } else {
     parser_error(p, previous(p), true, "{s} overload outside of class",
     previous(p)->type == TK_KW_OPERATOR ? "operator" : "conversion");
@@ -894,6 +909,8 @@ bool parse_operator_decl(parser* p, heck_operator_type* type_out, heck_func_decl
 }
 
 void parse_func_def(parser* p, heck_scope* parent) {
+  heck_token* start_tk = peek(p);
+
 	step(p);
 	
 	heck_idf func_idf;
@@ -932,7 +949,7 @@ void parse_func_def(parser* p, heck_scope* parent) {
     if (func_name == NULL) {
       if (!scope_is_class(parent))
         return;
-      operator_class = parent->class;
+      operator_class = parent->parent_class;
     } else {
       operator_class = get_operator_class(p, func_name);
     }
@@ -942,12 +959,14 @@ void parse_func_def(parser* p, heck_scope* parent) {
 
 		heck_operator_type operator_type;
     heck_func_decl operator_decl;
+    operator_decl.fp = &start_tk->fp;
+    operator_decl.scope = scope_create(parent);
 
     if (!parse_operator_decl(p, &operator_type, &operator_decl, parent))
       return;
 
     // there are no issues; create the function
-    func = func_create(parent, &operator_decl, func_idf == NULL);
+    func = func_create(&operator_decl, func_idf == NULL);
 
     // add the operator overload to the class
     add_operator_def(operator_class->value.class_value, &operator_type, func);
@@ -967,7 +986,7 @@ void parse_func_def(parser* p, heck_scope* parent) {
 			
 			func_name->type = IDF_FUNCTION;
 			func_name->value.func_value.decl_vec = NULL;
-			func_name->value.func_value.def_vec = vector_create(); 
+			func_name->value.func_value.def_vec = vector_create();
 			
 		} else if (func_name->type != IDF_FUNCTION) {
       parser_error(p,
@@ -983,12 +1002,14 @@ void parse_func_def(parser* p, heck_scope* parent) {
 
     // parse the parameter and return types
     heck_func_decl func_decl;
+    func_decl.fp = &start_tk->fp;
+    func_decl.scope = scope_create(parent);
 
     if (!parse_func_decl(p, &func_decl, parent))
       return;
 		
 		// there are no issues; create the function
-		func = func_create(parent, &func_decl, func_idf[1] == NULL);
+		func = func_create(&func_decl, func_idf[1] == NULL);
 		
     // add the function definition, resolve duplicates later
 		vector_add(&func_name->value.func_value.def_vec, func);
@@ -997,8 +1018,8 @@ void parse_func_def(parser* p, heck_scope* parent) {
 
 	if (peek(p)->type == TK_BRAC_L) {
 		
-		heck_scope* block_scope = scope_create(parent);
-		func->code = parse_block(p, block_scope, STMT_FLAG_FUNC);
+    func->decl.scope->parent_func = func;
+		func->code = parse_block(p, func->decl.scope, STMT_FLAG_FUNC);
 		
 		if (func->code->type == BLOCK_MAY_RETURN) {
 			parser_error(p, peek(p), true, "function \"{I}\" only returns in some cases", func_idf);
@@ -1058,7 +1079,7 @@ void parse_class_def(parser* p, heck_scope* parent) {
 		}
 		
 		class_name->type = IDF_CLASS;
-		class_name->child_scope->class = class_name;
+		class_name->child_scope->parent_class = class_name;
 
 		// if class_idf has one value (e.g. name instead of classA.classB.name)
 		if (class_idf[1] == NULL) {
@@ -1210,11 +1231,13 @@ void parse_func_extern(parser* p, heck_scope* parent) {
     }
     
     // parse the func decl
-    heck_func_decl decl;
-    if (!parse_func_decl(p, &decl, parent))
+    heck_func_decl func_decl;
+    func_decl.fp = &start_tk->fp;
+    func_decl.scope = scope_create(parent);
+    if (!parse_func_decl(p, &func_decl, parent))
       return;
     
-    vector_add(&func_name->value.func_value.decl_vec, decl);
+    vector_add(&func_name->value.func_value.decl_vec, func_decl);
 
   } else {
 
@@ -1229,11 +1252,13 @@ void parse_func_extern(parser* p, heck_scope* parent) {
       parser_error(p, start_tk, true, "operator overload outside of class definition");
       return;
     }
-    heck_class* operator_class = parent->class->value.class_value;
+    heck_class* operator_class = parent->parent_class->value.class_value;
     
     // parse the operator overload
     heck_operator_type operator_type;
     heck_func_decl operator_decl;
+    operator_decl.fp = &start_tk->fp;
+    operator_decl.scope = scope_create(parent);
 
     if (!parse_operator_decl(p, &operator_type, &operator_decl, parent))
       return;
@@ -1308,6 +1333,9 @@ void parse_statement(parser* p, heck_block* block, u_int8_t flags) {
 				break;
 			case TK_KW_IF:
 				stmt = if_statement(p, block->scope, flags);
+        if (block->type != BLOCK_BREAKS && block->type < stmt->value.if_stmt->type) {
+          block->type = stmt->value.if_stmt->type;
+        }
 				break;
 			case TK_KW_NAMESPACE:
 				if (STMT_IN_GLOBAL(flags)) {
@@ -1340,10 +1368,12 @@ void parse_statement(parser* p, heck_block* block, u_int8_t flags) {
 				
 				if (STMT_IN_FUNC(flags)) {
 					stmt = ret_statement(p, block->scope);
+          if (block->type != BLOCK_BREAKS) {
+            block->type = BLOCK_RETURNS;
+          }
 				} else {
 					parser_error(p, t, true, "return statement outside function");
 				}
-				return;
 				break;
 			case TK_BRAC_L:
 				stmt = block_statement(p, block->scope, flags);

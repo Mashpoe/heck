@@ -71,8 +71,9 @@ void name_free(heck_name* name);
 
 typedef struct heck_scope {
 	struct heck_scope* parent;
-	struct heck_name* class;
-	struct heck_scope* namespace;
+	struct heck_scope* parent_nmsp;
+	struct heck_name* parent_class;
+	struct heck_func* parent_func;
 	
 	// map of heck_name*s, NULL if empty
 	idf_map* names;
@@ -81,6 +82,7 @@ typedef struct heck_scope {
 	heck_name** var_inits;
 } heck_scope;
 heck_scope* scope_create(heck_scope* parent);
+heck_scope* scope_create_global();
 void scope_free(heck_scope* scope);
 heck_name* scope_get_child(heck_scope* scope, heck_idf idf);
 

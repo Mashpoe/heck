@@ -54,6 +54,7 @@ typedef union heck_func_value {
 // FUNCTION DECLARATION
 struct heck_func_decl {
   heck_file_pos* fp;
+  heck_scope* scope;
   heck_variable** param_vec;
   heck_data_type* return_type;
 };
@@ -64,6 +65,7 @@ struct heck_func {
 	// TODO: bitmask these bois
 	bool declared; // heck_func implied definition, so we just need to check if there is a declaration
 	bool generic; // if it's generic, use value.gen_inst_vec
+  bool resolved;
   
   // argument and return types
   heck_func_decl decl;
@@ -75,7 +77,7 @@ struct heck_func {
 };
 
 // decl is copied by this function
-heck_func* func_create(heck_scope* parent, heck_func_decl* decl, bool declared);
+heck_func* func_create(heck_func_decl* decl, bool declared);
 void func_free(heck_func* func);
 
 //bool func_add_overload(heck_func_list* list, heck_func* func);
@@ -84,6 +86,9 @@ void func_free(heck_func* func);
 // match declarations with definitions
 // check for duplicates
 bool func_resolve_name(heck_name* func_name, heck_scope* global);
+
+// error flags can be stored in func_name
+bool func_resolve_def(heck_name* func_name, heck_func* func_def, heck_scope* global);
 
 // finds the correct definition/overload for a given call
 // returns NULL if there is no match

@@ -34,13 +34,24 @@ heck_scope* scope_create(heck_scope* parent) {
   scope->var_inits = NULL;
 	
 	scope->parent = parent;
-	if (parent == NULL) {
-		scope->namespace = NULL;
-		scope->class = NULL;
-	} else {
-		scope->namespace = parent->namespace;
-		scope->class = parent->class;
-	}
+  scope->parent_nmsp = parent->parent_nmsp;
+  scope->parent_class = parent->parent_class;
+  scope->parent_func = parent->parent_func;
+	
+	return scope;
+}
+
+heck_scope* scope_create_global() {
+  	
+	heck_scope* scope = malloc(sizeof(heck_scope));
+	scope->names = NULL;
+	//scope->decl_vec = NULL;
+  scope->var_inits = NULL;
+	
+	scope->parent = NULL;
+  scope->parent_nmsp = scope;
+  scope->parent_class = NULL;
+  scope->parent_func = NULL;
 	
 	return scope;
 }
@@ -172,10 +183,7 @@ bool name_accessible(const heck_scope* parent, const heck_scope* child, const he
 	if (name->access == ACCESS_PUBLIC)
 		return true;
 	
-	if (name->type == IDF_CLASS && parent->class == child->class)
-		return true;
-	
-	if (name->access == ACCESS_PUBLIC)
+	if (name->type == IDF_CLASS && parent->parent_class == child->parent_class)
 		return true;
 	
 	if (name->access == ACCESS_PRIVATE || name->access == ACCESS_PROTECTED) {
@@ -228,9 +236,9 @@ heck_name* scope_resolve_value(heck_expr_value* value, const heck_scope* parent,
 		case CONTEXT_LOCAL:
 			return scope_resolve_idf(value->idf, parent);
 		case CONTEXT_THIS:
-			if (parent->class == NULL || parent->class->child_scope == NULL)
+			if (parent->parent_class == NULL || parent->parent_class->child_scope == NULL)
 				return NULL;
-			return scope_resolve_idf(value->idf, parent->class->child_scope);
+			return scope_resolve_idf(value->idf, parent->parent_class->child_scope);
 		case CONTEXT_GLOBAL:
 			return scope_resolve_idf(value->idf, global);
 	}
@@ -289,10 +297,10 @@ bool scope_resolve_names(heck_scope* scope, const heck_scope* global) {
 // this could be made into a macro as a ternary expression
 //#define scope_is_class(scope) ((scope)->class == NULL ? false : (scope)->class->child_scope == (scope))
 bool scope_is_class(heck_scope* scope) {
-	if (scope->class == NULL)
+	if (scope->parent_class == NULL)
 		return false;
 	
-	return scope->class->child_scope == scope;
+	return scope->parent_class->child_scope == scope;
 }
 
 bool scope_var_is_init(heck_scope* scope, heck_name* var_name) {

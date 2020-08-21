@@ -13,3 +13,34 @@ foo(50)
 // should not resolve
 foo(2, 3, 5)
 foo("hello")
+
+let x = 3
+
+func nameTest(x = x) {
+
+}
+
+func g(a) {
+  let a = 6
+}
+
+func resolveTest() {
+  if (true) {
+    let meme = 3
+    return 4
+  } else if (true) {
+    return 3
+  } else {
+  }
+}
+
+func resolveTest2() {
+  undeclaredIdentifier = 6
+}
+
+resolveTest()
+resolveTest2()
+
+/*func nameTest2(x, x, y) {
+
+}

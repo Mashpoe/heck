@@ -169,8 +169,8 @@ bool heck_scan(heck_code* c, FILE* f) {
 		.pos = 0,
 		.file = NULL,
 		.current = '\0',
-		.ch_fp = {.ln = 0, .ch = 0},
-		.tk_fp = {.ln = 0, .ch = 0},
+		.ch_fp = {.ln = 1, .ch = 0},
+		.tk_fp = {.ln = 1, .ch = 0},
 	};
 	
 	// load the file into memory

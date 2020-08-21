@@ -99,6 +99,8 @@ heck_data_type* compile_func_call(heck_code* c, heck_expr_call* call) {
 */
 
 
+
+
 // assumes everything was resolved
 // there shouldn't be any issues
 // generates wasm in binary format

@@ -18,7 +18,6 @@ class a {
   func operator-() {}
 }
 
-// TODO: fix "conversion overload outside of class"
 func a.as bool() {
   
 }

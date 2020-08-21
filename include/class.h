@@ -19,13 +19,16 @@ typedef struct heck_class {
 	// TODO: add type parameter/argument
 	
   // TODO: make flags
-	bool resolved;
+	bool resolved; // resolved when constructor is called
+  int size; // determined at resolve
+  heck_variable** inst_var_vec;
 	
 	// operator and conversion overloads
   heck_operator_list operators;
 	
 	// store let statements and some function statements to be resolved after parsing
 	//heck_stmt** declarations; // no
+
 } heck_class;
 
 heck_class* class_create(void);

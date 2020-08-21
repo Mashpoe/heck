@@ -19,6 +19,9 @@ heck_class* class_create() {
 
 	c->operators.decl_vec = NULL;
   c->operators.def_vec = NULL;
+
+  c->inst_var_vec = NULL;
+  c->size = 0;
 	
 	return c;
 }

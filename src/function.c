@@ -22,12 +22,13 @@
 //	return param;
 //}
 
-heck_func* func_create(heck_scope* parent, heck_func_decl* decl, bool declared) {
+heck_func* func_create(heck_func_decl* decl, bool declared) {
 	heck_func* func = malloc(sizeof(heck_func));
 	func->declared = declared;
+  func->resolved = false;
 	
-	heck_scope* block_scope = scope_create(parent);
-	func->code = block_create(block_scope);
+	// heck_scope* block_scope = scope_create(decl->scope);
+	// func->code = block_create(block_scope);
 
   func->decl = *decl;
 	
@@ -83,13 +84,18 @@ bool func_resolve_name(heck_name* func_name, heck_scope* global) {
       vec_size_t num_params = vector_size(decl->param_vec);
       for (int i = 0; i < num_params; ++i) {
         
-        heck_data_type* param_type = decl->param_vec[i]->data_type;
+        heck_variable* param = decl->param_vec[i];
+        heck_data_type* param_type = param->data_type;
 
         if (param_type != NULL) {
-          // multiplication sets success to false on failure
           if (!resolve_data_type(param_type, func_name->parent, global)) {
             success = false;
           }
+        }
+
+        if (param->value != NULL) {
+          heck_report_error(NULL, param->value->fp, "default arguments are not supported yet");
+          success = false;
         }
 
       }
@@ -107,6 +113,32 @@ bool func_resolve_name(heck_name* func_name, heck_scope* global) {
     }
 
   }
+
+  return success;
+}
+
+bool func_resolve_def(heck_name* func_name, heck_func* func_def, heck_scope* global) {
+
+  if (func_def->resolved) {
+    return true;
+  }
+
+  // set to true either way so we only have to resolve and deal with errors once
+  func_def->resolved = true;
+  
+  bool success = true;
+
+  heck_func_decl* func_decl = &func_def->decl;
+
+  // TODO: check for default arguments, resolve them
+  // resolve default arguments with func_name->parent to avoid conflicts with function definition locals
+
+  if (func_def->code->type == BLOCK_MAY_RETURN) {
+    success = false;
+    heck_report_error(NULL, func_decl->fp, "function only returns in some cases");
+  }
+
+  success *= resolve_block(func_def->code, global);
 
   return success;
 

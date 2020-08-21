@@ -645,18 +645,24 @@ bool resolve_expr_call(heck_expr* expr, heck_scope* parent, heck_scope* global) 
       heck_func* def = func_match_def(name, func_call);
 
       if (def == NULL) {
+        heck_report_error(NULL, expr->fp, "no function named \"{I}\" exists with matching parameters", operand->value.value.idf);
         return false;
       }
 
+      if (!func_resolve_def(name, def, global)) {
+        heck_report_error(NULL, expr->fp, "error from call to function \"{I}\"", operand->value.value.idf);
+        success = false;
+      }
+
       func_call->func = def;
-      return true;
+      return success;
 
     }
 
   } else {
     // TODO: check for callback function type
     // just return false for now
-    heck_report_error(NULL, expr->fp, "callbacks are not yet supported");
+    heck_report_error(NULL, expr->fp, "callbacks are not supported yet");
     return false;
   }
 

@@ -17,8 +17,8 @@ heck_code* heck_create() {
 	heck_code* c = malloc(sizeof(heck_code));
 	c->token_vec = vector_create();
 	
-	heck_scope* block_scope = scope_create(NULL);
-	block_scope->namespace = block_scope; // global namespace = global scope
+	heck_scope* block_scope = scope_create_global();
+  
 	c->global = block_create(block_scope);
 	
 	c->strings = str_table_create();
