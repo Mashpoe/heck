@@ -55,7 +55,7 @@ void wasm_code_print(wasm_code* code) {
 
 bool wasm_code_output(wasm_code* code, const char* output) {
 	
-	FILE* f = fopen(output, "wb");
+	FILE* f = fopen(output, "w");
 	
 	if (!f)
 		return false;

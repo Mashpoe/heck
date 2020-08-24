@@ -52,7 +52,7 @@ void idf_map_free(idf_map* m) {
 
 // puts an old bucket into a resized str_table
 static idf_entry* resize_entry(idf_map* m, idf_entry* old_entry) {
-	u_int32_t index = old_entry->key->hash % m->capacity;
+	uint32_t index = old_entry->key->hash % m->capacity;
 	for (;;) {
 		idf_entry* entry = &m->buckets[index];
 		
@@ -88,7 +88,7 @@ static void idf_map_resize(idf_map* m) {
 
 
 static idf_entry* find_entry(idf_map* m, str_entry key) {
-	u_int32_t index = key->hash % m->capacity;
+	uint32_t index = key->hash % m->capacity;
 	for (;;) {
 		idf_entry* entry = &m->buckets[index];
 			

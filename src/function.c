@@ -8,6 +8,7 @@
 #include <function.h>
 #include <scope.h>
 #include <print.h>
+#include <error.h>
 #include <stdio.h>
 #include "vec.h"
 
@@ -26,6 +27,7 @@ heck_func* func_create(heck_func_decl* decl, bool declared) {
 	heck_func* func = malloc(sizeof(heck_func));
 	func->declared = declared;
   func->resolved = false;
+  func->compiled = false;
 	
 	// heck_scope* block_scope = scope_create(decl->scope);
 	// func->code = block_create(block_scope);

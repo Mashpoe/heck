@@ -7,4 +7,4 @@
 
 #include "table.h"
 
-u_int32_t hash_data(const void* data, size_t size);
+uint32_t hash_data(const void* data, size_t size);

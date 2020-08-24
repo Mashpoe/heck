@@ -9,45 +9,28 @@
 #include <scope.h>
 #include <function.h>
 #include <print.h>
+#include <error.h>
 #include <stdio.h>
 #include "vec.h"
 
-inline heck_stmt* create_stmt(heck_stmt_type type, const stmt_vtable* vtable) {
-	heck_stmt* s = malloc(sizeof(heck_stmt));
-	s->type = type;
-	s->vtable = vtable;
-	s->flags = 0x0; // set all flags to false
-	return s;
+void init_stmt(heck_stmt* stmt, heck_stmt_type type, const stmt_vtable* vtable, heck_file_pos* fp);
+inline void init_stmt(heck_stmt* stmt, heck_stmt_type type, const stmt_vtable* vtable, heck_file_pos* fp) {
+  stmt->fp = fp;
+	stmt->type = type;
+	stmt->vtable = vtable;
+	stmt->flags = 0x0; // set all flags to false
 }
 
-heck_stmt* create_stmt_expr(heck_expr* expr) {
-	heck_stmt* s = create_stmt(STMT_EXPR, &stmt_vtable_expr);
+heck_stmt* create_stmt_expr(heck_expr* expr, heck_file_pos* fp) {
+  heck_stmt* s = malloc(STMT_SIZE + sizeof(heck_expr*));
+  init_stmt(s, STMT_EXPR, &stmt_vtable_expr, fp);
 	s->value.expr_value = expr;
 	return s;
 }
 
-heck_variable* variable_create(str_entry name, heck_data_type* data_type, heck_expr* value) {
-	heck_variable* variable = malloc(sizeof(heck_variable));
-	variable->name = name;
-	variable->data_type = data_type;
-	variable->value = value;
-	return variable;
-}
-
-void variable_free(heck_variable* variable) {
-  if (variable->data_type != NULL)
-    free_data_type(variable->data_type);
-  
-  if (variable->value != NULL)
-    free_expr(variable->value);
-
-  free(variable);
-}
-
-heck_stmt* create_stmt_let(heck_variable* variable) {
-	heck_stmt* s = create_stmt(STMT_LET, &stmt_vtable_let);
-	s->type = STMT_LET;
-	s->vtable = &stmt_vtable_let;
+heck_stmt* create_stmt_let(heck_variable* variable, heck_file_pos* fp) {
+  heck_stmt* s = malloc(STMT_SIZE + sizeof(heck_variable*));
+  init_stmt(s, STMT_LET, &stmt_vtable_let, fp);
 	
 	s->value.var_value = variable;
 	return s;
@@ -62,44 +45,41 @@ heck_if_node* create_if_node(heck_expr* condition, heck_scope* parent) {
 	heck_scope* block_scope = scope_create(parent);
 	node->code = block_create(block_scope);
 	
-	
 	return node;
 }
-heck_stmt* create_stmt_if(heck_if_node* contents) {
-	heck_stmt* s = create_stmt(STMT_IF, &stmt_vtable_if);
+heck_stmt* create_stmt_if(heck_if_node* contents, heck_file_pos* fp) {
+  heck_stmt* s = malloc(STMT_SIZE + sizeof(heck_stmt_if));
+  init_stmt(s, STMT_IF, &stmt_vtable_if, fp);
 	
-	heck_stmt_if* if_stmt = malloc(sizeof(heck_stmt_if));
-	if_stmt->type = BLOCK_DEFAULT;
-	if_stmt->contents = contents;
+	s->value.if_stmt.type = BLOCK_DEFAULT;
+	s->value.if_stmt.contents = contents;
 	
-	s->value.if_stmt = if_stmt;
 	return s;
 }
 
-heck_stmt* create_stmt_class(heck_scope* class_scope) {
-	heck_stmt* s = create_stmt(STMT_CLASS, &stmt_vtable_class);
+heck_stmt* create_stmt_class(heck_scope* class_scope, heck_file_pos* fp) {
+  heck_stmt* s = malloc(STMT_SIZE + sizeof(heck_stmt_class));
+  init_stmt(s, STMT_CLASS, &stmt_vtable_class, fp);
 	
-	heck_stmt_class* class_stmt = malloc(sizeof(heck_stmt_class));
-	class_stmt->class_scope = class_scope;
-	//class_stmt->name = name;
+	s->value.class_stmt.class_scope = class_scope;
+	//s->value.class_stmt.name = name;
 	
-	s->value.class_stmt = class_stmt;
 	return s;
 }
 
-heck_stmt* create_stmt_func(heck_func* func) {
-	heck_stmt* s = create_stmt(STMT_FUNC, &stmt_vtable_func);
+heck_stmt* create_stmt_func(heck_func* func, heck_file_pos* fp) {
+  heck_stmt* s = malloc(STMT_SIZE + sizeof(heck_stmt_func));
+  init_stmt(s, STMT_FUNC, &stmt_vtable_func, fp);
 	
-	heck_stmt_func* func_stmt = malloc(sizeof(heck_stmt_func));
-	func_stmt->func = func;
-	//func_stmt->name = name;
+	s->value.func_stmt.func = func;
+	//s->value.func_stmt.name = name;
 	
-	s->value.func_stmt = func_stmt;
 	return s;
 }
 
-heck_stmt* create_stmt_ret(heck_expr* expr) {
-	heck_stmt* s = create_stmt(STMT_RET, &stmt_vtable_ret);
+heck_stmt* create_stmt_ret(heck_expr* expr, heck_file_pos* fp) {
+  heck_stmt* s = malloc(STMT_SIZE + sizeof(heck_expr*));
+  init_stmt(s, STMT_RET, &stmt_vtable_ret, fp);
 	
 	s->value.expr_value = expr;
 	
@@ -129,18 +109,19 @@ void block_free(heck_block* block) {
 	free(block);
 }
 
-heck_stmt* create_stmt_block(struct heck_block* block) {
-	heck_stmt* s = create_stmt(STMT_BLOCK, &stmt_vtable_block);
+heck_stmt* create_stmt_block(struct heck_block* block, heck_file_pos* fp) {
+  heck_stmt* s = malloc(STMT_SIZE + sizeof(heck_block*));
+  init_stmt(s, STMT_BLOCK, &stmt_vtable_block, fp);
 	
 	s->value.block_value = block;
 	
 	return s;
 }
 
-heck_stmt* create_stmt_err(void) {
-	heck_stmt* s = create_stmt(STMT_ERR, &stmt_vtable_err);
-	
-	s->value.expr_value = NULL; // sets all types to null, obviously
+heck_stmt* create_stmt_err(heck_file_pos* fp) {
+  // error has no value
+  heck_stmt* s = malloc(STMT_SIZE);
+  init_stmt(s, STMT_ERR, &stmt_vtable_err, fp);
 	
 	return s;
 }
@@ -320,7 +301,7 @@ void print_stmt_block(heck_stmt* stmt, int indent) {
 }
 
 bool resolve_stmt_if(heck_stmt* stmt, heck_scope* parent, heck_scope* global) {
-	heck_if_node* node = (stmt->value.if_stmt)->contents;
+	heck_if_node* node = stmt->value.if_stmt.contents;
 
   bool success = true;
 	do {
@@ -340,7 +321,7 @@ void free_stmt_if(heck_stmt* stmt) {
 	
 }
 void print_stmt_if(heck_stmt* stmt, int indent) {
-	heck_if_node* node = (stmt->value.if_stmt)->contents;
+	heck_if_node* node = stmt->value.if_stmt.contents;
 	
 	printf("if ");
 	print_expr(node->condition);
@@ -368,9 +349,72 @@ void print_stmt_if(heck_stmt* stmt, int indent) {
 	}
 }
 
-bool resolve_stmt_ret(heck_stmt* stmt, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_stmt_ret(heck_stmt* stmt, heck_scope* parent, heck_scope* global) {
+
+  // get parent func
+  heck_func* parent_func = parent->parent_func;
+
+  // get parent func return type
+  heck_data_type* func_ret_type = parent_func->decl.return_type;
+
+  heck_expr* ret_expr = stmt->value.expr_value;
+
+  // handle return value
+  if (ret_expr != NULL) {
+    
+    if (!resolve_expr(ret_expr, parent, global)) {
+      return false;
+    }
+
+    heck_data_type* ret_type = ret_expr->data_type;
+
+    if (ret_type == NULL) {
+      heck_report_error(NULL, stmt->fp, "cannot return the value of an expression with no type");
+      return false;
+    }
+
+    if (func_ret_type == NULL) {
+      // implicity declare function return type
+      parent_func->decl.return_type = copy_resolved_type(ret_type);
+      return true;
+    }
+    
+    // handle void return type
+    if (func_ret_type->type_name == TYPE_VOID) {
+      heck_report_error(NULL, stmt->fp, "cannot return a value in function with return type \"{t}\"", func_ret_type);
+      return false;
+    }
+
+    // compare return types
+    if (!data_type_cmp(func_ret_type, ret_type)) {
+      heck_report_error(NULL, stmt->fp, "cannot return a value of type \"{t}\" in function with return type \"{t}\"", ret_type, func_ret_type);
+      return false;
+    }
+
+    // the return types match; return true
+    return true;
+
+  }
+
+  if (func_ret_type == NULL) {
+    // implicit void return type
+    parent_func->decl.return_type = data_type_void;
+    return true;
+  }
+
+  // there is no return value but the function expects one
+  if (func_ret_type->type_name != TYPE_VOID) {
+    heck_report_error(NULL, stmt->fp, "empty return statement in function with return type \"{t}\"", func_ret_type);
+    return false;
+  }
+
+  // no return value, function does not expect one; return true
+  return true;
+}
+
 void free_stmt_ret(heck_stmt* stmt) {
-	
+	if (stmt->value.expr_value != NULL)
+    free_expr(stmt->value.expr_value);
 }
 void print_stmt_ret(heck_stmt* stmt, int indent) {
 	printf("return ");

@@ -9,6 +9,7 @@
 #define table_h
 
 #include <stdlib.h>
+#include <stdint.h>
 
 // default capacity must be at least 1/TABLE_MAX_LOAD,
 // which will allow at least one item to be added before the table is resized
@@ -19,9 +20,9 @@
 #define TABLE_HASH_INIT				2166136261u
 
 // inline definition
-inline u_int32_t hash_data(const void* data, size_t size) {
+inline uint32_t hash_data(const void* data, size_t size) {
 	// FNV-1a hashing algorithm, a short but decent hash function
-	u_int32_t hash = TABLE_HASH_INIT;
+	uint32_t hash = TABLE_HASH_INIT;
 	for (size_t i = 0; i < size; ++i) {
 		hash ^= ((const char*)data)[i];
 		hash *= 16777619;

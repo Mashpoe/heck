@@ -304,17 +304,19 @@ bool scope_is_class(heck_scope* scope) {
 }
 
 bool scope_var_is_init(heck_scope* scope, heck_name* var_name) {
-  if (var_name->value.var_value->value != NULL)
+
+  heck_variable* var_value = var_name->value.var_value;
+
+  if (var_value->value != NULL)
     return true;
 
   do {
 
     if (scope->var_inits != NULL) {
-      
       vec_size_t num_inits = vector_size(scope->var_inits);
 
       for (vec_size_t i = 0; i < num_inits; ++i) {
-        if (scope->var_inits[i] == var_name)
+        if (scope->var_inits[i] == var_value)
           return true;
       }
 

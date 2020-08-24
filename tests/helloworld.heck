@@ -1,5 +1,5 @@
-func 尺print(a: string) {
+func P尺INT(a: string) {
   return a
 }
 
-尺print("hello尺 world")
+P尺INT("HELLO WO尺LD")

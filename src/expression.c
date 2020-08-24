@@ -857,7 +857,7 @@ bool resolve_expr_asg(heck_expr* expr, heck_scope* parent, heck_scope* global) {
       if (parent->var_inits == NULL)
         parent->var_inits = vector_create();
       
-      vector_add(&parent->var_inits, value->name);
+      vector_add(&parent->var_inits, value->name->value.var_value);
     }
 
   } else { // TODO: resolve and handle other types of lvalues

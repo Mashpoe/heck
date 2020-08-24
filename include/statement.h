@@ -9,7 +9,13 @@
 #define statement_h
 
 #include "expression.h"
+#include "variable.h"
 #include "idf_map.h"
+#include <stdint.h>
+
+// heck_stmt is a polymorphic structure with a "vtable"
+typedef struct stmt_vtable stmt_vtable;
+typedef struct heck_expr heck_expr;
 
 typedef enum heck_stmt_type {
 	STMT_EXPR,
@@ -21,21 +27,6 @@ typedef enum heck_stmt_type {
 	STMT_BLOCK,
 	STMT_ERR
 } heck_stmt_type;
-
-typedef struct stmt_vtable stmt_vtable;
-typedef struct heck_stmt {
-	const stmt_vtable* vtable;
-	heck_stmt_type type;
-	u_int8_t flags;
-	union {
-		struct heck_variable* var_value; // let statement
-		struct heck_stmt_if* if_stmt;
-		struct heck_stmt_class* class_stmt;
-		struct heck_stmt_func* func_stmt;
-		struct heck_block* block_value;
-		struct heck_expr* expr_value;
-	} value;
-} heck_stmt;
 
 // TODO: maybe make these callbacks take void pointers instead
 typedef bool (*stmt_resolve)(heck_stmt*, heck_scope* parent, heck_scope* global);
@@ -55,17 +46,10 @@ struct stmt_vtable {
 
 // EXPRESSION STATEMENT
 // just use a regular heck_expr* for expression statements
-heck_stmt* create_stmt_expr(heck_expr* expr);
+heck_stmt* create_stmt_expr(heck_expr* expr, heck_file_pos* fp);
 
 // LET STATEMENT
-typedef struct heck_variable {
-	str_entry name;
-	heck_data_type* data_type;
-	heck_expr* value;
-} heck_variable;
-heck_variable* variable_create(str_entry name, heck_data_type* type, heck_expr* value);
-void variable_free(heck_variable* variable);
-heck_stmt* create_stmt_let(heck_variable* variable);
+heck_stmt* create_stmt_let(heck_variable* variable, heck_file_pos* fp);
 
 // BLOCK OF CODE
 // block types are ordered from least to greatest precedence; do not change values/order
@@ -77,7 +61,7 @@ typedef struct heck_block {
 } heck_block;
 heck_block* block_create(heck_scope* child);
 void block_free(heck_block* block);
-heck_stmt* create_stmt_block(heck_block* block);
+heck_stmt* create_stmt_block(heck_block* block, heck_file_pos* fp);
 
 // IF STATEMENT
 typedef struct heck_if_node {
@@ -91,7 +75,7 @@ typedef struct heck_stmt_if {
 	heck_block_type type;
 	heck_if_node* contents; // linked list for if/else ladder
 } heck_stmt_if;
-heck_stmt* create_stmt_if(heck_if_node* contents);
+heck_stmt* create_stmt_if(heck_if_node* contents, heck_file_pos* fp);
 
 // not currently in use, but could be used for debugging
 //typedef struct heck_stmt_nmsp {
@@ -104,18 +88,42 @@ typedef struct heck_stmt_class {
 	heck_scope* class_scope;
 	//heck_idf* name;
 } heck_stmt_class;
-heck_stmt* create_stmt_class(heck_scope* class_scope);
+heck_stmt* create_stmt_class(heck_scope* class_scope, heck_file_pos* fp);
 
 typedef struct heck_stmt_func {
 	heck_func* func;
 	//heck_idf* name;
 } heck_stmt_func;
-heck_stmt* create_stmt_func(heck_func* func);
+heck_stmt* create_stmt_func(heck_func* func, heck_file_pos* fp);
 
-heck_stmt* create_stmt_ret(heck_expr* value);
+
+typedef union {
+  struct heck_stmt_if if_stmt;
+  struct heck_stmt_class class_stmt;
+  struct heck_stmt_func func_stmt;
+  struct heck_block* block_value;
+  struct heck_expr* expr_value;
+  struct heck_variable* var_value; // let statement
+} heck_stmt_data;
+
+typedef struct stmt_vtable stmt_vtable;
+typedef struct heck_stmt {
+  heck_file_pos* fp;
+	const stmt_vtable* vtable;
+	heck_stmt_type type;
+	uint8_t flags;
+	heck_stmt_data value;
+} heck_stmt;
+
+enum {
+  STMT_SIZE = sizeof(heck_stmt) - sizeof(heck_stmt_data)
+};
+
+// other stmt functions
+heck_stmt* create_stmt_ret(heck_expr* value, heck_file_pos* fp);
 
 // ERROR
-heck_stmt* create_stmt_err(void);
+heck_stmt* create_stmt_err(heck_file_pos* fp);
 
 void free_stmt(heck_stmt* stmt);
 
@@ -123,7 +131,7 @@ void print_stmt(heck_stmt* stmt, int indent);
 
 bool resolve_stmt(heck_stmt* stmt, heck_scope* parent, heck_scope* global);
 
-heck_stmt* create_stmt(heck_stmt_type type, const stmt_vtable* vtable);
+heck_stmt* create_stmt(heck_stmt_type type, const stmt_vtable* vtable, heck_file_pos* fp);
 
 bool resolve_block(heck_block* block, heck_scope* global);
 void print_block(heck_block* block, int indent);

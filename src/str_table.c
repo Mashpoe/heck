@@ -47,7 +47,7 @@ void str_table_free(str_table* t) {
 
 // puts an old bucket into a resized str_table
 static void resize_entry(str_table* t, str_entry old_entry) {
-	u_int32_t index = old_entry->hash % t->capacity;
+	uint32_t index = old_entry->hash % t->capacity;
 	for (;;) {
 		str_entry entry = t->buckets[index];
 		
@@ -82,7 +82,7 @@ static void str_table_resize(str_table* t) {
 /*	returns the address of the bucket (str_obj**) rather than the actual bucket (str_obj*)
  	so the bucket can be reassigned */
 static str_entry* find_entry(str_table* t, str_entry value) {
-	u_int32_t index = value->hash % t->capacity;
+	uint32_t index = value->hash % t->capacity;
 	for (;;) {
 		str_entry* entry = &t->buckets[index];
 		

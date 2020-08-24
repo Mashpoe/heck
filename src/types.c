@@ -80,16 +80,41 @@ inline heck_data_type* resolve_data_type(heck_data_type* type, heck_scope* paren
 	return type->vtable->resolve(type, parent, global);
 }
 
-// this could also be made a macro
-inline void free_data_type(heck_data_type* type) {
+// this could also be made into a macro
+void free_data_type(heck_data_type* type) {
 	type->vtable->free(type);
 }
 
-inline void print_data_type(const heck_data_type* type) {
+typedef struct resolved_type_copy {
+  // store type data directly in the struct
+  heck_data_type data_type;
+  // keep the original type functionality except for free
+  type_vtable hidden_vtable;
+} resolved_type_copy;
+void free_resolved_type_copy(heck_data_type* type) {
+  // child types are freed when the original type is freed
+  // this is all we need to do here
+  free(type);
+}
+heck_data_type* copy_resolved_type(const heck_data_type* type) {
+  resolved_type_copy* copy = malloc(sizeof(resolved_type_copy));
+  // directly copy bytes
+  copy->data_type = *type;
+  // create special vtable
+  copy->data_type.vtable = &copy->hidden_vtable;
+  copy->hidden_vtable.resolve = type->vtable->resolve;
+  copy->hidden_vtable.print = type->vtable->print;
+  // override the default free callback
+  copy->hidden_vtable.free = free_resolved_type_copy;
+
+  return (heck_data_type*)copy;
+}
+
+void print_data_type(const heck_data_type* type) {
 	type->vtable->print(type, stdout);
 }
 
-inline void fprint_data_type(const heck_data_type* type, FILE* f) {
+void fprint_data_type(const heck_data_type* type, FILE* f) {
 	type->vtable->print(type, f);
 }
 

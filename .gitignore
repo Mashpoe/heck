@@ -2,6 +2,10 @@
 build/
 heck
 emsdk/
+wabt/
+a.out.wat
+a.out.wasm
+runwasm.js
 
 # Prerequisites
 *.d

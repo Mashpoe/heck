@@ -10,6 +10,7 @@
 
 #include "identifier.h"
 #include "declarations.h"
+#include <stdint.h>
 
 /*
 typedef enum {
@@ -73,7 +74,7 @@ typedef struct type_vtable type_vtable;
 struct heck_data_type {
 	heck_type_name type_name;
 	const type_vtable* vtable;
-	u_int8_t flags; // stores resolved state and qualifiers, change to uint16_t if we run out of bits
+	uint8_t flags; // stores resolved state and qualifiers, change to uint16_t if we run out of bits
 	union {
 		heck_class_type class_type;
 		heck_data_type* arr_type; // recursive structure
@@ -93,6 +94,15 @@ struct type_vtable {
 heck_data_type* create_data_type(heck_type_name name);
 heck_data_type* resolve_data_type(heck_data_type* type, heck_scope* parent, heck_scope* global);
 void free_data_type(heck_data_type* type);
+
+// creates a shallow copy that doesn't free child type data
+// resulting type can be used like a normal type
+// free is overridden
+heck_data_type* copy_resolved_type(const heck_data_type* type);
+
+// for templates
+// makes a deep copy and frees its data
+heck_data_type* copy_unresolved_type(const heck_data_type* type);
 
 extern const type_vtable type_vtable_err;
 extern const type_vtable type_vtable_gen;

@@ -34,12 +34,6 @@ typedef struct heck_func_gen_list {
 	void* func_code; // the code produced from compiling the function using the types from call
 } heck_func_gen_inst;
 
-// use call_gen_vec for generic functions, use func_type for functions with set parameter types
-typedef union heck_func_value {
-	heck_func_gen_inst** gen_inst_vec;
-	void* func_type;
-} heck_func_value;
-
 // FUNCTION PARAMETER
 //typedef struct heck_param {
 //	str_entry name; // name of the parameter
@@ -64,14 +58,18 @@ void free_decl_data(heck_func_decl* decl);
 struct heck_func {
 	// TODO: bitmask these bois
 	bool declared; // heck_func implied definition, so we just need to check if there is a declaration
-	bool generic; // if it's generic, use value.gen_inst_vec
+	bool generic;
   bool resolved;
+  bool compiled;
+
+  // keep track of all local variables within a function
+  // excludes parameters
+  heck_variable** local_vec;
+  // the number of locals, including parameters
+  int local_count;
   
   // argument and return types
   heck_func_decl decl;
-	
-  // TODO: remove
-	heck_func_value value;
 	
 	heck_block* code;
 };

@@ -72,9 +72,9 @@ void print_class(heck_name* class_name, const char* name, int indent) {
         printf("operator @op");
       }
 
-      print_func_decl(&operator_def->func.decl);
+      print_func_decl(&operator_def->func->decl);
 
-      print_block(operator_def->func.code, indent + 1);
+      print_block(operator_def->func->code, indent + 1);
     }
 
   }

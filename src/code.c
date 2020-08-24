@@ -9,6 +9,7 @@
 #include <code_impl.h>
 #include <scope.h>
 #include <print.h>
+#include <function.h>
 #include <str.h>
 #include <stdio.h>
 #include "vec.h"
@@ -20,7 +21,18 @@ heck_code* heck_create() {
 	heck_scope* block_scope = scope_create_global();
   
 	c->global = block_create(block_scope);
-	
+
+	heck_func_decl main_decl = {
+    .fp = NULL,
+    .scope = block_scope,
+    .param_vec = NULL,
+    .return_type = NULL
+  };
+
+  c->main = func_create(&main_decl, false);
+  c->main->code = c->global;
+  c->main->code->scope->parent_func = c->main;
+  
 	c->strings = str_table_create();
 
   c->data_types = vector_create();
@@ -44,7 +56,9 @@ void free_data_types(heck_code* c) {
 }
 
 void heck_free(heck_code* c) {
-  block_free(c->global);
+  // also frees global
+  func_free(c->main);
+
   free_data_types(c);
   vector_free(c->data_types);
 	free_tokens(c);

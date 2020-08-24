@@ -16,6 +16,7 @@
 //#include "scope.h"
 #include "context.h"
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "declarations.h"
 
@@ -129,21 +130,21 @@ typedef union {
   heck_expr_value value;
   heck_literal* literal;
   heck_expr* expr; // used for cast expression, cast type is stored in parent ^^
-} expr_data;
+} heck_expr_data;
 
 struct heck_expr {
   heck_file_pos* fp; // the starting line and character of the expr
 	heck_expr_type type; // type is exclusive to flags because it can only have one value
 	const heck_data_type* data_type;
 	const expr_vtable* vtable; // resolve callback
-	u_int8_t flags; // currently only stores resolved state
+	uint8_t flags; // currently only stores resolved state
 
   // heck_expr objects will be specifically allocated to store the correct item
-	expr_data value;
+	heck_expr_data value;
 };
 
 enum {
-  EXPR_SIZE = sizeof(heck_expr) - sizeof(expr_data)
+  EXPR_SIZE = sizeof(heck_expr) - sizeof(heck_expr_data)
 };
 
 //heck_expr* create_expr(heck_expr_type type, const expr_vtable* vtable);

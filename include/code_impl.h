@@ -21,6 +21,8 @@
 
 struct heck_code {
 	heck_token** token_vec; // token vector
+
+  heck_func* main; // code/syntax tree
 	heck_block* global; // code/syntax tree
 	
 	// these tables could be joined technically, but it might be better to separate them

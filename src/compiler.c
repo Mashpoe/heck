@@ -13,93 +13,11 @@
 #include <code_impl.h>
 #include "WASMGEN/wasm_code.h"
 #include <stdio.h>
-/*
-// forward declaration
-heck_data_type* compile_func_call(heck_code* c, heck_expr_call* call);
 
-heck_data_type* compile_expr(heck_code* c, heck_expr* expr) {
-	
-	switch (expr->type) {
-		case EXPR_ERR:
-			return create_data_type(TYPE_ERR);
-			break;
-		case EXPR_CALL:
-			return compile_func_call(c, expr->expr);
-			break;
-		case EXPR_VALUE:
-			break;
-		case EXPR_TERNARY: {
-			heck_data_type* type = compile_expr(c, ((heck_expr_ternary*)expr->expr)->value_a);
-			if (type == NULL)
-				return create_data_type(TYPE_ERR);
-			
-			if (data_type_cmp(type, compile_expr(c, ((heck_expr_ternary*)expr->expr)->value_b))) {
-				return type;
-			} else {
-				return create_data_type(TYPE_ERR);
-			}
-			break;
-		}
-		case EXPR_BINARY: {
-			heck_data_type* type = compile_expr(c, ((heck_expr_binary*)expr->expr)->left);
-			if (type == NULL)
-				return create_data_type(TYPE_ERR);
-			
-			if (data_type_cmp(type, compile_expr(c, ((heck_expr_binary*)expr->expr)->right))) {
-				return type;
-			} else {
-				return create_data_type(TYPE_ERR);
-			}
-			break;
-		}
-		case EXPR_UNARY:
-			return create_data_type(TYPE_BOOL);
-			break;
-		case EXPR_LITERAL: {
-			
-			return create_data_type(((heck_literal*)expr->expr)->type);
-			break;
-		}
-		case EXPR_ASG:
-			return compile_expr(c, ((heck_expr_asg*)expr->expr)->value);
-			break;
-		default:
-			return create_data_type(TYPE_ERR);
-			break;
-	}
-	
-	return create_data_type(TYPE_ERR);
+// functions return the number of bytes they produce
+void heck_compile_block() {
+  
 }
-
-// gets return type from a function call
-heck_data_type* compile_func_call(heck_code* c, heck_expr_call* call) {
-	// find function in syntax tree
-	heck_scope* s;
-	idf_map_get(c->global->map, call->name.name[0], (void*)&s);
-	if (s && s->type == IDF_FUNCTION) {
-		
-		heck_func* f = s->value;
-		
-		if (f->code->type == BLOCK_MAY_RETURN) {
-			fprintf(stderr, "error: function only returns in some cases\n");
-			return create_data_type(TYPE_ERR);
-		}
-		
-		if (f->code->type != BLOCK_RETURNS) // block doesn't return
-			return create_data_type(TYPE_VOID);
-		
-		// begin traversing child scopes 
-			
-		
-	}
-	
-	
-	return create_data_type(TYPE_ERR);
-}
-*/
-
-
-
 
 // assumes everything was resolved
 // there shouldn't be any issues
@@ -107,12 +25,20 @@ heck_data_type* compile_func_call(heck_code* c, heck_expr_call* call) {
 bool heck_compile(heck_code* c) {
 	
   // func decls go at the beginning of a file
-	wasm_code* func_decls = wasm_code_create();
-	
-  // init wasm object
-	$wasm(func_decls, $magic, $version);
-	
-	wasm_code* func_defs = wasm_code_create();
-	
-	return true;
+	wasm_code* code = wasm_code_create();
+
+  char code_output[] = 
+  "(module\n"
+    "(import \"imports\" \"print_i32\" (func $print_i32 (param i32)))\n"
+    "(func (export \"main\") (result i32)\n"
+      "i32.const 420\n"
+      "call $print_i32\n"
+      "i32.const 0\n"
+    ")\n"
+  ")";
+
+  // ignore null terminator
+  wasm_code_add(code, code_output, sizeof(code_output) - 1);
+
+  return wasm_code_output(code, "a.out.wat");
 }

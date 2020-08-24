@@ -101,9 +101,8 @@ void _vector_remove(vector* vec_addr, vec_type_t type_size, vec_size_t pos) {
 
 vector _vector_copy(vector vec, vec_type_t type_size) {
 	vector_data* vec_data = vector_get_data(vec);
-	vector_data* v = malloc(sizeof(vector_data) + vec_data->length * type_size);
-	v->alloc = vec_data->length;
-	v->length = vec_data->length;
-	memcpy(&v->buff, &vec_data->buff, vec_data->length);
+  size_t alloc_size = sizeof(vector_data) + vec_data->length * type_size;
+	vector_data* v = malloc(alloc_size);
+	memcpy(v, vec_data, alloc_size);
 	return (void*)&v->buff;
 }

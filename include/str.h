@@ -9,6 +9,7 @@
 #define str_h
 
 #include <stdlib.h>
+#include <stdint.h>
 
 /*	multiple structures require access to this data. */
 /*	this structure is only compiler's representation of literals and identifiers,
@@ -19,7 +20,7 @@ struct str_obj {
 	size_t size;
 	// hash is stored with the str_obj during its entire lifetime,
 	// as hashing and string creation are both O(n)
-	u_int32_t hash;
+	uint32_t hash;
 };
 
 typedef const struct str_obj* str_entry;

@@ -14,6 +14,7 @@
 #include "context.h"
 #include "expression.h"
 #include "function.h"
+#include <stdint.h>
 
 // declaration status
 typedef enum heck_decl_status {
@@ -50,7 +51,7 @@ typedef enum heck_name_flags {
 // the children of a scope, used to map an identifier to a value
 // may be renamed to heck_nmsp for namespace, but that could end up being confusing
 typedef struct heck_name {
-	u_int8_t flags;
+	uint8_t flags;
 	
 	heck_scope* parent;
 	
@@ -79,7 +80,7 @@ typedef struct heck_scope {
 	idf_map* names;
 	
   // every variable that gets initialized in this scope
-	heck_name** var_inits;
+	heck_variable** var_inits;
 } heck_scope;
 heck_scope* scope_create(heck_scope* parent);
 heck_scope* scope_create_global();

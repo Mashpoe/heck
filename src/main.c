@@ -58,14 +58,21 @@ int main(int argc, const char * argv[]) {
 		heck_code* c = heck_create();
 		heck_scan(c, f);
 		//heck_print_tokens(c);
-		heck_parse(c); // parsing includes resolving for now, since it completes the syntax tree
-		
-		heck_print_tree(c);
+		bool success = heck_parse(c); // parsing includes resolving for now, since it completes the syntax tree
+
+		//heck_print_tree(c);
+
+    if (success) {
+      heck_compile(c);
+    } else {
+      return 1;
+    }
+
 		//printf("done.\n");
-		//heck_compile(c);
 		//printf("press ENTER to continue...");
 		//getchar();
-		heck_free(c);
+
+		//heck_free(c);
 
 	  fclose(f);
 	} else {
@@ -76,7 +83,7 @@ int main(int argc, const char * argv[]) {
 
 	clock_t end = clock();
 	double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-	printf("\nexecution time: %f seconds\n", time_spent);
+	printf("compile time: %f seconds\n", time_spent);
 
 	return 0;
 }

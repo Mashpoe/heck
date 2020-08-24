@@ -9,6 +9,7 @@
 #define operator_h
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "token.h"
 #include "tokentypes.h"
 #include "declarations.h"
@@ -25,7 +26,7 @@ enum heck_operator_flags {
 };
 
 typedef struct heck_operator_type {
-	u_int8_t flags;
+	uint8_t flags;
   union {
     heck_tk_type op;
     heck_data_type* data_type;
@@ -39,7 +40,7 @@ typedef struct heck_operator_decl {
 
 typedef struct heck_operator_def {
 	heck_operator_type type;
-	heck_func func;
+	heck_func* func;
 } heck_operator_def;
 
 typedef struct heck_operator_list {

@@ -29,7 +29,7 @@ void add_operator_def(heck_class* c, heck_operator_type* type, heck_func* func) 
   
   heck_operator_def* temp = vector_add_asg(&c->operators.def_vec);
   temp->type = *type;
-  temp->func = *func;
+  temp->func = func;
 
 }
 
