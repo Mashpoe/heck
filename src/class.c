@@ -6,12 +6,13 @@
 //
 
 #include <class.h>
+#include <code_impl.h>
 #include <scope.h>
 #include <operator.h>
 #include <print.h>
 #include "vec.h"
 
-heck_class* class_create() {
+heck_class* class_create(heck_code* code) {
 	heck_class* c = malloc(sizeof(heck_class));
 
 	c->friend_vec = NULL; // empty list of friends :(

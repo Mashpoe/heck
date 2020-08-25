@@ -67,7 +67,7 @@ typedef struct heck_name {
 	
 	struct heck_scope* child_scope; // optional, might be null
 } heck_name;
-heck_name* name_create(heck_idf_type type, heck_scope* parent);
+heck_name* name_create(heck_code* c, heck_scope* parent, heck_idf_type type);
 void name_free(heck_name* name);
 
 typedef struct heck_scope {
@@ -82,17 +82,17 @@ typedef struct heck_scope {
   // every variable that gets initialized in this scope
 	heck_variable** var_inits;
 } heck_scope;
-heck_scope* scope_create(heck_scope* parent);
-heck_scope* scope_create_global();
+heck_scope* scope_create(heck_code* c, heck_scope* parent);
+heck_scope* scope_create_global(heck_code* c);
 void scope_free(heck_scope* scope);
-heck_name* scope_get_child(heck_scope* scope, heck_idf idf);
+heck_name* scope_get_child(heck_code* c, heck_scope* scope, heck_idf idf);
 
 // parent is the scope you are referring from, child is the parent of name, and name is name
 bool name_accessible(const heck_scope* parent, const heck_scope* child, const heck_name* name);
 // returns null if the scope couldn't be resolved or access wasn't allowed
-heck_name* scope_resolve_idf(heck_idf idf, const heck_scope* parent);
-heck_name* scope_resolve_value(heck_expr_value* value, const heck_scope* parent, const heck_scope* global);
-bool scope_resolve_names(heck_scope* scope, const heck_scope* global);
+heck_name* scope_resolve_idf(const heck_scope* parent, heck_idf idf);
+heck_name* scope_resolve_value(heck_code* c, heck_scope* parent, heck_expr_value* value);
+bool scope_resolve_names(heck_code* c, heck_scope* scope);
 
 // add a declaration statement (class members, classes, or functions that belong to the scope)
 //void scope_add_decl(heck_scope* scope, heck_stmt* decl);

@@ -29,12 +29,12 @@ typedef enum heck_stmt_type {
 } heck_stmt_type;
 
 // TODO: maybe make these callbacks take void pointers instead
-typedef bool (*stmt_resolve)(heck_stmt*, heck_scope* parent, heck_scope* global);
-typedef void (*stmt_free)(heck_stmt*); // int for number of indents
+typedef bool (*stmt_resolve)(heck_code*, heck_scope*, heck_stmt*);
+//typedef void (*stmt_free)(heck_stmt*); // int for number of indents
 typedef void (*stmt_print)(heck_stmt*, int); // int for number of indents
 struct stmt_vtable {
 	stmt_resolve resolve;
-	stmt_free free;
+	//stmt_free free;
 	stmt_print print;
 };
 
@@ -46,10 +46,10 @@ struct stmt_vtable {
 
 // EXPRESSION STATEMENT
 // just use a regular heck_expr* for expression statements
-heck_stmt* create_stmt_expr(heck_expr* expr, heck_file_pos* fp);
+heck_stmt* create_stmt_expr(heck_code* c, heck_file_pos* fp, heck_expr* expr);
 
 // LET STATEMENT
-heck_stmt* create_stmt_let(heck_variable* variable, heck_file_pos* fp);
+heck_stmt* create_stmt_let(heck_code* c, heck_file_pos* fp, heck_variable* variable);
 
 // BLOCK OF CODE
 // block types are ordered from least to greatest precedence; do not change values/order
@@ -59,9 +59,9 @@ typedef struct heck_block {
 	struct heck_scope* scope;
 	heck_stmt** stmt_vec;
 } heck_block;
-heck_block* block_create(heck_scope* child);
-void block_free(heck_block* block);
-heck_stmt* create_stmt_block(heck_block* block, heck_file_pos* fp);
+heck_block* block_create(heck_code* c, heck_scope* child);
+//void block_free(heck_block* block);
+heck_stmt* create_stmt_block(heck_code* c, heck_file_pos* fp, heck_block* block);
 
 // IF STATEMENT
 typedef struct heck_if_node {
@@ -69,13 +69,13 @@ typedef struct heck_if_node {
 	heck_block* code;
 	struct heck_if_node* next; // next node in linked list for if/else ladder
 } heck_if_node;
-heck_if_node* create_if_node(heck_expr* condition, heck_scope* parent);
+heck_if_node* create_if_node(heck_code* c, heck_scope* parent, heck_expr* condition);
 
 typedef struct heck_stmt_if {
 	heck_block_type type;
 	heck_if_node* contents; // linked list for if/else ladder
 } heck_stmt_if;
-heck_stmt* create_stmt_if(heck_if_node* contents, heck_file_pos* fp);
+heck_stmt* create_stmt_if(heck_code* c, heck_file_pos* fp, heck_if_node* contents);
 
 // not currently in use, but could be used for debugging
 //typedef struct heck_stmt_nmsp {
@@ -88,13 +88,13 @@ typedef struct heck_stmt_class {
 	heck_scope* class_scope;
 	//heck_idf* name;
 } heck_stmt_class;
-heck_stmt* create_stmt_class(heck_scope* class_scope, heck_file_pos* fp);
+heck_stmt* create_stmt_class(heck_code* c, heck_file_pos* fp, heck_scope* class_scope);
 
 typedef struct heck_stmt_func {
 	heck_func* func;
 	//heck_idf* name;
 } heck_stmt_func;
-heck_stmt* create_stmt_func(heck_func* func, heck_file_pos* fp);
+heck_stmt* create_stmt_func(heck_code* c, heck_file_pos* fp, heck_func* func);
 
 
 typedef union {
@@ -120,20 +120,18 @@ enum {
 };
 
 // other stmt functions
-heck_stmt* create_stmt_ret(heck_expr* value, heck_file_pos* fp);
+heck_stmt* create_stmt_ret(heck_code* c, heck_file_pos* fp, heck_expr* value);
 
 // ERROR
-heck_stmt* create_stmt_err(heck_file_pos* fp);
+heck_stmt* create_stmt_err(heck_code* c, heck_file_pos* fp);
 
-void free_stmt(heck_stmt* stmt);
+//void free_stmt(heck_stmt* stmt);
 
 void print_stmt(heck_stmt* stmt, int indent);
 
-bool resolve_stmt(heck_stmt* stmt, heck_scope* parent, heck_scope* global);
+bool resolve_stmt(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 
-heck_stmt* create_stmt(heck_stmt_type type, const stmt_vtable* vtable, heck_file_pos* fp);
-
-bool resolve_block(heck_block* block, heck_scope* global);
+bool resolve_block(heck_code* c, heck_block* block);
 void print_block(heck_block* block, int indent);
 
 void print_variable(heck_variable* variable);

@@ -14,5 +14,5 @@
 
 // WOW, this function really deserves its own file
 bool heck_resolve(heck_code* c) {
-	return resolve_block(c->global, c->global->scope);
+	return resolve_block(c, c->code);
 }

@@ -47,14 +47,14 @@ enum heck_expr_type {
 // TODO: maybe make these callbacks take void pointers instead of heck_expr
 // TODO: resolve_info* structures instead of parent and global among other parameters that will inevitably be added
 
-typedef bool		(*expr_resolve)(heck_expr*, heck_scope* parent, heck_scope* global);
-typedef heck_expr*	(*expr_copy)(heck_expr*); // for templates
-typedef void		(*expr_free)(heck_expr*);
+typedef bool		(*expr_resolve)(heck_code*, heck_scope*, heck_expr*);
+typedef heck_expr*	(*expr_copy)(heck_code*, heck_expr*); // for templates
+//typedef void		(*expr_free)(heck_expr*);
 typedef void		(*expr_print)(heck_expr*);
 struct expr_vtable {
 	expr_resolve resolve;
 	expr_copy copy;
-	expr_free free;
+	//expr_free free;
 	expr_print print;
 };
 
@@ -64,25 +64,25 @@ struct expr_vtable {
  * because there are so many expression types compared to other types
  */
 
-heck_expr* create_expr_res_type(heck_data_type* type, heck_file_pos* fp);
+heck_expr* create_expr_res_type(heck_code* c, heck_file_pos* fp, heck_data_type* type);
 
-heck_expr* create_expr_literal(heck_literal* value, heck_file_pos* fp);
+heck_expr* create_expr_literal(heck_code* c, heck_file_pos* fp, heck_literal* value);
 
-heck_expr* create_expr_cast(const heck_data_type* type, heck_expr* expr, heck_file_pos* fp);
+heck_expr* create_expr_cast(heck_code* c, heck_file_pos* fp, const heck_data_type* type, heck_expr* expr);
 
 typedef struct heck_expr_binary {
 	heck_expr* left;
 	heck_tk_type operator;
 	heck_expr* right;
 } heck_expr_binary;
-heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr* right, const expr_vtable* vtable, heck_file_pos* fp);
+heck_expr* create_expr_binary(heck_code* c, heck_file_pos* fp, heck_expr* left, heck_tk_type operator, heck_expr* right, const expr_vtable* vtable);
 
 // ++, --, !, -(number)
 typedef struct heck_expr_unary {
 	heck_expr* expr;
 	heck_tk_type operator;
 } heck_expr_unary;
-heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator, const expr_vtable* vtable, heck_file_pos* fp);
+heck_expr* create_expr_unary(heck_code* c, heck_file_pos* fp, heck_expr* expr, heck_tk_type operator, const expr_vtable* vtable);
 
 // variable/variable value
 typedef struct heck_expr_value {
@@ -90,17 +90,17 @@ typedef struct heck_expr_value {
   heck_name* name; // set at resolve
 	idf_context context;
 } heck_expr_value;
-heck_expr* create_expr_value(heck_idf idf, idf_context context, heck_file_pos* fp);
+heck_expr* create_expr_value(heck_code* c, heck_file_pos* fp, heck_idf idf, idf_context context);
 
 // TODO: add support for any expression as the left operand
 // function call
 typedef struct heck_expr_call {
 	heck_expr* operand; // an expression that evaluates to a function, most likely expr_value
 	heck_expr** arg_vec; // arguments
-	heck_data_type** type_arg_vec; // type arguments (NULL if not applicable)
+	//heck_data_type** type_arg_vec; // type arguments (NULL if not applicable)
 	heck_func* func; // pointer to the function that gets called, set after resolving
 } heck_expr_call;
-heck_expr* create_expr_call(heck_expr* operand, heck_file_pos* fp);
+heck_expr* create_expr_call(heck_code* c, heck_file_pos* fp, heck_expr* operand);
 
 // array access
 typedef struct heck_expr_arr_access {
@@ -112,14 +112,14 @@ typedef struct heck_expr_arr_access {
 //	heck_expr_value* name;
 //	heck_expr* value;
 //} heck_expr_asg;
-heck_expr* create_expr_asg(heck_expr* left, heck_expr* right, heck_file_pos* fp);
+heck_expr* create_expr_asg(heck_code* c, heck_file_pos* fp, heck_expr* left, heck_expr* right);
 
 typedef struct heck_expr_ternary {
 	heck_expr* condition;
 	heck_expr* value_a;
 	heck_expr* value_b;
 } heck_expr_ternary;
-heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b, heck_file_pos* fp);
+heck_expr* create_expr_ternary(heck_code* c, heck_file_pos* fp, heck_expr* condition, heck_expr* value_a, heck_expr* value_b);
 
 typedef union {
   heck_expr_unary unary;
@@ -149,13 +149,11 @@ enum {
 
 //heck_expr* create_expr(heck_expr_type type, const expr_vtable* vtable);
 
-heck_expr* create_expr_err(heck_file_pos* fp);
+heck_expr* create_expr_err(heck_code* c, heck_file_pos* fp);
 
-bool resolve_expr(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr(heck_code* c, heck_scope* parent, heck_expr* expr);
 
-heck_expr* copy_expr(heck_expr* expr);
-
-void free_expr(heck_expr* expr);
+heck_expr* copy_expr(heck_code* c, heck_expr* expr);
 
 void print_expr(heck_expr* expr);
 

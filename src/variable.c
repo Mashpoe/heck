@@ -16,12 +16,12 @@ heck_variable* variable_create(str_entry name, heck_data_type* data_type, heck_e
 	return variable;
 }
 
-void variable_free(heck_variable* variable) {
-  if (variable->data_type != NULL)
-    free_data_type(variable->data_type);
+// void variable_free(heck_variable* variable) {
+//   if (variable->data_type != NULL)
+//     free_data_type(variable->data_type);
   
-  if (variable->value != NULL)
-    free_expr(variable->value);
+//   if (variable->value != NULL)
+//     free_expr(variable->value);
 
-  free(variable);
-}
+//   free(variable);
+// }

@@ -9,13 +9,14 @@
 #include <scope.h>
 #include <function.h>
 #include <error.h>
+#include <code_impl.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "vec.h"
 
 // todo: make init_expr(heck_expr* expr, type, vtable)
-void init_expr(heck_expr*, heck_expr_type, const expr_vtable*, heck_file_pos* fp);
-inline void init_expr(heck_expr* expr, heck_expr_type type, const expr_vtable* vtable, heck_file_pos* fp) {
+void init_expr(heck_file_pos*, heck_expr*, heck_expr_type, const expr_vtable*);
+inline void init_expr(heck_file_pos* fp, heck_expr* expr, heck_expr_type type, const expr_vtable* vtable) {
   expr->fp = fp;
 	expr->type = type;
 	expr->vtable = vtable;
@@ -23,9 +24,9 @@ inline void init_expr(heck_expr* expr, heck_expr_type type, const expr_vtable* v
 	expr->flags = 0x0; // set all flags to false
 }
 
-heck_expr* create_expr_literal(heck_literal* value, heck_file_pos* fp) {
-	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_literal*));
-  init_expr(e, EXPR_LITERAL, &expr_vtable_literal, fp);
+heck_expr* create_expr_literal(heck_code* c, heck_file_pos* fp, heck_literal* value) {
+	heck_expr* e = heck_alloc(c, EXPR_SIZE + sizeof(heck_literal*));
+  init_expr(fp, e, EXPR_LITERAL, &expr_vtable_literal);
 	e->value.literal = value;
 	e->data_type = value->data_type;
 	e->flags = EXPR_CONST; // literals are constexpr
@@ -33,17 +34,17 @@ heck_expr* create_expr_literal(heck_literal* value, heck_file_pos* fp) {
 	return e;
 }
 
-heck_expr* create_expr_cast(const heck_data_type* type, heck_expr* expr, heck_file_pos* fp) {
-	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr*));
-  init_expr(e, EXPR_CAST, &expr_vtable_cast, fp);
+heck_expr* create_expr_cast(heck_code* c, heck_file_pos* fp, const heck_data_type* type, heck_expr* expr) {
+	heck_expr* e = heck_alloc(c, EXPR_SIZE + sizeof(heck_expr*));
+  init_expr(fp, e, EXPR_CAST, &expr_vtable_cast);
 	e->data_type = type;
 	e->value.expr = expr;
 	return e;
 }
 
-heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr* right, const expr_vtable* vtable, heck_file_pos* fp) {
-	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_binary));
-  init_expr(e, EXPR_BINARY, vtable, fp);
+heck_expr* create_expr_binary(heck_code* c, heck_file_pos* fp, heck_expr* left, heck_tk_type operator, heck_expr* right, const expr_vtable* vtable) {
+	heck_expr* e = heck_alloc(c, EXPR_SIZE + sizeof(heck_expr_binary));
+  init_expr(fp, e, EXPR_BINARY, vtable);
 	
 	heck_expr_binary* binary = &e->value.binary;
 	binary->left = left;
@@ -53,9 +54,9 @@ heck_expr* create_expr_binary(heck_expr* left, heck_tk_type operator, heck_expr*
 	return e;
 }
 
-heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator, const expr_vtable* vtable, heck_file_pos* fp) {
-	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_unary));
-  init_expr(e, EXPR_UNARY, vtable, fp);
+heck_expr* create_expr_unary(heck_code* c, heck_file_pos* fp, heck_expr* expr, heck_tk_type operator, const expr_vtable* vtable) {
+	heck_expr* e = heck_alloc(c, EXPR_SIZE + sizeof(heck_expr_unary));
+  init_expr(fp, e, EXPR_UNARY, vtable);
 	
 	heck_expr_unary* unary = &e->value.unary;
 	unary->expr = expr;
@@ -64,9 +65,9 @@ heck_expr* create_expr_unary(heck_expr* expr, heck_tk_type operator, const expr_
 	return e;
 }
 
-heck_expr* create_expr_value(heck_idf idf, idf_context context, heck_file_pos* fp) {
-	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_value));
-  init_expr(e, EXPR_VALUE, &expr_vtable_value, fp);
+heck_expr* create_expr_value(heck_code* c, heck_file_pos* fp, heck_idf idf, idf_context context) {
+	heck_expr* e = heck_alloc(c, EXPR_SIZE + sizeof(heck_expr_value));
+  init_expr(fp, e, EXPR_VALUE, &expr_vtable_value);
 	
 	// value :)
 	heck_expr_value* value = &e->value.value;
@@ -77,22 +78,24 @@ heck_expr* create_expr_value(heck_idf idf, idf_context context, heck_file_pos* f
 	return e;
 }
 
-heck_expr* create_expr_call(heck_expr* operand, heck_file_pos* fp) {
+heck_expr* create_expr_call(heck_code* c, heck_file_pos* fp, heck_expr* operand) {
 	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_call));
-  init_expr(e, EXPR_CALL, &expr_vtable_call, fp);
+  init_expr(fp, e, EXPR_CALL, &expr_vtable_call);
+  // use add_call because arg_vec needs to be freed
+  heck_add_call(c, e);
 	
 	heck_expr_call* call = &e->value.call;
 	call->operand = operand;
 	call->arg_vec = vector_create();
-	call->type_arg_vec = NULL;
+	//call->type_arg_vec = NULL;
   call->func = NULL;
 	
 	return e;
 }
 
-heck_expr* create_expr_asg(heck_expr* left, heck_expr* right, heck_file_pos* fp) {
-	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_binary));
-  init_expr(e, EXPR_BINARY, &expr_vtable_asg, fp);
+heck_expr* create_expr_asg(heck_code* c, heck_file_pos* fp, heck_expr* left, heck_expr* right) {
+	heck_expr* e = heck_alloc(c, EXPR_SIZE + sizeof(heck_expr_binary));
+  init_expr(fp, e, EXPR_BINARY, &expr_vtable_asg);
 	
 	heck_expr_binary* asg = &e->value.binary;
 	asg->left = left;
@@ -101,9 +104,9 @@ heck_expr* create_expr_asg(heck_expr* left, heck_expr* right, heck_file_pos* fp)
 	return e;
 }
 
-heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_expr* value_b, heck_file_pos* fp) {
-	heck_expr* e = malloc(EXPR_SIZE + sizeof(heck_expr_ternary));
-  init_expr(e, EXPR_TERNARY, &expr_vtable_ternary, fp);
+heck_expr* create_expr_ternary(heck_code* c, heck_file_pos* fp, heck_expr* condition, heck_expr* value_a, heck_expr* value_b) {
+	heck_expr* e = heck_alloc(c, EXPR_SIZE + sizeof(heck_expr_ternary));
+  init_expr(fp, e, EXPR_TERNARY, &expr_vtable_ternary);
 	
 	heck_expr_ternary* ternary = &e->value.ternary;
 	ternary->condition = condition;
@@ -113,9 +116,9 @@ heck_expr* create_expr_ternary(heck_expr* condition, heck_expr* value_a, heck_ex
 	return e;
 }
 
-heck_expr* create_expr_err(heck_file_pos* fp) {
-	heck_expr* e = malloc(EXPR_SIZE/* + 0*/);
-  init_expr(e, EXPR_ERR, &expr_vtable_err, fp);
+heck_expr* create_expr_err(heck_code* c, heck_file_pos* fp) {
+	heck_expr* e = heck_alloc(c, EXPR_SIZE/* + 0*/);
+  init_expr(fp, e, EXPR_ERR, &expr_vtable_err);
 	
 	e->value.expr = NULL;
 	
@@ -126,22 +129,22 @@ heck_expr* create_expr_err(heck_file_pos* fp) {
 // internal use only, for quickly checking binary expressions, doesn't actually fully resolve the expression
 // meant to be called by the resolve functions for binary expressions
 //
-bool resolve_expr_binary(heck_expr* expr, heck_scope* parent, heck_scope* global);
-inline bool resolve_expr_binary(heck_expr* expr, heck_scope* parent, heck_scope* global) {
+bool resolve_expr_binary(heck_code* c, heck_scope* parent, heck_expr* expr);
+inline bool resolve_expr_binary(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	heck_expr_binary* binary = &expr->value.binary;
 	return (
-		  binary->left->vtable->resolve(binary->left, parent, global) &&
-		  binary->right->vtable->resolve(binary->right, parent, global)
+		  binary->left->vtable->resolve(c, parent, binary->left) &&
+		  binary->right->vtable->resolve(c, parent, binary->right)
 	);
 }
 
 // expects a heck_expr_value.
 // used for access and assignment
 // do not confuse with resolve_expr_value, this function is for internal use.
-bool resolve_value(heck_expr* expr, heck_scope* parent, heck_scope* global) {
+bool resolve_value(heck_code* c, heck_scope* parent, heck_expr* expr) {
   
   // try to find the identifier
-	heck_name* name = scope_resolve_value(&expr->value.value, parent, global);
+	heck_name* name = scope_resolve_value(c, parent, &expr->value.value);
 	
 	if (name == NULL) {
     heck_report_error(NULL, expr->fp, "use of undeclared identifier \"{I}\"", expr->value.value.idf);
@@ -175,12 +178,12 @@ bool resolve_value(heck_expr* expr, heck_scope* parent, heck_scope* global) {
  * all vtable definitions
  ************************/
 
-heck_expr* copy_expr_unary(heck_expr* expr);
-void free_expr_unary(heck_expr* expr);
+heck_expr* copy_expr_unary(heck_code* c, heck_expr* expr);
+//void free_expr_unary(heck_expr* expr);
 void print_expr_unary(heck_expr* expr);
 
-heck_expr* copy_expr_binary(heck_expr* expr);
-void free_expr_binary(heck_expr* expr);
+heck_expr* copy_expr_binary(heck_code* c, heck_expr* expr);
+//void free_expr_binary(heck_expr* expr);
 void print_expr_binary(heck_expr* expr);
 
 /*
@@ -188,82 +191,70 @@ void print_expr_binary(heck_expr* expr);
  */
 
 // error (always resolves to false)
-bool resolve_expr_err(heck_expr* expr, heck_scope* parent, heck_scope* global);
-heck_expr* copy_expr_err(heck_expr* expr);
-void free_expr_err(heck_expr* expr);
+bool resolve_expr_err(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* copy_expr_err(heck_code* c, heck_expr* expr);
 void print_expr_err(heck_expr* expr);
 const expr_vtable expr_vtable_err = {
 	resolve_expr_err,
 	copy_expr_err,
-	free_expr_err,
 	print_expr_err
 };
 
 // resolved (always resolves to true, frees nothing)
 
 // literal
-bool resolve_expr_literal(heck_expr* expr, heck_scope* parent, heck_scope* global);
-heck_expr* copy_expr_literal(heck_expr* expr);
-void free_expr_literal(heck_expr* expr);
+bool resolve_expr_literal(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* copy_expr_literal(heck_code* c, heck_expr* expr);
 void print_expr_literal(heck_expr* expr);
 const expr_vtable expr_vtable_literal = {
 	resolve_expr_literal,
 	copy_expr_literal,
-	free_expr_literal,
 	print_expr_literal
 };
 
 // variable value
-bool resolve_expr_value(heck_expr* expr, heck_scope* parent, heck_scope* global);
-heck_expr* copy_expr_value(heck_expr* expr);
-void free_expr_value(heck_expr* expr);
+bool resolve_expr_value(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* copy_expr_value(heck_code* c, heck_expr* expr);
 void print_expr_value(heck_expr* expr);
 const expr_vtable expr_vtable_value = {
 	resolve_expr_value,
 	copy_expr_value,
-	free_expr_value,
 	print_expr_value
 };
 
 // postfix increment
-bool resolve_expr_post_incr(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_post_incr(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_post_incr = {
 	resolve_expr_post_incr,
 	copy_expr_unary,
-	free_expr_unary,
 	print_expr_unary
 };
 
 // postfix decrement
-bool resolve_expr_post_decr(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_post_decr(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_post_decr = {
 	resolve_expr_post_decr,
 	copy_expr_unary,
-	free_expr_unary,
 	print_expr_unary
 };
 
 // function call
-bool resolve_expr_call(heck_expr* expr, heck_scope* parent, heck_scope* global);
-heck_expr* copy_expr_call(heck_expr* expr);
-void free_expr_call(heck_expr* expr);
+bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* copy_expr_call(heck_code* c, heck_expr* expr);
 void print_expr_call(heck_expr* expr);
 const expr_vtable expr_vtable_call = {
 	resolve_expr_call,
 	copy_expr_call,
-	free_expr_call,
 	print_expr_call
 };
 
 // array access
-bool resolve_expr_arr_access(heck_expr* expr, heck_scope* parent, heck_scope* global);
-heck_expr* copy_expr_arr_access(heck_expr* expr);
-void free_expr_arr_access(heck_expr* value);
+bool resolve_expr_arr_access(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* copy_expr_arr_access(heck_code* c, heck_expr* expr);
 void print_expr_arr_access(heck_expr* expr);
 const expr_vtable expr_vtable_arr_access = {
 	resolve_expr_arr_access,
 	copy_expr_arr_access,
-	free_expr_arr_access,
 	print_expr_arr_access
 };
 // TODO: maybe treat . as an operator, only benefit would be overloading
@@ -273,58 +264,52 @@ const expr_vtable expr_vtable_arr_access = {
  */
 
 // prefix increment
-bool resolve_expr_pre_incr(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_pre_incr(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_pre_incr = {
 	resolve_expr_pre_incr,
-	copy_expr_unary, free_expr_unary,
+	copy_expr_unary,
 	print_expr_unary
 };
 
 // prefix decrement
-bool resolve_expr_pre_decr(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_pre_decr(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_pre_decr = {
 	resolve_expr_pre_decr,
 	copy_expr_unary,
-	free_expr_unary,
 	print_expr_unary
 };
 
 // unary minus
-bool resolve_expr_unary_minus(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_unary_minus(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_unary_minus = {
 	resolve_expr_unary_minus,
 	copy_expr_unary,
-	free_expr_unary,
 	print_expr_unary
 };
 
 // logical not
-bool resolve_expr_not(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_not(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_not = {
 	resolve_expr_not,
 	copy_expr_unary,
-	free_expr_unary,
 	print_expr_unary
 };
 
 // bitwise not
-bool resolve_expr_bw_not(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_bw_not(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_bw_not = {
 	resolve_expr_bw_not,
 	copy_expr_unary,
-	free_expr_unary,
 	print_expr_unary
 };
 
 // c-style cast
-bool resolve_expr_cast(heck_expr* expr, heck_scope* parent, heck_scope* global);
-heck_expr* copy_expr_cast(heck_expr* expr);
-void free_expr_cast(heck_expr* expr);
+bool resolve_expr_cast(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* copy_expr_cast(heck_code* c, heck_expr* expr);
 void print_expr_cast(heck_expr* expr);
 const expr_vtable expr_vtable_cast = {
 	resolve_expr_cast,
 	copy_expr_cast,
-	free_expr_cast,
 	print_expr_cast
 };
 
@@ -335,29 +320,26 @@ const expr_vtable expr_vtable_cast = {
 // the basic operators (*, /, %, +, -) share a resolve function currently
 
 // multiplication
-bool resolve_expr_mult(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_mult(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_mult = {
 	resolve_expr_mult,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
 // division
-bool resolve_expr_div(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_div(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_div = {
 	resolve_expr_mult,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
 // modulo
-bool resolve_expr_mod(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_mod(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_mod = {
 	resolve_expr_mult,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
@@ -366,20 +348,18 @@ const expr_vtable expr_vtable_mod = {
  */
 
 // addition
-bool resolve_expr_add(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_add(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_add = {
 	resolve_expr_mult,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
 // subtraction
-bool resolve_expr_sub(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_sub(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_sub = {
 	resolve_expr_mult,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
@@ -388,20 +368,18 @@ const expr_vtable expr_vtable_sub = {
  */
 
 // bitwise left shift
-bool resolve_expr_shift_l(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_shift_l(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_shift_l = {
 	resolve_expr_shift_l,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
 // bitwise right shift
-bool resolve_expr_shift_r(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_shift_r(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_shift_r = {
 	resolve_expr_shift_r,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
@@ -410,11 +388,10 @@ const expr_vtable expr_vtable_shift_r = {
  */
 
 // bitwise and
-bool resolve_expr_bw_and(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_bw_and(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_bw_and = {
 	resolve_expr_bw_and,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
@@ -423,11 +400,10 @@ const expr_vtable expr_vtable_bw_and = {
  */
 
 // bitwise xor
-bool resolve_expr_bw_xor(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_bw_xor(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_bw_xor = {
 	resolve_expr_bw_xor,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
@@ -436,11 +412,10 @@ const expr_vtable expr_vtable_bw_xor = {
  */
 
 // bitwise or
-bool resolve_expr_bw_or(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_bw_or(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_bw_or = {
 	resolve_expr_bw_or,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
@@ -449,38 +424,34 @@ const expr_vtable expr_vtable_bw_or = {
  */
 
 // less than
-bool resolve_expr_less(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_less(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_less = {
 	resolve_expr_less,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
 // less than or equal to
-bool resolve_expr_less_eq(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_less_eq(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_less_eq = {
 	resolve_expr_less_eq,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
 // greater than
-bool resolve_expr_gtr(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_gtr(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_gtr = {
 	resolve_expr_gtr,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
 // greater than or equal to
-bool resolve_expr_gtr_eq(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_gtr_eq(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_gtr_eq = {
 	resolve_expr_gtr_eq,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
@@ -489,21 +460,19 @@ const expr_vtable expr_vtable_gtr_eq = {
  */
 
 // equal to
-bool resolve_expr_eq(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_eq(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_eq = {
 	resolve_expr_eq,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
 // not equal to
 // == and != have the same resolve callbacks
-//bool resolve_expr_n_eq(heck_expr* expr, heck_scope* parent, heck_scope* global);
+//bool resolve_expr_n_eq(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_n_eq = {
 	resolve_expr_eq,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
@@ -512,11 +481,10 @@ const expr_vtable expr_vtable_n_eq = {
  */
 
 // logical and
-bool resolve_expr_and(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_and(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_and = {
 	resolve_expr_and,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
@@ -525,11 +493,10 @@ const expr_vtable expr_vtable_and = {
  */
 
 // logical xor
-bool resolve_expr_xor(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_xor(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_xor = {
 	resolve_expr_xor,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
@@ -538,11 +505,10 @@ const expr_vtable expr_vtable_xor = {
  */
 
 // logical or
-bool resolve_expr_or(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_or(heck_code* c, heck_scope* parent, heck_expr* expr);
 const expr_vtable expr_vtable_or = {
 	resolve_expr_or,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_binary
 };
 
@@ -551,14 +517,12 @@ const expr_vtable expr_vtable_or = {
  */
 
 // ternary
-bool resolve_expr_ternary(heck_expr* expr, heck_scope* parent, heck_scope* global);
-heck_expr* copy_expr_ternary(heck_expr* expr);
-void free_expr_ternary(heck_expr* expr);
+bool resolve_expr_ternary(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* copy_expr_ternary(heck_code* c, heck_expr* expr);
 void print_expr_ternary(heck_expr* expr);
 const expr_vtable expr_vtable_ternary = {
 	resolve_expr_ternary,
 	copy_expr_ternary,
-	free_expr_ternary,
 	print_expr_ternary
 };
 
@@ -567,30 +531,29 @@ const expr_vtable expr_vtable_ternary = {
  */
 
 // assignment
-bool resolve_expr_asg(heck_expr* expr, heck_scope* parent, heck_scope* global);
+bool resolve_expr_asg(heck_code* c, heck_scope* parent, heck_expr* expr);
 void print_expr_asg(heck_expr* expr);
 const expr_vtable expr_vtable_asg = {
 	resolve_expr_asg,
 	copy_expr_binary,
-	free_expr_binary,
 	print_expr_asg
 };
 
 /************************
 * all resolve definitions
 ************************/
-inline bool resolve_expr(heck_expr* expr, heck_scope* parent, heck_scope* global) {
-	return expr->vtable->resolve(expr, parent, global);
+inline bool resolve_expr(heck_code* c, heck_scope* parent, heck_expr* expr) {
+	return expr->vtable->resolve(c, parent, expr);
 }
 
 // precedence 1
-bool resolve_expr_err(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_expr_err(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 // literals are always resolved immediatley during scanning
-bool resolve_expr_literal(heck_expr* expr, heck_scope* parent, heck_scope* global) { return true; }
-bool resolve_expr_value(heck_expr* expr, heck_scope* parent, heck_scope* global) {
+bool resolve_expr_literal(heck_code* c, heck_scope* parent, heck_expr* expr) { return true; }
+bool resolve_expr_value(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	
 	// try to find the identifier
-	if (!resolve_value(expr, parent, global))
+	if (!resolve_value(c, parent, expr))
 		return false;
 
 	heck_name* name = expr->value.value.name;
@@ -602,11 +565,11 @@ bool resolve_expr_value(heck_expr* expr, heck_scope* parent, heck_scope* global)
 
 	return true;
 }
-bool resolve_expr_callback(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_unary(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_post_incr(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_post_decr(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_call(heck_expr* expr, heck_scope* parent, heck_scope* global) {
+bool resolve_expr_callback(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_unary(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_post_incr(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_post_decr(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	
 	heck_expr_call* func_call = &expr->value.call;
 
@@ -618,7 +581,7 @@ bool resolve_expr_call(heck_expr* expr, heck_scope* parent, heck_scope* global) 
   if (func_call->arg_vec != NULL) {
     vec_size_t num_args = vector_size(func_call->arg_vec);
     for (int i = 0; i < num_args; ++i) {
-      args_resolved *= resolve_expr(func_call->arg_vec[i], parent, global);
+      args_resolved *= resolve_expr(c, parent, func_call->arg_vec[i]);
     }
   }
   success *= args_resolved;
@@ -626,7 +589,7 @@ bool resolve_expr_call(heck_expr* expr, heck_scope* parent, heck_scope* global) 
   if (operand->type == EXPR_VALUE) {
 
     // try to find the identifier
-    heck_name* name = scope_resolve_value(&operand->value.value, parent, global);
+    heck_name* name = scope_resolve_value(c, parent, &operand->value.value);
 
     if (name == NULL) {
       heck_report_error(NULL, expr->fp, "call to undeclared identifier \"{I}\"", operand->value.value.idf);
@@ -649,7 +612,7 @@ bool resolve_expr_call(heck_expr* expr, heck_scope* parent, heck_scope* global) 
         return false;
       }
 
-      if (!func_resolve_def(name, def, global)) {
+      if (!func_resolve_def(c, name, def)) {
         heck_report_error(NULL, expr->fp, "error from call to function \"{I}\"", operand->value.value.idf);
         success = false;
       }
@@ -668,50 +631,17 @@ bool resolve_expr_call(heck_expr* expr, heck_scope* parent, heck_scope* global) 
 
   return success;
 	
-	// find function
-	//heck_scope* func_scope = scope_resolve_value(&func_call->, parent, global);
-	
-	//if (func_scope == NULL)
-	//	return false;
-	
-	// if (!resolve_expr(func_call->operand, parent, global))
-	// 	return false;
-	
-	/*
-	 *	TODO: check if it's a function type
-	 *	then check if it's a callback
-	 *	if not, locate the correct overload for the regular function
-	 */
-	
-	// just return false for now
-	// return false;
-	
-//	// locate correct overload
-//	func_call->func = func_match_def(func_scope, func_call);
-//
-//
-//	if (func_call->func == NULL)
-//		return false;
-//
-//
-//	// TODO: resolve func return type
-//
-//	// this will do for now
-//	expr->data_type = func_call->func->return_type;
-//
-//	return true;
-	
 }
-bool resolve_expr_arr_access(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_expr_arr_access(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 
 // precedence 2
-bool resolve_expr_pre_incr(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_pre_decr(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_unary_minus(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_not(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_bw_not(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_cast(heck_expr* expr, heck_scope* parent, heck_scope* global) {
-	if (!resolve_expr(expr->value.expr, parent, global))
+bool resolve_expr_pre_incr(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_pre_decr(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_unary_minus(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_not(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_bw_not(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_cast(heck_code* c, heck_scope* parent, heck_expr* expr) {
+	if (!resolve_expr(c, parent, expr->value.expr))
 		return false;
 	
 	// check if the types are identical first
@@ -727,8 +657,8 @@ bool resolve_expr_cast(heck_expr* expr, heck_scope* parent, heck_scope* global) 
 }
 
 // precedence 3
-bool resolve_expr_mult(heck_expr* expr, heck_scope* parent, heck_scope* global) {
-	if (!resolve_expr_binary(expr, parent, global))
+bool resolve_expr_mult(heck_code* c, heck_scope* parent, heck_expr* expr) {
+	if (!resolve_expr_binary(c, parent, expr))
 		return false;
 	
 	heck_expr_binary* binary = &expr->value.binary;
@@ -745,37 +675,37 @@ bool resolve_expr_mult(heck_expr* expr, heck_scope* parent, heck_scope* global) 
 	return false;
 	
 }
-bool resolve_expr_div(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_mod(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_expr_div(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_mod(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 
 // precedence 4
-bool resolve_expr_add(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_sub(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_expr_add(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_sub(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 
 // precedence 5
-bool resolve_expr_shift_l(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_shift_r(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_expr_shift_l(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_shift_r(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 
 // precedence 6
-bool resolve_expr_bw_and(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_expr_bw_and(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 
 // precedence 7
-bool resolve_expr_bw_xor(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_expr_bw_xor(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 
 // precedence 8
-bool resolve_expr_bw_or(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_expr_bw_or(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 
 // precedence 9
-bool resolve_expr_less(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_less_eq(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_gtr(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
-bool resolve_expr_gtr_eq(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_expr_less(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_less_eq(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_gtr(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_gtr_eq(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 
 // precedence 10
-bool resolve_expr_eq(heck_expr* expr, heck_scope* parent, heck_scope* global) {
+bool resolve_expr_eq(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	heck_expr_binary* eq_expr = &expr->value.binary;
 	
-  if (!resolve_expr_binary(expr, parent, global))
+  if (!resolve_expr_binary(c, parent, expr))
     return false;
 
 	// TODO: support casting and overloaded asg operators
@@ -786,13 +716,13 @@ bool resolve_expr_eq(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 	
 	return data_type_cmp(eq_expr->left->data_type, eq_expr->right->data_type);
 }
-bool resolve_expr_n_eq(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_expr_n_eq(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 
 // precedence 11
-bool resolve_expr_and(heck_expr* expr, heck_scope* parent, heck_scope* global) {
+bool resolve_expr_and(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	heck_expr_binary* binary = &expr->value.binary;
 
-  if (!resolve_expr_binary(expr, parent, global))
+  if (!resolve_expr_binary(c, parent, expr))
     return false;
   
   // cannot check truthiness of void
@@ -810,23 +740,23 @@ bool resolve_expr_and(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 }
 
 // precedence 12
-bool resolve_expr_xor(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_expr_xor(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 
 // precedence 13
-bool resolve_expr_or(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_expr_or(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 
 // precedence 14
-bool resolve_expr_ternary(heck_expr* expr, heck_scope* parent, heck_scope* global) { return false; }
+bool resolve_expr_ternary(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 
 // precedence 15
-bool resolve_expr_asg(heck_expr* expr, heck_scope* parent, heck_scope* global) {
+bool resolve_expr_asg(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	
 	heck_expr_binary* asg = &expr->value.binary;
 
-  if (!resolve_expr(asg->right, parent, global))
+  if (!resolve_expr(c, parent, asg->right))
     return false;
 
-  //if (!resolve_expr_binary(expr, parent, global))
+  //if (!resolve_expr_binary(c, parent, expr))
   // return false;
 	
 	/*
@@ -838,7 +768,7 @@ bool resolve_expr_asg(heck_expr* expr, heck_scope* parent, heck_scope* global) {
   if (asg->left->type == EXPR_VALUE) {
 
     // will report error on its own
-    if (!resolve_value(asg->left, parent, global))
+    if (!resolve_value(c, parent, asg->left))
       return false;
 
     heck_expr_value* value = &asg->left->value.value;
@@ -889,83 +819,59 @@ bool resolve_expr_asg(heck_expr* expr, heck_scope* parent, heck_scope* global) {
 // copy function definitions
 //
 
-inline heck_expr* copy_expr(heck_expr* expr) {
-	return expr->vtable->copy(expr);
+inline heck_expr* copy_expr(heck_code* c, heck_expr* expr) {
+	return expr->vtable->copy(c, expr);
 }
 
 // TODO: make one static expr_err instead of copying
-heck_expr* copy_expr_err(heck_expr* expr) {
-	return create_expr_err(expr->fp);
+heck_expr* copy_expr_err(heck_code* c, heck_expr* expr) {
+	return create_expr_err(c, expr->fp);
 }
 
 // only used for unresolvable literals in function templates
-heck_expr* copy_expr_literal(heck_expr* expr) {
-	return create_expr_literal(copy_literal((expr->value.literal)), expr->fp);
+heck_expr* copy_expr_literal(heck_code* c, heck_expr* expr) {
+	return create_expr_literal(c, expr->fp, copy_literal(expr->value.literal));
 }
 
-heck_expr* copy_expr_value(heck_expr* expr) {
+heck_expr* copy_expr_value(heck_code* c, heck_expr* expr) {
 	heck_expr_value* value = &expr->value.value; // value
-	return create_expr_value(value->idf, value->context, expr->fp);
+	return create_expr_value(c, expr->fp, value->idf, value->context);
 }
 
-heck_expr* copy_expr_call(heck_expr* expr) {
+heck_expr* copy_expr_call(heck_code* c, heck_expr* expr) {
 	heck_expr_call* call = &expr->value.call;
-//	heck_expr* new_call = create_expr_call(call->)
+//	heck_expr* new_call = create_expr_call(c, expr->fp, call->)
 	return NULL;
 }
 
-heck_expr* copy_expr_arr_access(heck_expr* expr) {
+heck_expr* copy_expr_arr_access(heck_code* c, heck_expr* expr) {
 	return NULL;
 }
 
-heck_expr* copy_expr_cast(heck_expr* expr) {
+heck_expr* copy_expr_cast(heck_code* c, heck_expr* expr) {
 	return NULL;
 }
 
-heck_expr* copy_expr_unary(heck_expr* expr) {
+heck_expr* copy_expr_unary(heck_code* c, heck_expr* expr) {
 	heck_expr_unary* orig_val = &expr->value.unary;
-	heck_expr* copy = create_expr_unary(orig_val->expr, orig_val->operator, expr->vtable, expr->fp);
+	heck_expr* copy = create_expr_unary(c, expr->fp, orig_val->expr, orig_val->operator, expr->vtable);
 	copy->flags = expr->flags;
 	return copy;
 }
 
-heck_expr* copy_expr_binary(heck_expr* expr) {
+heck_expr* copy_expr_binary(heck_code* c, heck_expr* expr) {
 	heck_expr_binary* orig_value = &expr->value.binary;
-	heck_expr* copy = create_expr_binary(orig_value->left, orig_value->operator, orig_value->right, expr->vtable, expr->fp);
+	heck_expr* copy = create_expr_binary(c, expr->fp, orig_value->left, orig_value->operator, orig_value->right, expr->vtable);
 	copy->flags = expr->flags;
 	return copy;
 }
 
-heck_expr* copy_expr_ternary(heck_expr* expr) {
+heck_expr* copy_expr_ternary(heck_code* c, heck_expr* expr) {
 	heck_expr_ternary* orig_value = &expr->value.ternary;
-	heck_expr* copy = create_expr_ternary(orig_value->condition, orig_value->value_a, orig_value->value_b, expr->fp);
+	heck_expr* copy = create_expr_ternary(c, expr->fp, orig_value->condition, orig_value->value_a, orig_value->value_b);
 	copy->flags = expr->flags;
 	return copy;
 }
-
-//
-// free function definitions
-//
-
-inline void free_expr(heck_expr* expr) {
-	expr->vtable->free(expr);
-}
-
-void free_expr_err(heck_expr* expr) {}
-
-void free_expr_literal(heck_expr* expr) {}
-
-void free_expr_value(heck_expr* expr) {}
-
-void free_expr_call(heck_expr* expr) {}
-
-void free_expr_arr_access(heck_expr* expr) {}
-
-void free_expr_cast(heck_expr* expr) {}
-
-void free_expr_unary(heck_expr* expr) {}
-void free_expr_binary(heck_expr* expr) {}
-void free_expr_ternary(heck_expr* expr) {}
 
 //
 // print function definitions

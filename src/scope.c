@@ -7,14 +7,15 @@
 
 #include <scope.h>
 #include <function.h>
+#include <code_impl.h>
 #include <class.h>
 #include <print.h>
 #include <stdio.h>
 #include "vec.h"
 
-heck_name* name_create(heck_idf_type type, heck_scope* parent) {
-	
+heck_name* name_create(heck_code* c, heck_scope* parent, heck_idf_type type) {
 	heck_name* name = malloc(sizeof(heck_name));
+  heck_add_name(c, name);
 	
 	name->type = type;
 	name->value.class_value = NULL; // will set all fields to NULL
@@ -26,9 +27,10 @@ heck_name* name_create(heck_idf_type type, heck_scope* parent) {
 	return name;
 }
 
-heck_scope* scope_create(heck_scope* parent) {
-	
+heck_scope* scope_create(heck_code* c, heck_scope* parent) {
 	heck_scope* scope = malloc(sizeof(heck_scope));
+  heck_add_scope(c, scope);
+
 	scope->names = NULL;
 	//scope->decl_vec = NULL;
   scope->var_inits = NULL;
@@ -41,9 +43,10 @@ heck_scope* scope_create(heck_scope* parent) {
 	return scope;
 }
 
-heck_scope* scope_create_global() {
-  	
+heck_scope* scope_create_global(heck_code* c) {
 	heck_scope* scope = malloc(sizeof(heck_scope));
+  heck_add_scope(c, scope);
+
 	scope->names = NULL;
 	//scope->decl_vec = NULL;
   scope->var_inits = NULL;
@@ -56,65 +59,65 @@ heck_scope* scope_create_global() {
 	return scope;
 }
 
-void free_name_callback(str_entry key, void* value, void* user_ptr) {
-  heck_name* name = value;
-  // printf("free %s\n", key->value);
+// void free_name_callback(str_entry key, void* value, void* user_ptr) {
+//   heck_name* name = value;
+//   // printf("free %s\n", key->value);
 
-  switch(name->type) {
-    case IDF_VARIABLE:
-      // TODO: free variable
-      break;
-    case IDF_FUNCTION: {
-      heck_func_list* func_list = &name->value.func_value;
+//   switch(name->type) {
+//     case IDF_VARIABLE:
+//       // TODO: free variable
+//       break;
+//     case IDF_FUNCTION: {
+//       heck_func_list* func_list = &name->value.func_value;
 
-      if (func_list->decl_vec != NULL) {
-        size_t num_decls = vector_size(func_list->decl_vec);
-        for (size_t i = 0; i < num_decls; ++i) {
-          free_decl_data(&func_list->decl_vec[i]);
-        }
-        vector_free(func_list->decl_vec);
-      }
+//       if (func_list->decl_vec != NULL) {
+//         size_t num_decls = vector_size(func_list->decl_vec);
+//         for (size_t i = 0; i < num_decls; ++i) {
+//           free_decl_data(&func_list->decl_vec[i]);
+//         }
+//         vector_free(func_list->decl_vec);
+//       }
 
-      if (func_list->def_vec != NULL) {
-        size_t num_defs = vector_size(func_list->def_vec);
-        for (size_t i = 0; i < num_defs; ++i) {
-          func_free(func_list->def_vec[i]);
-        }
-        vector_free(func_list->def_vec);
-        break;
-      }
+//       if (func_list->def_vec != NULL) {
+//         size_t num_defs = vector_size(func_list->def_vec);
+//         for (size_t i = 0; i < num_defs; ++i) {
+//           func_free(func_list->def_vec[i]);
+//         }
+//         vector_free(func_list->def_vec);
+//         break;
+//       }
 
-    }
-    case IDF_UNDECLARED_CLASS:
-    case IDF_CLASS:
-      // TODO: free class
-      break;
-    default:
-      break;
-  }
-}
+//     }
+//     case IDF_UNDECLARED_CLASS:
+//     case IDF_CLASS:
+//       // TODO: free class
+//       break;
+//     default:
+//       break;
+//   }
+// }
 
-void scope_free(heck_scope* scope) {
+// void scope_free(heck_scope* scope) {
 
-  if (scope->names != NULL) {
-    // free all items in the scope
-    idf_map_iterate(scope->names, free_name_callback, NULL);
+//   if (scope->names != NULL) {
+//     // free all items in the scope
+//     idf_map_iterate(scope->names, free_name_callback, NULL);
 
-    // free the scope itself
-	  idf_map_free(scope->names);
-  }
+//     // free the scope itself
+// 	  idf_map_free(scope->names);
+//   }
 
-  if (scope->var_inits != NULL)
-    vector_free(scope->var_inits);
+//   if (scope->var_inits != NULL)
+//     vector_free(scope->var_inits);
     
-  free(scope);
-}
+//   free(scope);
+// }
 
 // use this function only when parsing a declaration or definition
 // finds a child of a scope, possibly multiple levels deep.
 // if the child cannot be found, it may be implicitly declared.
 // returns null on failure
-heck_name* scope_get_child(heck_scope* scope, heck_idf idf) {
+heck_name* scope_get_child(heck_code* c, heck_scope* scope, heck_idf idf) {
 	
 	// the current name as we iterate through the idf
 	heck_name* name;
@@ -139,7 +142,7 @@ heck_name* scope_get_child(heck_scope* scope, heck_idf idf) {
 					return NULL;
 				
 				// create a child, let the loop below do the rest of the work
-				name->child_scope = scope_create(scope);
+				name->child_scope = scope_create(c, scope);
 				scope = name->child_scope;
 				scope->names = idf_map_create();
 			} else {
@@ -155,7 +158,7 @@ heck_name* scope_get_child(heck_scope* scope, heck_idf idf) {
 		// the above continue wasn't reached, so the child doesn't exist
 		// we'll just create one instead
 		for (;;) {
-			name = name_create(IDF_UNDECLARED, scope);
+			name = name_create(c, scope, IDF_UNDECLARED);
 			
 			idf_map_set(scope->names, idf[i], name);
 			
@@ -163,7 +166,7 @@ heck_name* scope_get_child(heck_scope* scope, heck_idf idf) {
 				return name;
 		
 			// create a child scope
-			name->child_scope = scope_create(scope);
+			name->child_scope = scope_create(c, scope);
 			scope = name->child_scope;
 			
 			scope->names = idf_map_create();
@@ -194,7 +197,7 @@ bool name_accessible(const heck_scope* parent, const heck_scope* child, const he
 	return false;
 }
 
-heck_name* scope_resolve_idf(heck_idf idf, const heck_scope* parent) {
+heck_name* scope_resolve_idf(const heck_scope* parent, heck_idf idf) {
 
 	// find the parent of the idf
 	heck_name* name;
@@ -231,22 +234,22 @@ heck_name* scope_resolve_idf(heck_idf idf, const heck_scope* parent) {
 	return name;
 }
 
-heck_name* scope_resolve_value(heck_expr_value* value, const heck_scope* parent, const heck_scope* global) {
+heck_name* scope_resolve_value(heck_code* c, heck_scope* parent, heck_expr_value* value) {
 	switch (value->context) {
 		case CONTEXT_LOCAL:
-			return scope_resolve_idf(value->idf, parent);
+			return scope_resolve_idf(parent, value->idf);
 		case CONTEXT_THIS:
 			if (parent->parent_class == NULL || parent->parent_class->child_scope == NULL)
 				return NULL;
-			return scope_resolve_idf(value->idf, parent->parent_class->child_scope);
+			return scope_resolve_idf(parent->parent_class->child_scope, value->idf);
 		case CONTEXT_GLOBAL:
-			return scope_resolve_idf(value->idf, global);
+			return scope_resolve_idf(c->global, value->idf);
 	}
 }
 
 // helper struct for resolve_name_callback
 typedef struct resolve_name_data {
-  heck_scope* global;
+  heck_code* c;
   bool success;
 } resolve_name_data;
 void resolve_name_callback(str_entry key, void* value, void* user_ptr) {
@@ -255,14 +258,14 @@ void resolve_name_callback(str_entry key, void* value, void* user_ptr) {
   
   switch (name->type) {
     case IDF_FUNCTION: {
-      data->success *= func_resolve_name(name, data->global);
+      data->success *= func_resolve_name(data->c, name);
       break;
     }
     case IDF_UNDECLARED_CLASS:
       data->success = false;
       // fallthrough
     case IDF_CLASS: {
-      data->success *= scope_resolve_names(name->child_scope, data->global);
+      data->success *= scope_resolve_names(data->c, name->child_scope);
       // TODO: resolve operator overloads
       break;
     }
@@ -270,13 +273,13 @@ void resolve_name_callback(str_entry key, void* value, void* user_ptr) {
   
 }
 
-bool scope_resolve_names(heck_scope* scope, const heck_scope* global) {
+bool scope_resolve_names(heck_code* c, heck_scope* scope) {
 
 	if (scope->names == NULL)
     return true; // nothing to resolve
   
   resolve_name_data data = {
-    .global = global,
+    .c = c,
     .success = true
   };
   idf_map_iterate(scope->names, resolve_name_callback, (void*)&data);

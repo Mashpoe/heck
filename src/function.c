@@ -6,6 +6,7 @@
 //
 
 #include <function.h>
+#include <code_impl.h>
 #include <scope.h>
 #include <print.h>
 #include <error.h>
@@ -24,6 +25,7 @@
 //}
 
 heck_func* func_create(heck_func_decl* decl, bool declared) {
+  // functions are freed by parent names/classes
 	heck_func* func = malloc(sizeof(heck_func));
 	func->declared = declared;
   func->resolved = false;
@@ -37,27 +39,27 @@ heck_func* func_create(heck_func_decl* decl, bool declared) {
 	return func;
 }
 
-void free_decl_data(heck_func_decl* decl) {
-  if (decl->param_vec != NULL) {
-    size_t num_params = vector_size(decl->param_vec);
-    for (int i = 0; i < num_params; ++i) {
-      variable_free(decl->param_vec[i]);
-    }
-  }
-	if (decl->return_type != NULL)
-		free_data_type(decl->return_type);
-}
+// void free_decl_data(heck_func_decl* decl) {
+//   if (decl->param_vec != NULL) {
+//     size_t num_params = vector_size(decl->param_vec);
+//     for (int i = 0; i < num_params; ++i) {
+//       variable_free(decl->param_vec[i]);
+//     }
+//   }
+// 	if (decl->return_type != NULL)
+// 		free_data_type(decl->return_type);
+// }
 
-void func_free(heck_func* func) {
-	free_decl_data(&func->decl);
-	block_free(func->code);
-	// TODO: free func->value
-  free(func);
-}
+// void func_free(heck_func* func) {
+// 	free_decl_data(&func->decl);
+// 	block_free(func->code);
+// 	// TODO: free func->value
+//   free(func);
+// }
 
 // TODO: check for duplicates, match defs and decls
 // for now we'll just resolve param and return types
-bool func_resolve_name(heck_name* func_name, heck_scope* global) {
+bool func_resolve_name(heck_code* c, heck_name* func_name) {
 
   if (func_name->flags & NAME_RESOLVED)
     return true;
@@ -90,7 +92,7 @@ bool func_resolve_name(heck_name* func_name, heck_scope* global) {
         heck_data_type* param_type = param->data_type;
 
         if (param_type != NULL) {
-          if (!resolve_data_type(param_type, func_name->parent, global)) {
+          if (!resolve_data_type(c, func_name->parent, param_type)) {
             success = false;
           }
         }
@@ -109,7 +111,7 @@ bool func_resolve_name(heck_name* func_name, heck_scope* global) {
 
     if (return_type != NULL) {
       // multiplication sets success to false on failure
-      if (!resolve_data_type(return_type, func_name->parent, global)) {
+      if (!resolve_data_type(c, func_name->parent, return_type)) {
         success = false;
       }
     }
@@ -119,7 +121,7 @@ bool func_resolve_name(heck_name* func_name, heck_scope* global) {
   return success;
 }
 
-bool func_resolve_def(heck_name* func_name, heck_func* func_def, heck_scope* global) {
+bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def) {
 
   if (func_def->resolved) {
     return true;
@@ -140,7 +142,7 @@ bool func_resolve_def(heck_name* func_name, heck_func* func_def, heck_scope* glo
     heck_report_error(NULL, func_decl->fp, "function only returns in some cases");
   }
 
-  success *= resolve_block(func_def->code, global);
+  success *= resolve_block(c, func_def->code);
 
   return success;
 

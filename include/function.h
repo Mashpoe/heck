@@ -27,30 +27,13 @@ typedef struct heck_func_list {
 	heck_func** def_vec;
 } heck_func_list;
 
-// TODO: rename
-// instance of a generic function
-typedef struct heck_func_gen_list {
-	heck_type_arg_list type_args;
-	void* func_code; // the code produced from compiling the function using the types from call
-} heck_func_gen_inst;
-
-// FUNCTION PARAMETER
-//typedef struct heck_param {
-//	str_entry name; // name of the parameter
-//
-//	heck_data_type* type;
-//	heck_idf obj_type; // NULL unless type == TYPE_CLASS
-//
-//	heck_expr* def_val; // default value
-//} heck_param;
-//heck_param* param_create(str_entry name);
-
 // FUNCTION DECLARATION
 struct heck_func_decl {
   heck_file_pos* fp;
   heck_scope* scope;
   heck_variable** param_vec;
   heck_data_type* return_type;
+  const char* source_filename;
 };
 void free_decl_data(heck_func_decl* decl);
 
@@ -75,18 +58,20 @@ struct heck_func {
 };
 
 // decl is copied by this function
+/* no heck_code is needed because
+   functions are freed by parent names/classes */
 heck_func* func_create(heck_func_decl* decl, bool declared);
-void func_free(heck_func* func);
+//void func_free(heck_func* func);
 
 //bool func_add_overload(heck_func_list* list, heck_func* func);
 
 // resolve param and return types 
 // match declarations with definitions
 // check for duplicates
-bool func_resolve_name(heck_name* func_name, heck_scope* global);
+bool func_resolve_name(heck_code* c, heck_name* func_name);
 
 // error flags can be stored in func_name
-bool func_resolve_def(heck_name* func_name, heck_func* func_def, heck_scope* global);
+bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def);
 
 // finds the correct definition/overload for a given call
 // returns NULL if there is no match

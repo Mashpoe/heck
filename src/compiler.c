@@ -14,9 +14,16 @@
 #include "WASMGEN/wasm_code.h"
 #include <stdio.h>
 
-// functions return the number of bytes they produce
-void heck_compile_block() {
+void heck_compile_block(wasm_code* c, heck_block* block) {
   
+}
+
+void compile_func_decl(wasm_code* c, heck_func_decl* decl) {
+
+}
+
+void compile_func_body(wasm_code* c, heck_func* func) {
+
 }
 
 // assumes everything was resolved

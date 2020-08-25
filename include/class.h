@@ -9,6 +9,7 @@
 #define class_h
 
 #include <stdbool.h>
+#include "code.h"
 #include "scope.h"
 #include "operator.h"
 #include "identifier.h"
@@ -31,9 +32,9 @@ typedef struct heck_class {
 
 } heck_class;
 
-heck_class* class_create(void);
+heck_class* class_create(heck_code* c);
 // creates a heck_name for a class
-heck_scope* class_create_name(heck_idf name, heck_scope* parent);
+//heck_scope* class_create_name(heck_idf name, heck_scope* parent);
 
 // just prints operator overloads, friends, etc
 void print_class(heck_name* class_name, const char* name, int indent);

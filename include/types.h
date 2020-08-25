@@ -10,6 +10,7 @@
 
 #include "identifier.h"
 #include "declarations.h"
+#include <code.h>
 #include <stdint.h>
 
 /*
@@ -61,6 +62,7 @@ typedef struct heck_type_arg_list {
 } heck_type_arg_list;
 
 // TODO: store start token for error line numbers
+// TODO: replace type_args with type_arg_vec
 typedef struct heck_class_type {
 	union {
 		heck_idf name;
@@ -70,6 +72,7 @@ typedef struct heck_class_type {
 	heck_scope* parent; // this is used with name to find the correct class during resolve time
 } heck_class_type;
 
+// TODO: rename type_value to value
 typedef struct type_vtable type_vtable;
 struct heck_data_type {
 	heck_type_name type_name;
@@ -92,17 +95,12 @@ struct type_vtable {
 };
 
 heck_data_type* create_data_type(heck_type_name name);
-heck_data_type* resolve_data_type(heck_data_type* type, heck_scope* parent, heck_scope* global);
+heck_data_type* resolve_data_type(heck_code* c, heck_scope* parent, heck_data_type* type);
 void free_data_type(heck_data_type* type);
 
-// creates a shallow copy that doesn't free child type data
-// resulting type can be used like a normal type
-// free is overridden
-heck_data_type* copy_resolved_type(const heck_data_type* type);
-
 // for templates
-// makes a deep copy and frees its data
-heck_data_type* copy_unresolved_type(const heck_data_type* type);
+// makes a deep copy
+heck_data_type* copy_data_type(const heck_data_type* type);
 
 extern const type_vtable type_vtable_err;
 extern const type_vtable type_vtable_gen;

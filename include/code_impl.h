@@ -20,15 +20,48 @@
 #include "types.h"
 
 struct heck_code {
-	heck_token** token_vec; // token vector
+  heck_code** import_vec;
+
+  // indicates the main file or an imported file
+  bool main_file;
+
+  // mainly for printing errors
+  const char* filename;
+
+  // token vector
+	heck_token** token_vec;
 
   heck_func* main; // code/syntax tree
-	heck_block* global; // code/syntax tree
-	
-	// these tables could be joined technically, but it might be better to separate them
-	str_table* strings; // all unique strings and identifiers
+	heck_block* code; // the code block inside of main
+  heck_scope* global; // for easy access
 
-  heck_data_type** data_types; // all allocated data types. May have duplicates
+  // keep track of normal memory allocations
+  void** alloc_vec;
+
+  // keep track of other objects that cannot be freed normally
+  heck_block** block_vec;
+  heck_scope** scope_vec;
+  heck_name** name_vec;
+  /* heck_expr_calls are stored in contiguous memory
+  alongside their parent heck_exprs */
+  heck_expr** call_vec;
+  heck_data_type** type_vec;
+
+  // all unique strings and identifiers
+	str_table* strings;
+	
 };
+
+// allocates memory that will be freed
+void* heck_alloc(heck_code* c, size_t amt);
+// keep track of memory that was already allocated
+void heck_add_alloc(heck_code* c, void* mem);
+
+// objects containing vectors that cannot be freed normally
+void heck_add_block(heck_code* c, heck_block* block);
+void heck_add_scope(heck_code* c, heck_scope* scope);
+void heck_add_name(heck_code* c, heck_name* name);
+void heck_add_call(heck_code* c, heck_expr* expr);
+void heck_add_type(heck_code* c, heck_data_type* type);
 
 #endif /* code_impl_h */

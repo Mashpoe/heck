@@ -10,6 +10,7 @@
 
 #include "types.h"
 #include "str.h"
+#include "code.h"
 #include "expression.h"
 
 typedef struct heck_variable {
@@ -20,6 +21,6 @@ typedef struct heck_variable {
   int local_index;
 } heck_variable;
 heck_variable* variable_create(str_entry name, heck_data_type* type, heck_expr* value);
-void variable_free(heck_variable* variable);
+// void variable_free(heck_variable* variable);
 
 #endif /* variable_h */

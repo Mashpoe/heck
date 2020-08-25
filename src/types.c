@@ -27,11 +27,11 @@ bool data_type_cmp(const heck_data_type* a, const heck_data_type* b) {
 			const heck_class_type* class_a = &a->type_value.class_type;
 			const heck_class_type* class_b = &b->type_value.class_type;
 			
-			heck_name* name_a = scope_resolve_idf(class_a->value.name, class_a->parent);
+			heck_name* name_a = scope_resolve_idf(class_a->parent, class_a->value.name);
 			if (!name_a)
 				return false;
 			
-			heck_name* name_b = scope_resolve_idf(class_b->value.name, class_b->parent);
+			heck_name* name_b = scope_resolve_idf(class_b->parent, class_b->value.name);
 			if (!name_b)
 				return false;
 			
@@ -75,39 +75,14 @@ inline bool data_type_is_numeric(const heck_data_type* type) {
 }
 
 // locates classes, hashes types, etc
-inline heck_data_type* resolve_data_type(heck_data_type* type, heck_scope* parent, heck_scope* global) {
+inline heck_data_type* resolve_data_type(heck_code* c, heck_scope* parent, heck_data_type* type) {
 	// TODO: free it if it can't be resolved, or maybe leave that to whoever calls
-	return type->vtable->resolve(type, parent, global);
+	return type->vtable->resolve(c, parent, type);
 }
 
 // this could also be made into a macro
 void free_data_type(heck_data_type* type) {
 	type->vtable->free(type);
-}
-
-typedef struct resolved_type_copy {
-  // store type data directly in the struct
-  heck_data_type data_type;
-  // keep the original type functionality except for free
-  type_vtable hidden_vtable;
-} resolved_type_copy;
-void free_resolved_type_copy(heck_data_type* type) {
-  // child types are freed when the original type is freed
-  // this is all we need to do here
-  free(type);
-}
-heck_data_type* copy_resolved_type(const heck_data_type* type) {
-  resolved_type_copy* copy = malloc(sizeof(resolved_type_copy));
-  // directly copy bytes
-  copy->data_type = *type;
-  // create special vtable
-  copy->data_type.vtable = &copy->hidden_vtable;
-  copy->hidden_vtable.resolve = type->vtable->resolve;
-  copy->hidden_vtable.print = type->vtable->print;
-  // override the default free callback
-  copy->hidden_vtable.free = free_resolved_type_copy;
-
-  return (heck_data_type*)copy;
 }
 
 void print_data_type(const heck_data_type* type) {
@@ -128,10 +103,10 @@ const heck_data_type val_data_type_string	= { TYPE_STRING,	&type_vtable_string,0
 
 
 // primitives are already resolved, resolve methods return true
-heck_data_type* resolve_type_prim(heck_data_type* type, heck_scope* parent, heck_scope* global);
+heck_data_type* resolve_type_prim(heck_code* c, heck_scope* parent, heck_data_type* type);
 void free_type_prim(heck_data_type* type);
 // error
-heck_data_type* resolve_type_err(heck_data_type* type, heck_scope* parent, heck_scope* global);
+heck_data_type* resolve_type_err(heck_code* c, heck_scope* parent, heck_data_type* type);
 void print_type_err(const heck_data_type* type, FILE* f);
 const type_vtable type_vtable_err = { resolve_type_err, free_type_prim, print_type_err };
 // generic
@@ -153,35 +128,35 @@ const type_vtable type_vtable_bool = { resolve_type_prim, free_type_prim, print_
 void print_type_string(const heck_data_type* type, FILE* f);
 const type_vtable type_vtable_string = { resolve_type_prim, free_type_prim, print_type_string };
 // array
-heck_data_type* resolve_type_arr(heck_data_type* type, heck_scope* parent, heck_scope* global);
+heck_data_type* resolve_type_arr(heck_code* c, heck_scope* parent, heck_data_type* type);
 void free_type_arr(heck_data_type* type);
 void print_type_arr(const heck_data_type* type, FILE* f);
 const type_vtable type_vtable_arr = { resolve_type_arr, free_type_arr, print_type_arr };
 // class
-heck_data_type* resolve_type_class(heck_data_type* type, heck_scope* parent, heck_scope* global);
+heck_data_type* resolve_type_class(heck_code* c, heck_scope* parent, heck_data_type* type);
 void free_type_class(heck_data_type* type);
 void print_type_class(const heck_data_type* type, FILE* f);
 const type_vtable type_vtable_class = { resolve_type_class, free_type_class, print_type_class };
 // class with type arguments
-heck_data_type* resolve_type_class_args(heck_data_type* type, heck_scope* parent, heck_scope* global);
+heck_data_type* resolve_type_class_args(heck_code* c, heck_scope* parent, heck_data_type* type);
 void free_type_class_args(heck_data_type* type);
 void print_type_class_args(const heck_data_type* type, FILE* f);
 const type_vtable type_vtable_class_args = { resolve_type_class_args, free_type_class_args, print_type_class_args };
 
 // already resolved
-heck_data_type* resolve_type_prim(heck_data_type* type, heck_scope* parent, heck_scope* global) { return type; }
+heck_data_type* resolve_type_prim(heck_code* c, heck_scope* parent, heck_data_type* type) { return type; }
 
 // always NULL
-heck_data_type* resolve_type_err(heck_data_type* type, heck_scope* parent, heck_scope* global) { return NULL; }
+heck_data_type* resolve_type_err(heck_code* c, heck_scope* parent, heck_data_type* type) { return NULL; }
 
-heck_data_type* resolve_type_arr(heck_data_type* type, heck_scope* parent, heck_scope* global) {
-	return resolve_data_type(type->type_value.arr_type, parent, global);
+heck_data_type* resolve_type_arr(heck_code* c, heck_scope* parent, heck_data_type* type) {
+	return resolve_data_type(c, parent, type->type_value.arr_type);
 }
-heck_data_type* resolve_type_class(heck_data_type* type, heck_scope* parent, heck_scope* global) {
+heck_data_type* resolve_type_class(heck_code* c, heck_scope* parent, heck_data_type* type) {
 	// find the correct class using the parent scope
 	heck_class_type* class_type = &type->type_value.class_type;
 	
-	heck_name* n = scope_resolve_idf(class_type->value.name, parent);
+	heck_name* n = scope_resolve_idf(parent, class_type->value.name);
 	
 	// TODO: line numbers in error messages
 	if (n == NULL) {
@@ -197,9 +172,9 @@ heck_data_type* resolve_type_class(heck_data_type* type, heck_scope* parent, hec
 	
 	return NULL;
 }
-heck_data_type* resolve_type_class_args(heck_data_type* type, heck_scope* parent, heck_scope* global) {
+heck_data_type* resolve_type_class_args(heck_code* c, heck_scope* parent, heck_data_type* type) {
 	
-	type = resolve_type_class(type, parent, global);
+	type = resolve_type_class(c, parent, type);
 	
 	if (!type)
 		return NULL;
@@ -209,7 +184,7 @@ heck_data_type* resolve_type_class_args(heck_data_type* type, heck_scope* parent
 	
 	vec_size_t size = vector_size(class_type->type_args.type_vec);
 	for (vec_size_t i = 0; i < size; i++) {
-		heck_data_type* current_type = resolve_data_type(class_type->type_args.type_vec[i], parent, global);
+		heck_data_type* current_type = resolve_data_type(c, parent, class_type->type_args.type_vec[i]);
 		if (current_type == NULL) {
 			fprintf(stderr, "error: invalid type argument\n");
 			return NULL;
