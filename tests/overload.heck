@@ -1,0 +1,42 @@
+extern func decl1(a: int, b: int)
+
+func decl1(a: int, b: int) {
+
+}
+
+extern func decl2(a: int, b: int) -> int
+extern func decl2(a: int, b: bool) -> int
+
+func decl2(a: int, b: int) {
+  return 3
+}
+
+extern func decl3(a: int, b: int) -> int
+// error
+func decl3(a: int, b: int) {
+  return false
+}
+
+extern func decl4(a: int, b: int)
+
+func decl4(a: int, b: int) -> bool {
+  return true
+}
+
+extern func decl5(a: int, b: int) -> int
+
+func decl7(a: int, b: int) {
+  return 3
+}
+
+func implicit_class.decl8(a: int, b: int) {
+
+}
+
+decl1(1, 2)
+decl2(1, 2)
+decl3(1, 2)
+decl4(1, 2)
+decl5(1, 2)
+decl6(1, 2)
+decl7(1, 2)

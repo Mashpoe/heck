@@ -10,7 +10,7 @@
 
 #include "tokentypes.h"
 #include "literal.h"
-#include "types.h"
+#include "declarations.h"
 #include "context.h"
 #include <stdbool.h>
 

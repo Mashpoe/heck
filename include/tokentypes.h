@@ -113,11 +113,12 @@ typedef enum heck_tk_type {
   TK_KW_AS,
 	TK_KW_RETURN,
 	TK_KW_CLASS,
+	TK_KW_NAMESPACE,
 	TK_KW_PUBLIC,
 	TK_KW_PRIVATE,
 	TK_KW_PROTECTED,
 	TK_KW_FRIEND,
-	TK_KW_NAMESPACE,
+	TK_KW_IMPORT,
 	
 	
 	TK_CTX, // global/local context

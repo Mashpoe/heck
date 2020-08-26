@@ -10,6 +10,7 @@
 
 #include "expression.h"
 #include "variable.h"
+#include "compiler.h"
 #include "idf_map.h"
 #include <stdint.h>
 
@@ -30,10 +31,14 @@ typedef enum heck_stmt_type {
 
 // TODO: maybe make these callbacks take void pointers instead
 typedef bool (*stmt_resolve)(heck_code*, heck_scope*, heck_stmt*);
+typedef void (*stmt_copy)(heck_code*, heck_stmt*); // int for number of indents
 //typedef void (*stmt_free)(heck_stmt*); // int for number of indents
+typedef void (*stmt_compile)(heck_compiler*, heck_stmt*);
 typedef void (*stmt_print)(heck_stmt*, int); // int for number of indents
 struct stmt_vtable {
 	stmt_resolve resolve;
+  // stmt_copy copy;
+  // stmt_compile compile;
 	//stmt_free free;
 	stmt_print print;
 };
@@ -95,7 +100,6 @@ typedef struct heck_stmt_func {
 	//heck_idf* name;
 } heck_stmt_func;
 heck_stmt* create_stmt_func(heck_code* c, heck_file_pos* fp, heck_func* func);
-
 
 typedef union {
   struct heck_stmt_if if_stmt;

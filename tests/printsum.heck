@@ -1,0 +1,9 @@
+//let notType = 6
+
+import func print_i32(num: int) -> int
+
+func printSum(a: int, b: int) {
+  print_i32(a + b);
+}
+
+printSum(3, 5);

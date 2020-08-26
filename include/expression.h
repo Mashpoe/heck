@@ -11,6 +11,7 @@
 #include "types.h"
 #include "token.h"
 #include "identifier.h"
+#include "compiler.h"
 #include "str.h"
 #include "code.h"
 //#include "scope.h"
@@ -32,7 +33,7 @@ enum heck_expr_flags {
 typedef enum heck_expr_type heck_expr_type;
 enum heck_expr_type {
 	EXPR_ERR,		// error parsing
-	EXPR_RESOLVED,	// avoid copying resolvable template code
+	//EXPR_RESOLVED,	// avoid copying resolvable template code
 	EXPR_BINARY,
 	EXPR_UNARY,
 	EXPR_LITERAL,	// always constexpr
@@ -50,6 +51,7 @@ enum heck_expr_type {
 typedef bool		(*expr_resolve)(heck_code*, heck_scope*, heck_expr*);
 typedef heck_expr*	(*expr_copy)(heck_code*, heck_expr*); // for templates
 //typedef void		(*expr_free)(heck_expr*);
+typedef bool		(*expr_compile)(heck_expr*);
 typedef void		(*expr_print)(heck_expr*);
 struct expr_vtable {
 	expr_resolve resolve;

@@ -209,8 +209,8 @@ void free_types(heck_code* c) {
 	size_t num_types = vector_size(c->type_vec);
 	for (int i = 0; i < num_types; ++i) {
 		heck_data_type* type = c->type_vec[i];
-    if (type->type_name == TYPE_CLASS && type->type_value.class_type.type_args.type_vec != NULL) {
-		  vector_free(type->type_value.class_type.type_args.type_vec);
+    if (type->type_name == TYPE_CLASS && type->value.class_type.type_arg_vec != NULL) {
+		  vector_free(type->value.class_type.type_arg_vec);
     }
 		free(type);
     printf("free type!\n");

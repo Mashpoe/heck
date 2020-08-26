@@ -10,7 +10,7 @@
 
 #include "identifier.h"
 #include "declarations.h"
-#include <code.h>
+#include "code.h"
 #include <stdint.h>
 
 /*
@@ -57,24 +57,17 @@ typedef enum heck_type_name {
 
 typedef struct heck_data_type heck_data_type;
 
-typedef struct heck_type_arg_list {
-	heck_data_type** type_vec;
-} heck_type_arg_list;
-
 // TODO: store start token for error line numbers
-// TODO: replace type_args with type_arg_vec
 typedef struct heck_class_type {
-	union {
-		heck_idf name;
-		heck_class* class; // class is used after resolving
-	} value;
-	heck_type_arg_list type_args;
+  heck_idf class_name;
+  heck_class* class_value; // class is used after resolving
+	heck_data_type** type_arg_vec;
 	heck_scope* parent; // this is used with name to find the correct class during resolve time
 } heck_class_type;
 
-// TODO: rename type_value to value
 typedef struct type_vtable type_vtable;
 struct heck_data_type {
+  heck_file_pos* fp;
 	heck_type_name type_name;
 	const type_vtable* vtable;
 	uint8_t flags; // stores resolved state and qualifiers, change to uint16_t if we run out of bits
@@ -82,19 +75,19 @@ struct heck_data_type {
 		heck_class_type class_type;
 		heck_data_type* arr_type; // recursive structure
 		heck_data_type* ref_type;
-	} type_value;
+	} value;
 };
 // resolve callback
 typedef heck_data_type* (*type_resolve)(heck_data_type*, heck_scope* parent, heck_scope* global);
-typedef void (*type_free)(heck_data_type*);
+//typedef void (*type_free)(heck_data_type*);
 typedef void (*type_print)(const heck_data_type*, FILE*);
 struct type_vtable {
 	type_resolve resolve;
-	type_free free;
+	//type_free free;
 	type_print print;
 };
 
-heck_data_type* create_data_type(heck_type_name name);
+heck_data_type* create_data_type(heck_file_pos* fp, heck_type_name name);
 heck_data_type* resolve_data_type(heck_code* c, heck_scope* parent, heck_data_type* type);
 void free_data_type(heck_data_type* type);
 

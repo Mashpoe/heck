@@ -166,6 +166,8 @@ heck_idf identifier(parser* p);
 
 // returns NULL on failure, but it might be changed to type_error
 heck_data_type* parse_data_type(parser* p, heck_scope* parent) {
+  heck_token* start_tk = peek(p);
+
 	step(p);
 	
 	heck_data_type* t = NULL;
@@ -173,9 +175,9 @@ heck_data_type* parse_data_type(parser* p, heck_scope* parent) {
 	
 	switch (previous(p)->type) {
 		case TK_IDF: {
-			t = create_data_type(TYPE_CLASS);
-			t->type_value.class_type.value.name = identifier(p);
-			t->type_value.class_type.parent = parent;
+			t = create_data_type(&start_tk->fp, TYPE_CLASS);
+			t->value.class_type.class_name = identifier(p);
+			t->value.class_type.parent = parent;
 			
 			if (match(p, TK_COLON)) {
 				
@@ -184,7 +186,7 @@ heck_data_type* parse_data_type(parser* p, heck_scope* parent) {
 					return NULL;
 				}
 				
-				t->type_value.class_type.type_args.type_vec = vector_create();
+				t->value.class_type.type_arg_vec = vector_create();
 				t->vtable = &type_vtable_class_args;
 				
 				for (;;) {
@@ -194,18 +196,20 @@ heck_data_type* parse_data_type(parser* p, heck_scope* parent) {
 					if (type_arg == NULL) {
 						// we do not need to call panic_mode() because it was called by parse_type_depth
 						// don't print error; child type already did
-						free_data_type(t);
+            vector_free(t->value.class_type.type_arg_vec);
+						free(t);
 						return NULL;
 					}
 					
-					vector_add(&t->type_value.class_type.type_args.type_vec, (heck_data_type*)type_arg);
+					vector_add(&t->value.class_type.type_arg_vec, (heck_data_type*)type_arg);
 					
 					// end of type args
 					if (!match(p, TK_COMMA)) {
 						
 						if (!match(p, TK_SQR_R)) {
 							parser_error(p, peek(p), true, "expected ]");
-							free_data_type(t);
+              vector_free(t->value.class_type.type_arg_vec);
+							free(t);
 							return NULL;
 						}
 						
@@ -215,7 +219,7 @@ heck_data_type* parse_data_type(parser* p, heck_scope* parent) {
 				}
 				
 			} else {
-				t->type_value.class_type.type_args.type_vec = NULL;
+				t->value.class_type.type_arg_vec = NULL;
 				t->vtable = &type_vtable_class;
 			}
 			
@@ -237,13 +241,13 @@ heck_data_type* parse_data_type(parser* p, heck_scope* parent) {
 		
 		if (match(p, TK_SQR_R)) {
 			heck_data_type* temp = t;
-			t = create_data_type(TYPE_ARR);
-			t->type_value.arr_type = temp;
+			t = create_data_type(&start_tk->fp, TYPE_ARR);
+			t->value.arr_type = temp;
 			t->vtable = &type_vtable_arr;
 		} else {
-			fputs("error: expected ]\n", stderr);
+      parser_error(p, peek(p), true, "expected ]");
 			panic_mode(p);
-			free_data_type(t);
+			free(t);
 			return NULL;
 		}
 		
@@ -395,7 +399,7 @@ heck_expr* unary(parser* p, heck_scope* parent) {
 			const heck_data_type* data_type = parse_data_type(p, parent);
 			if (data_type->type_name == TYPE_ERR)
 				return create_expr_err(p->code, expr_start);
-			if (data_type->type_name != TYPE_CLASS || data_type->type_value.class_type.type_args.type_vec == NULL) {
+			if (data_type->type_name != TYPE_CLASS || data_type->value.class_type.type_arg_vec == NULL) {
 				if (!match(p, TK_OP_GTR)) {
 					parser_error(p, peek(p), true, "unexpected token");
 					return create_expr_err(p->code, expr_start);
@@ -990,7 +994,7 @@ void parse_func_def(parser* p, heck_scope* parent) {
 			// functions cannot have children
 			if (func_name->child_scope != NULL) {
 				// not sure if panic should be true
-        parser_error(p, peek(p), true, "unable to create child scope for a function \"{I}\"", func_idf);
+        parser_error(p, peek(p), true, "unable to create function \"{s}\" in place of implicitly declared item", func_idf);
 				return;
 			}
 			
@@ -1196,6 +1200,60 @@ void parse_class_def(parser* p, heck_scope* parent) {
 	
 }
 
+// finds the func_name for an extern function declaration
+// returns NULL on failure
+heck_name* get_extern_func(parser* p, heck_scope* parent, str_entry name_str) {
+
+  heck_name* func_name = NULL;
+
+  if (parent->names == NULL) {
+    // create idf map and insert variable
+    parent->names = idf_map_create();
+
+    // add the function to the scope
+    func_name = name_create(p->code, parent, IDF_FUNCTION);
+    func_name->value.func_value.decl_vec = NULL;
+    func_name->value.func_value.def_vec = NULL;
+    idf_map_set(parent->names, name_str, func_name);
+    
+  } else if (idf_map_get(parent->names, name_str, &func_name)) {
+
+    if (func_name->type == IDF_FUNCTION) {
+
+      if (func_name->value.func_value.decl_vec == NULL)
+        func_name->value.func_value.decl_vec = vector_create();
+
+    } else if (func_name->type == IDF_UNDECLARED) {
+      // functions cannot have children
+      if (func_name->child_scope != NULL) {
+        // not sure if panic should be true
+        parser_error(p, peek(p), true, "unable to create function \"{s}\" in place of implicitly declared item", name_str->value);
+        return NULL;
+      }
+      
+      func_name->type = IDF_FUNCTION;
+      func_name->value.func_value.decl_vec = vector_create();
+      func_name->value.func_value.def_vec = NULL;
+
+    } else {
+
+      parser_error(p, peek(p), true, "cannot declare function with the same name as {s} \"{s}\"", get_idf_type_string(func_name->type), name_str->value);
+      return NULL;
+
+    }
+    
+  } else {
+    // add the function to the scope
+    func_name = name_create(p->code, parent, IDF_FUNCTION);
+    func_name->value.func_value.decl_vec = vector_create();
+    func_name->value.func_value.def_vec = NULL;
+    idf_map_set(parent->names, name_str, func_name);
+  }
+
+  return func_name;
+
+}
+
 // assumes "extern" and "func" keywords were matched
 void parse_func_extern(parser* p, heck_scope* parent) {
   heck_token* start_tk = peek_n(p, -2);
@@ -1204,51 +1262,10 @@ void parse_func_extern(parser* p, heck_scope* parent) {
     // check for identifier with a length of 1
     str_entry name_str = previous(p)->value.str_value;
 
-    heck_name* func_name = NULL;
-    
-    if (parent->names == NULL) {
-      // create idf map and insert variable
-      parent->names = idf_map_create();
+    heck_name* func_name = get_extern_func(p, parent, name_str);
 
-      // add the function to the scope
-      func_name = name_create(p->code, parent, IDF_FUNCTION);
-      func_name->value.func_value.decl_vec = vector_create();
-      func_name->value.func_value.def_vec = NULL;
-      idf_map_set(parent->names, name_str, func_name);
-      
-    } else if (idf_map_get(parent->names, name_str, &func_name)) {
-
-      if (func_name->type == IDF_FUNCTION) {
-
-        if (func_name->value.func_value.decl_vec == NULL)
-          func_name->value.func_value.decl_vec = vector_create();
-
-      } else if (func_name->type == IDF_UNDECLARED) {
-        // functions cannot have children
-			  if (func_name->child_scope != NULL) {
-          // not sure if panic should be true
-          parser_error(p, peek(p), true, "unable to create child scope for a function \"{s}\"", name_str->value);
-          return;
-        }
-        
-        func_name->type = IDF_FUNCTION;
-        func_name->value.func_value.decl_vec = vector_create();
-        func_name->value.func_value.def_vec = NULL;
-
-      } else {
-
-        parser_error(p, start_tk, true, "cannot declare function with the same name as {s} \"{s}\"", get_idf_type_string(func_name->type), name_str->value);
-        return;
-
-      }
-      
-    } else {
-      // add the function to the scope
-      func_name = name_create(p->code, parent, IDF_FUNCTION);
-      func_name->value.func_value.decl_vec = vector_create();
-      func_name->value.func_value.def_vec = NULL;
-      idf_map_set(parent->names, name_str, func_name);
-    }
+    if (!func_name)
+      return;
     
     // parse the func decl
     heck_func_decl func_decl;
@@ -1257,7 +1274,12 @@ void parse_func_extern(parser* p, heck_scope* parent) {
     if (!parse_func_decl(p, &func_decl))
       return;
     
-    vector_add(&func_name->value.func_value.decl_vec, func_decl);
+    heck_func_list* func_value = &func_name->value.func_value;
+
+    if (func_value->decl_vec == NULL)
+      func_value->decl_vec = vector_create();
+    
+    vector_add(&func_value->decl_vec, func_decl);
 
   } else {
 
@@ -1293,6 +1315,58 @@ void extern_decl(parser* p, heck_scope* parent) {
   step(p);
   if (match(p, TK_KW_FUNC)) {
     parse_func_extern(p, parent);
+  } else {
+    // TODO: add other extern declaration types
+    parser_error(p, peek(p), true, "expected a function declaration");
+  }
+}
+
+void import_func(parser* p, heck_scope* parent) {
+  heck_token* start_tk = peek_n(p, -2);
+
+  if (p->code->global != parent) {
+    parser_error(p, peek(p), true, "function import outside of global scope");
+    return;
+  }
+
+  if (match(p, TK_IDF)) {
+    // check for identifier with a length of 1
+    str_entry name_str = previous(p)->value.str_value;
+
+    heck_name* func_name = get_extern_func(p, parent, name_str);
+
+    if (!func_name)
+      return;
+    
+    // parse the func decl
+    heck_func_decl func_decl;
+    func_decl.fp = &start_tk->fp;
+    func_decl.scope = scope_create(p->code, parent);
+    if (!parse_func_decl(p, &func_decl))
+      return;
+    
+    // create a function definition with no child scope
+    heck_func* import_def = func_create(&func_decl, true);
+    import_def->imported = true;
+    
+    heck_func_list* func_value = &func_name->value.func_value;
+
+    if (func_value->def_vec == NULL)
+      func_value->def_vec = vector_create();
+
+    vector_add(&func_value->def_vec, import_def);
+
+  } else {
+    parser_error(p, peek(p), true, "expected an identifier");
+    return;
+  }
+
+}
+
+void import(parser* p, heck_scope* parent) {
+  step(p);
+  if (match(p, TK_KW_FUNC)) {
+    import_func(p, parent);
   } else {
     // TODO: add other extern declaration types
     parser_error(p, peek(p), true, "expected a function declaration");
@@ -1345,10 +1419,10 @@ heck_stmt* parse_namespace(parser* p, heck_scope* parent) {
 }
 
 void parse_statement(parser* p, heck_block* block, uint8_t flags) {
-		
 		heck_stmt* stmt = NULL;
 		
 		heck_token* t = peek(p);
+    // switch must either set stmt or return
 		switch (t->type) {
 			case TK_KW_LET:
 				stmt = let_statement(p, block->scope);
@@ -1366,6 +1440,10 @@ void parse_statement(parser* p, heck_block* block, uint8_t flags) {
 					parser_error(p, peek(p), true, "declaration of a namespace outside of a global context");
 					return;
 				}
+				break;
+			case TK_KW_IMPORT:
+				import(p, block->scope);
+        return;
 				break;
 			case TK_KW_FUNC:
 //				if (STMT_IN_GLOBAL(flags) || flags == STMT_FLAG_FUNC) {
@@ -1414,13 +1492,16 @@ bool heck_parse(heck_code* c) {
 	for (;;) {
 		
 		parse_statement(&p, c->code, STMT_FLAG_GLOBAL);
-		
+
+    // match semicolon before end
+		match(&p, TK_SEMI);
+
 		if (at_end(&p))
 			break;
 		
 		// TODO: check for newline or ;
-		if (!at_newline(&p) && !match(&p, TK_SEMI)) {
-			parser_error(&p, peek(&p), true, "expected ; or newline");
+		if (!at_newline(&p) && previous(&p)->type != TK_SEMI) {
+			parser_error(&p, peek(&p), true, "expected ; or newline between statements");
 		}
 	}
 	

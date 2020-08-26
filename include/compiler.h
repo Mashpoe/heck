@@ -10,6 +10,7 @@
 
 #include "code.h"
 
+typedef struct heck_compiler heck_compiler;
 
 // resolves & compiles everything.
 // if the syntax tree ends up being too simple for compiling, resolving can be moved elsewhere

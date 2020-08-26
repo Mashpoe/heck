@@ -123,6 +123,8 @@ bool resolve_block(heck_code* c, heck_block* block) {
 	vec_size_t size = vector_size(block->stmt_vec);
 	for (vec_size_t i = 0; i < size; ++i) {
 		heck_stmt* current = block->stmt_vec[i];
+    //printf("resolving statement %i...\n", i);
+    //printf("%p\n", current);
 		if (!current->vtable->resolve(c, block->scope, current))
 			success = false;
 	}
@@ -374,7 +376,7 @@ void print_stmt_ret(heck_stmt* stmt, int indent) {
 	printf("\n");
 }
 
-bool resolve_stmt_class(heck_code* c, heck_scope* parent, heck_stmt* stmt) { return false; }
+bool resolve_stmt_class(heck_code* c, heck_scope* parent, heck_stmt* stmt) { return true; }
 void print_stmt_class(heck_stmt* stmt, int indent) {
 	
 }

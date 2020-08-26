@@ -119,6 +119,42 @@ bool match_str(file_pos* fp, char* s) {
 	return true;
 }
 
+// for characters that are part of an identifier
+// not for the start of an identifier
+bool is_identifier_ch(char c);
+inline bool is_identifier_ch(char c) {
+  return (
+    isalnum(c) ||
+    c == '_' ||
+    // part of a unicode character
+		(unsigned char)c >= 0x80
+  );
+}
+
+bool match_kw(file_pos* fp, char* s) {
+
+	// go back in case the match fails partway through
+	file_pos temp = *fp;
+
+	int s_pos = 0;
+	
+	while (s[s_pos] != '\0') {
+		if (temp.current != s[s_pos])
+			return false;
+		scan_step(&temp);
+		++s_pos;
+	}
+
+  // check for trailing identifier character
+  if (is_identifier_ch(temp.current))
+    return false;
+
+	// apply changes
+	*fp = temp;
+	
+	return true;
+}
+
 bool is_space(file_pos* fp) {
 	return fp->current == ' ' || fp->current == '\t';
 }
@@ -421,101 +457,104 @@ bool heck_scan(heck_code* c, FILE* f) {
 				{
 					
 					// check for keywords
-					if (match_str(&fp, "if")) {
+					if (match_kw(&fp, "if")) {
 						add_token(c, &fp, TK_KW_IF);
 						
-					} else if (match_str(&fp, "else")) {
+					} else if (match_kw(&fp, "else")) {
 						add_token(c, &fp, TK_KW_ELSE);
 						
-					} else if (match_str(&fp, "do")) {
+					} else if (match_kw(&fp, "do")) {
 						add_token(c, &fp, TK_KW_DO);
 						
-					} else if (match_str(&fp, "while")) {
+					} else if (match_kw(&fp, "while")) {
 						add_token(c, &fp, TK_KW_WHILE);
 						
-					} else if (match_str(&fp, "for")) {
+					} else if (match_kw(&fp, "for")) {
 						add_token(c, &fp, TK_KW_FOR);
 						
-					} else if (match_str(&fp, "switch")) {
+					} else if (match_kw(&fp, "switch")) {
 						add_token(c, &fp, TK_KW_SWITCH);
 						
-					} else if (match_str(&fp, "case")) {
+					} else if (match_kw(&fp, "case")) {
 						add_token(c, &fp, TK_KW_CASE);
 					
-					} else if (match_str(&fp, "extern")) {
+					} else if (match_kw(&fp, "extern")) {
 						add_token(c, &fp, TK_KW_EXTERN);
 						
-					} else if (match_str(&fp, "let")) {
+					} else if (match_kw(&fp, "let")) {
 						add_token(c, &fp, TK_KW_LET);
 						
-					} else if (match_str(&fp, "func")) {
+					} else if (match_kw(&fp, "func")) {
 						add_token(c, &fp, TK_KW_FUNC);
 
-					} else if (match_str(&fp, "class")) {
+					} else if (match_kw(&fp, "class")) {
 						add_token(c, &fp, TK_KW_CLASS);
 
-					} else if (match_str(&fp, "namespace")) {
+					} else if (match_kw(&fp, "namespace")) {
 						add_token(c, &fp, TK_KW_NAMESPACE);
 
-					} else if (match_str(&fp, "public")) {
+					} else if (match_kw(&fp, "public")) {
 						add_token(c, &fp, TK_KW_PUBLIC);
 
-					} else if (match_str(&fp, "private")) {
+					} else if (match_kw(&fp, "private")) {
 						add_token(c, &fp, TK_KW_PRIVATE);
 
-					} else if (match_str(&fp, "protected")) {
+					} else if (match_kw(&fp, "protected")) {
 						add_token(c, &fp, TK_KW_PROTECTED);
 
-					} else if (match_str(&fp, "friend")) {
+					} else if (match_kw(&fp, "friend")) {
 						add_token(c, &fp, TK_KW_FRIEND);
+						
+					} else if (match_kw(&fp, "import")) {
+						add_token(c, &fp, TK_KW_IMPORT);
 
-					} else if (match_str(&fp, "operator")) {
+					} else if (match_kw(&fp, "operator")) {
 						add_token(c, &fp, TK_KW_OPERATOR);
 
-					} else if (match_str(&fp, "implicit")) {
+					} else if (match_kw(&fp, "implicit")) {
 						add_token(c, &fp, TK_KW_IMPLICIT);
 
-					} else if (match_str(&fp, "as")) {
+					} else if (match_kw(&fp, "as")) {
 						add_token(c, &fp, TK_KW_AS);
 						
-					} else if (match_str(&fp, "return")) {
+					} else if (match_kw(&fp, "return")) {
 						add_token(c, &fp, TK_KW_RETURN);
 						
-					} else if (match_str(&fp, "true")) {
+					} else if (match_kw(&fp, "true")) {
 						add_token_bool(c, &fp, true);
 						
-					} else if (match_str(&fp, "false")) {
+					} else if (match_kw(&fp, "false")) {
 						add_token_bool(c, &fp, true);
 						
-					} else if (match_str(&fp, "global")) {
+					} else if (match_kw(&fp, "global")) {
 						add_token_ctx(c, &fp, CONTEXT_GLOBAL);
 							
-					} else if (match_str(&fp, "this")) {
+					} else if (match_kw(&fp, "this")) {
 						add_token_ctx(c, &fp, CONTEXT_THIS);
 					
-					} else if (match_str(&fp, "int")) {
+					} else if (match_kw(&fp, "int")) {
 						add_token_prim(c, &fp, data_type_int);
 						
-					} else if (match_str(&fp, "float")) {
+					} else if (match_kw(&fp, "float")) {
 						add_token_prim(c, &fp, data_type_float);
 						
-					} else if (match_str(&fp, "bool")) {
+					} else if (match_kw(&fp, "bool")) {
 						add_token_prim(c, &fp, data_type_bool);
 						
-					} else if (match_str(&fp, "string")) {
+					} else if (match_kw(&fp, "string")) {
 						add_token_prim(c, &fp, data_type_string);
 					
           // the following keywords are reserved but not in use
-					} else if (match_str(&fp, "null")) {
+					} else if (match_kw(&fp, "null")) {
 						add_token(c, &fp, TK_KW_NULL);
 
-					} else if (match_str(&fp, "none")) {
+					} else if (match_kw(&fp, "none")) {
 						add_token(c, &fp, TK_KW_NONE);
 					
-					} else if (match_str(&fp, "generic")) {
+					} else if (match_kw(&fp, "generic")) {
 						add_token(c, &fp, TK_KW_GENERIC);
 					
-					} else if (match_str(&fp, "is")) {
+					} else if (match_kw(&fp, "is")) {
 						add_token(c, &fp, TK_KW_IS);
 
 					} else { // it's an identifier and not a keyword
@@ -525,15 +564,14 @@ bool heck_scan(heck_code* c, FILE* f) {
 						do {
 							token = str_add_char(token, &len, &alloc, fp.current);
 							scan_step(&fp);
-						} while (fp.current != '\0' &&
-								(isalnum(fp.current) || fp.current == '_' ||	// identifiers can start with 'A'-'z' or '_'
-								(unsigned char)fp.current >= 0x80));			// start or body of unicode character
+						} while (is_identifier_ch(fp.current));
 
-							str_entry idf_str = create_str_entry(token, len);
-							token = NULL;
-							
-							idf_str = str_table_get_entry(c->strings, idf_str);
-							add_token_idf(c, &fp, idf_str);
+            str_entry idf_str = create_str_entry(token, len);
+            token = NULL;
+            
+            idf_str = str_table_get_entry(c->strings, idf_str);
+            add_token_idf(c, &fp, idf_str);
+
 					}
 					
 					continue; // avoid step at the end

@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include "statement.h"
+#include "compiler.h"
 #include "str.h"
 #include "types.h"
 #include "declarations.h"
@@ -44,6 +45,7 @@ struct heck_func {
 	bool generic;
   bool resolved;
   bool compiled;
+  bool imported;
 
   // keep track of all local variables within a function
   // excludes parameters
@@ -68,7 +70,7 @@ heck_func* func_create(heck_func_decl* decl, bool declared);
 // resolve param and return types 
 // match declarations with definitions
 // check for duplicates
-bool func_resolve_name(heck_code* c, heck_name* func_name);
+bool func_resolve_name(heck_code* c, heck_name* func_name, str_entry name_str);
 
 // error flags can be stored in func_name
 bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def);

@@ -258,7 +258,7 @@ void resolve_name_callback(str_entry key, void* value, void* user_ptr) {
   
   switch (name->type) {
     case IDF_FUNCTION: {
-      data->success *= func_resolve_name(data->c, name);
+      data->success *= func_resolve_name(data->c, name, key);
       break;
     }
     case IDF_UNDECLARED_CLASS:
@@ -268,6 +268,11 @@ void resolve_name_callback(str_entry key, void* value, void* user_ptr) {
       data->success *= scope_resolve_names(data->c, name->child_scope);
       // TODO: resolve operator overloads
       break;
+    }
+    case IDF_UNDECLARED: {
+      if (name->child_scope != NULL) {
+        data->success *= scope_resolve_names(data->c, name->child_scope);
+      }
     }
   }
   
