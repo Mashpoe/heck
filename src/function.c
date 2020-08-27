@@ -32,12 +32,12 @@ heck_func* func_create(heck_func_decl* decl, bool declared) {
   func->compiled = false;
   func->imported = false;
 
-  func->code = NULL;
+  func->value.code = NULL;
   func->local_vec = NULL;
   func->local_count = 0;
 	
 	// heck_scope* block_scope = scope_create(decl->scope);
-	// func->code = block_create(block_scope);
+	// func->value.code = block_create(block_scope);
 
   func->decl = *decl;
 	
@@ -57,7 +57,7 @@ heck_func* func_create(heck_func_decl* decl, bool declared) {
 
 // void func_free(heck_func* func) {
 // 	free_decl_data(&func->decl);
-// 	block_free(func->code);
+// 	block_free(func->value.code);
 // 	// TODO: free func->value
 //   free(func);
 // }
@@ -260,12 +260,12 @@ bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def) {
   // TODO: check for default arguments, resolve them
   // resolve default arguments with func_name->parent to avoid conflicts with function definition locals
 
-  if (func_def->code->type == BLOCK_MAY_RETURN) {
+  if (func_def->value.code->type == BLOCK_MAY_RETURN) {
     success = false;
     heck_report_error(NULL, func_decl->fp, "function only returns in some cases");
   }
 
-  success *= resolve_block(c, func_def->code);
+  success *= resolve_block(c, func_def->value.code);
 
   return success;
 
@@ -390,10 +390,10 @@ void print_func_def(heck_func* func, const char* name, int indent) {
 
   print_func_decl(&func->decl);
 
-  if (func->code == NULL) {
+  if (func->imported || func->value.code == NULL) {
 	  putchar('\n');
   } else {
-    print_block(func->code, indent);
+    print_block(func->value.code, indent);
   }
 
 }

@@ -77,9 +77,11 @@ inline bool data_type_is_numeric(const heck_data_type* type) {
 }
 
 // locates classes, hashes types, etc
-inline heck_data_type* resolve_data_type(heck_code* c, heck_scope* parent, heck_data_type* type) {
-	// TODO: free it if it can't be resolved, or maybe leave that to whoever calls
+inline bool resolve_data_type(heck_code* c, heck_scope* parent, heck_data_type* type) {
 	return type->vtable->resolve(c, parent, type);
+}
+inline void compile_data_type(heck_compiler* cmplr, heck_data_type* type) {
+	return type->vtable->compile(cmplr, type);
 }
 
 // // this could also be made into a macro
@@ -95,66 +97,113 @@ void fprint_data_type(const heck_data_type* type, FILE* f) {
 	type->vtable->print(type, f);
 }
 
-const heck_data_type val_data_type_err		= { NULL, TYPE_ERR,		&type_vtable_err,	0x0, NULL };
-const heck_data_type val_data_type_gen		= { NULL, TYPE_GEN, 		&type_vtable_gen,	0x0, NULL };
-const heck_data_type val_data_type_void		= { NULL, TYPE_VOID, 		&type_vtable_void,	0x0, NULL };
-const heck_data_type val_data_type_int		= { NULL, TYPE_INT,		&type_vtable_int,	0x0, NULL };
-const heck_data_type val_data_type_float	= { NULL, TYPE_FLOAT, 	&type_vtable_float,	0x0, NULL };
-const heck_data_type val_data_type_bool		= { NULL, TYPE_BOOL,		&type_vtable_bool,	0x0, NULL };
-const heck_data_type val_data_type_string	= { NULL, TYPE_STRING,	&type_vtable_string,0x0, NULL };
+const heck_data_type val_data_type_err		= { NULL, TYPE_ERR,		&type_vtable_err,	TYPE_RESOLVED, NULL };
+const heck_data_type val_data_type_gen		= { NULL, TYPE_GEN, 		&type_vtable_gen,	TYPE_RESOLVED, NULL };
+const heck_data_type val_data_type_void		= { NULL, TYPE_VOID, 		&type_vtable_void,	TYPE_RESOLVED, NULL };
+const heck_data_type val_data_type_int		= { NULL, TYPE_INT,		&type_vtable_int,	TYPE_RESOLVED, NULL };
+const heck_data_type val_data_type_float	= { NULL, TYPE_FLOAT, 	&type_vtable_float,	TYPE_RESOLVED, NULL };
+const heck_data_type val_data_type_bool		= { NULL, TYPE_BOOL,		&type_vtable_bool,	TYPE_RESOLVED, NULL };
+const heck_data_type val_data_type_string	= { NULL, TYPE_STRING,	&type_vtable_string,TYPE_RESOLVED, NULL };
 
 
 // primitives are already resolved, resolve methods return true
-heck_data_type* resolve_type_prim(heck_code* c, heck_scope* parent, heck_data_type* type);
+bool resolve_type_prim(heck_code* c, heck_scope* parent, heck_data_type* type);
 //void free_type_prim(heck_data_type* type);
 // error
-heck_data_type* resolve_type_err(heck_code* c, heck_scope* parent, heck_data_type* type);
+bool resolve_type_err(heck_code* c, heck_scope* parent, heck_data_type* type);
 void print_type_err(const heck_data_type* type, FILE* f);
-const type_vtable type_vtable_err = { resolve_type_err, print_type_err };
+const type_vtable type_vtable_err = {
+  resolve_type_err,
+  NULL, // no code with error statement will compile
+  print_type_err
+};
 // generic
 void print_type_gen(const heck_data_type* type, FILE* f);
-const type_vtable type_vtable_gen = { resolve_type_err, print_type_gen };
+const type_vtable type_vtable_gen = {
+  resolve_type_err,
+  NULL, // generic types won't compile
+  print_type_gen
+};
 // void
 void print_type_void(const heck_data_type* type, FILE* f);
-const type_vtable type_vtable_void = { resolve_type_err, print_type_void };
+const type_vtable type_vtable_void = {
+  resolve_type_prim,
+  NULL, // there is no reason to compile this
+  print_type_void
+};
 // int
+void compile_type_int(heck_compiler* cmplr, heck_data_type* type);
 void print_type_int(const heck_data_type* type, FILE* f);
-const type_vtable type_vtable_int = { resolve_type_prim, print_type_int };
+const type_vtable type_vtable_int = {
+  resolve_type_prim,
+  compile_type_int,
+  print_type_int
+};
 // float
+void compile_type_float(heck_compiler* cmplr, heck_data_type* type);
 void print_type_float(const heck_data_type* type, FILE* f);
-const type_vtable type_vtable_float = { resolve_type_prim, print_type_float };
+const type_vtable type_vtable_float = {
+  resolve_type_prim,
+  compile_type_float,
+  print_type_float
+};
 // bool
+void compile_type_bool(heck_compiler* cmplr, heck_data_type* type);
 void print_type_bool(const heck_data_type* type, FILE* f);
-const type_vtable type_vtable_bool = { resolve_type_prim, print_type_bool };
+const type_vtable type_vtable_bool = {
+  resolve_type_prim,
+  compile_type_bool,
+  print_type_bool
+};
 // string
+void compile_type_string(heck_compiler* cmplr, heck_data_type* type);
 void print_type_string(const heck_data_type* type, FILE* f);
-const type_vtable type_vtable_string = { resolve_type_prim, print_type_string };
+const type_vtable type_vtable_string = {
+  resolve_type_prim,
+  compile_type_string,
+  print_type_string
+};
 // array
-heck_data_type* resolve_type_arr(heck_code* c, heck_scope* parent, heck_data_type* type);
+bool resolve_type_arr(heck_code* c, heck_scope* parent, heck_data_type* type);
+void compile_type_arr(heck_compiler* cmplr, heck_data_type* type);
 //void free_type_arr(heck_data_type* type);
 void print_type_arr(const heck_data_type* type, FILE* f);
-const type_vtable type_vtable_arr = { resolve_type_arr, print_type_arr };
+const type_vtable type_vtable_arr = {
+  resolve_type_arr,
+  compile_type_arr,
+  print_type_arr
+};
 // class
-heck_data_type* resolve_type_class(heck_code* c, heck_scope* parent, heck_data_type* type);
+bool resolve_type_class(heck_code* c, heck_scope* parent, heck_data_type* type);
+void compile_type_class(heck_compiler* cmplr, heck_data_type* type);
 //void free_type_class(heck_data_type* type);
 void print_type_class(const heck_data_type* type, FILE* f);
-const type_vtable type_vtable_class = { resolve_type_class, print_type_class };
+const type_vtable type_vtable_class = {
+  resolve_type_class,
+  compile_type_class,
+  print_type_class
+};
 // class with type arguments
-heck_data_type* resolve_type_class_args(heck_code* c, heck_scope* parent, heck_data_type* type);
+bool resolve_type_class_args(heck_code* c, heck_scope* parent, heck_data_type* type);
+void compile_type_class_args(heck_compiler* cmplr, heck_data_type* type);
 //void free_type_class_args(heck_data_type* type);
 void print_type_class_args(const heck_data_type* type, FILE* f);
-const type_vtable type_vtable_class_args = { resolve_type_class_args, print_type_class_args };
+const type_vtable type_vtable_class_args = {
+  resolve_type_class_args,
+  compile_type_class_args,
+  print_type_class_args
+};
 
 // already resolved
-heck_data_type* resolve_type_prim(heck_code* c, heck_scope* parent, heck_data_type* type) { return type; }
+bool resolve_type_prim(heck_code* c, heck_scope* parent, heck_data_type* type) { return true; }
 
 // always NULL
-heck_data_type* resolve_type_err(heck_code* c, heck_scope* parent, heck_data_type* type) { return NULL; }
+bool resolve_type_err(heck_code* c, heck_scope* parent, heck_data_type* type) { return false; }
 
-heck_data_type* resolve_type_arr(heck_code* c, heck_scope* parent, heck_data_type* type) {
+bool resolve_type_arr(heck_code* c, heck_scope* parent, heck_data_type* type) {
 	return resolve_data_type(c, parent, type->value.arr_type);
 }
-heck_data_type* resolve_type_class(heck_code* c, heck_scope* parent, heck_data_type* type) {
+bool resolve_type_class(heck_code* c, heck_scope* parent, heck_data_type* type) {
 	// find the correct class using the parent scope
 	heck_class_type* class_type = &type->value.class_type;
 	
@@ -163,7 +212,7 @@ heck_data_type* resolve_type_class(heck_code* c, heck_scope* parent, heck_data_t
 	// TODO: line numbers in error messages
 	if (n == NULL) {
     heck_report_error(NULL, type->fp, "no type named \"{I}\" exists", class_type->class_name);
-		return NULL;
+		return false;
 	}
 	
 	if (n->type != IDF_CLASS) {
@@ -172,29 +221,28 @@ heck_data_type* resolve_type_class(heck_code* c, heck_scope* parent, heck_data_t
 	
 	class_type->class_value = n->value.class_value;
 	
-	return NULL;
+  // until classes are supported
+  heck_report_error(NULL, type->fp, "unable to resolve class type \"{I}\" because classes are not yet fully supported", class_type->class_name);
+	return false;
+  // return true
 }
-heck_data_type* resolve_type_class_args(heck_code* c, heck_scope* parent, heck_data_type* type) {
+bool resolve_type_class_args(heck_code* c, heck_scope* parent, heck_data_type* type) {
 	
-	type = resolve_type_class(c, parent, type);
-	
-	if (!type)
-		return NULL;
+	if (resolve_type_class(c, parent, type))
+		return false;
 	
 	// resolve the type arguments
 	heck_class_type* class_type = &type->value.class_type;
 	
 	vec_size_t size = vector_size(class_type->type_arg_vec);
 	for (vec_size_t i = 0; i < size; i++) {
-		heck_data_type* current_type = resolve_data_type(c, parent, class_type->type_arg_vec[i]);
-		if (current_type == NULL) {
-			fprintf(stderr, "error: invalid type argument\n");
-			return NULL;
+		if (!resolve_data_type(c, parent, class_type->type_arg_vec[i])) {
+      heck_report_error(NULL, class_type->type_arg_vec[i]->fp, "invalid type argument");
+			return false;
 		}
-		class_type->type_arg_vec[i] = current_type;
 	}
 	
-	return type;
+	return true;
 }
 
 // void free_type_prim(heck_data_type* type) {

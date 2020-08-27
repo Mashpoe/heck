@@ -18,6 +18,7 @@
 #include "str_table.h"
 #include "literal.h"
 #include "types.h"
+#include "variable.h"
 
 struct heck_code {
   heck_code** import_vec;
@@ -34,6 +35,8 @@ struct heck_code {
   heck_func* main; // code/syntax tree
 	heck_block* code; // the code block inside of main
   heck_scope* global; // for easy access
+
+  heck_variable** global_vec;
 
   // keep track of normal memory allocations
   void** alloc_vec;

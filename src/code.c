@@ -19,6 +19,8 @@
 heck_code* heck_create() {
 	heck_code* c = malloc(sizeof(heck_code));
 
+  c->global_vec = vector_create();
+
   c->alloc_vec = vector_create();
   c->block_vec = vector_create();
   c->scope_vec = vector_create();
@@ -40,7 +42,7 @@ heck_code* heck_create() {
   };
 
   c->main = func_create(&main_decl, false);
-  c->main->code = c->code;
+  c->main->value.code = c->code;
   c->code->scope->parent_func = c->main;
 
 	return c;

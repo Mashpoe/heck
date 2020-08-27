@@ -35,6 +35,7 @@ struct heck_func_decl {
   heck_variable** param_vec;
   heck_data_type* return_type;
   const char* source_filename;
+  int index; // set during compile
 };
 void free_decl_data(heck_func_decl* decl);
 
@@ -56,7 +57,10 @@ struct heck_func {
   // argument and return types
   heck_func_decl decl;
 	
-	heck_block* code;
+  union {
+	  heck_block* code;
+    str_entry* import; // makes it easier to compile imports
+  } value;
 };
 
 // decl is copied by this function

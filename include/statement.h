@@ -29,16 +29,16 @@ typedef enum heck_stmt_type {
 	STMT_ERR
 } heck_stmt_type;
 
-// TODO: maybe make these callbacks take void pointers instead
+// statement vtable
 typedef bool (*stmt_resolve)(heck_code*, heck_scope*, heck_stmt*);
+typedef void (*stmt_compile)(heck_compiler*, heck_stmt*);
 typedef void (*stmt_copy)(heck_code*, heck_stmt*); // int for number of indents
 //typedef void (*stmt_free)(heck_stmt*); // int for number of indents
-typedef void (*stmt_compile)(heck_compiler*, heck_stmt*);
 typedef void (*stmt_print)(heck_stmt*, int); // int for number of indents
 struct stmt_vtable {
 	stmt_resolve resolve;
+  stmt_compile compile;
   // stmt_copy copy;
-  // stmt_compile compile;
 	//stmt_free free;
 	stmt_print print;
 };

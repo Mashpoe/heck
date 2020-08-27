@@ -24,7 +24,6 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-
 typedef struct parser parser;
 
 struct parser {
@@ -550,28 +549,9 @@ heck_expr* equality(parser* p, heck_scope* parent) {
 //	}
 }
 
-heck_expr* assignment(parser* p, heck_scope* parent) {
-  heck_file_pos* expr_start = &peek(p)->fp;
-	heck_expr* expr = equality(p, parent);
-	
-	if (match(p, TK_OP_ASG)) {
-		
-		if (expr->type == EXPR_VALUE) {
-			heck_expr* left = expression(p, parent);
-			heck_expr* asg = create_expr_asg(p->code, expr_start, expr, left);
-			//asg->data_type = expr->data_type;
-			return asg;
-		}
-		
-		// TODO: report invalid assignment target
-	}
-	
-	return expr;
-}
-
 heck_expr* ternary(parser* p, heck_scope* parent) {
   heck_file_pos* expr_start = &peek(p)->fp;
-	heck_expr* expr = assignment(p, parent);
+	heck_expr* expr = equality(p, parent);
 	
 	if (match(p, TK_Q_MARK)) {
 		heck_expr* value_a = expression(p, parent);
@@ -588,8 +568,27 @@ heck_expr* ternary(parser* p, heck_scope* parent) {
 	return expr;
 }
 
+heck_expr* assignment(parser* p, heck_scope* parent) {
+  heck_file_pos* expr_start = &peek(p)->fp;
+	heck_expr* expr = ternary(p, parent);
+	
+	if (match(p, TK_OP_ASG)) {
+		
+		if (expr->type == EXPR_VALUE) {
+			heck_expr* left = expression(p, parent);
+			heck_expr* asg = create_expr_asg(p->code, expr_start, expr, left);
+			//asg->data_type = expr->data_type;
+			return asg;
+		}
+		
+		// TODO: report invalid assignment target
+	}
+	
+	return expr;
+}
+
 heck_expr* expression(parser* p, heck_scope* parent) {
-	heck_expr* value = ternary(p, parent);
+	heck_expr* value = assignment(p, parent);
 	return value;
 	//return ternary(p);
 }
@@ -620,7 +619,7 @@ void parse_statement(parser* p, heck_block* block, uint8_t flags);
 void extern_decl(parser* p, heck_scope* parent);
 
 // returns NULL on failure
-// does not 
+// puts variables in appropriate scopes and lists
 heck_name* variable_decl(parser* p, heck_scope* parent) {
   heck_token* start_tk = peek(p);
 
@@ -671,6 +670,16 @@ heck_name* variable_decl(parser* p, heck_scope* parent) {
 	var_name = name_create(p->code, parent, IDF_VARIABLE);
 	var_name->value.var_value = variable;
 	idf_map_set(parent->names, variable->name, var_name);
+
+  // add it to the global/local list
+  if (parent == p->code->global) {
+    vector_add(&p->code->global_vec, variable);
+  } else {
+    heck_func* parent_func = parent->parent_func;
+    if (parent_func->local_vec == NULL)
+      parent_func->local_vec = vector_create();
+    vector_add(&parent_func->local_vec, variable);
+  }
 
   return var_name;
 }
@@ -1031,7 +1040,7 @@ void parse_func_def(parser* p, heck_scope* parent) {
 	}
 
   func->decl.scope->parent_func = func;
-  func->code = block_create(p->code, func->decl.scope);
+  func->value.code = block_create(p->code, func->decl.scope);
 
   // add parameters to var_inits and func locals
   if (func->decl.param_vec != NULL) {
@@ -1041,16 +1050,16 @@ void parse_func_def(parser* p, heck_scope* parent) {
 
 	if (peek(p)->type == TK_BRAC_L) {
 		
-    parse_block_stmts(p, func->code, STMT_FLAG_FUNC);
+    parse_block_stmts(p, func->value.code, STMT_FLAG_FUNC);
 		
-		if (func->code->type == BLOCK_MAY_RETURN) {
+		if (func->value.code->type == BLOCK_MAY_RETURN) {
 			parser_error(p, peek(p), false, "function \"{I}\" only returns in some cases", func_idf);
 		}
 		
 	} else {
 		
 		// populate function with only an error for resolve
-		vector_add(&func->code->stmt_vec, create_stmt_err(p->code, &peek(p)->fp));
+		vector_add(&func->value.code->stmt_vec, create_stmt_err(p->code, &peek(p)->fp));
 		
 		parser_error(p, peek(p), true, "expected {");
 	}
@@ -1348,6 +1357,8 @@ void import_func(parser* p, heck_scope* parent) {
     // create a function definition with no child scope
     heck_func* import_def = func_create(&func_decl, true);
     import_def->imported = true;
+    // set the name for the compiler to import
+    import_def->value.import = name_str;
     
     heck_func_list* func_value = &func_name->value.func_value;
 

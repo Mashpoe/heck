@@ -171,6 +171,9 @@ void print_variable(heck_variable* variable) {
 inline bool resolve_stmt(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
 	return stmt->vtable->resolve(c, parent, stmt);
 }
+inline void compile_stmt(heck_compiler* cmplr, heck_stmt* stmt) {
+  return stmt->vtable->compile(cmplr, stmt);
+}
 inline void print_stmt(heck_stmt* stmt, int indent) {
 	
 	print_indent(indent);
@@ -180,36 +183,76 @@ inline void print_stmt(heck_stmt* stmt, int indent) {
 
 // vtables
 bool resolve_stmt_expr(heck_code* c, heck_scope* parent, heck_stmt* stmt);
+void compile_stmt_expr(heck_compiler* cmplr, heck_stmt* stmt);
 void print_stmt_expr(heck_stmt* stmt, int indent);
-const stmt_vtable stmt_vtable_expr = { resolve_stmt_expr, print_stmt_expr };
+const stmt_vtable stmt_vtable_expr = {
+  resolve_stmt_expr,
+  compile_stmt_expr,
+  print_stmt_expr
+};
 
 bool resolve_stmt_let(heck_code* c, heck_scope* parent, heck_stmt* stmt);
+void compile_stmt_let(heck_compiler* cmplr, heck_stmt* stmt);
 void print_stmt_let(heck_stmt* stmt, int indent);
-const stmt_vtable stmt_vtable_let = { resolve_stmt_let, print_stmt_let };
+const stmt_vtable stmt_vtable_let = {
+  resolve_stmt_let,
+  compile_stmt_let,
+  print_stmt_let
+};
 
 bool resolve_stmt_block(heck_code* c, heck_scope* parent, heck_stmt* stmt);
+void compile_stmt_block(heck_compiler* cmplr, heck_stmt* stmt);
 void print_stmt_block(heck_stmt* stmt, int indent);
-const stmt_vtable stmt_vtable_block = { resolve_stmt_block, print_stmt_block };
+const stmt_vtable stmt_vtable_block = {
+  resolve_stmt_block,
+  compile_stmt_block,
+  print_stmt_block
+};
 
 bool resolve_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt);
+void compile_stmt_if(heck_compiler* cmplr, heck_stmt* stmt);
 void print_stmt_if(heck_stmt* stmt, int indent);
-const stmt_vtable stmt_vtable_if = { resolve_stmt_if, print_stmt_if };
+const stmt_vtable stmt_vtable_if = {
+  resolve_stmt_if,
+  compile_stmt_if,
+  print_stmt_if
+};
 
 bool resolve_stmt_ret(heck_code* c, heck_scope* parent, heck_stmt* stmt);
+void compile_stmt_ret(heck_compiler* cmplr, heck_stmt* stmt);
 void print_stmt_ret(heck_stmt* stmt, int indent);
-const stmt_vtable stmt_vtable_ret = { resolve_stmt_ret, print_stmt_ret };
+const stmt_vtable stmt_vtable_ret = {
+  resolve_stmt_ret,
+  compile_stmt_ret,
+  print_stmt_ret
+};
 
 bool resolve_stmt_class(heck_code* c, heck_scope* parent, heck_stmt* stmt);
+void compile_stmt_class(heck_compiler* cmplr, heck_stmt* stmt);
 void print_stmt_class(heck_stmt* stmt, int indent);
-const stmt_vtable stmt_vtable_class = { resolve_stmt_class, print_stmt_class };
+const stmt_vtable stmt_vtable_class = {
+  resolve_stmt_class,
+  compile_stmt_class,
+  print_stmt_class
+};
 
 bool resolve_stmt_func(heck_code* c, heck_scope* parent, heck_stmt* stmt);
+void compile_stmt_func(heck_compiler* cmplr, heck_stmt* stmt);
 void print_stmt_func(heck_stmt* stmt, int indent);
-const stmt_vtable stmt_vtable_func = { resolve_stmt_func, print_stmt_func };
+const stmt_vtable stmt_vtable_func = {
+  resolve_stmt_func,
+  compile_stmt_func,
+  print_stmt_func
+};
 
 bool resolve_stmt_err(heck_code* c, heck_scope* parent, heck_stmt* stmt);
+void compile_stmt_err(heck_compiler* cmplr, heck_stmt* stmt);
 void print_stmt_err(heck_stmt* stmt, int indent);
-const stmt_vtable stmt_vtable_err = { resolve_stmt_err, print_stmt_err };
+const stmt_vtable stmt_vtable_err = {
+  resolve_stmt_err,
+  compile_stmt_err,
+  print_stmt_err
+};
 
 // vtable function defs:
 bool resolve_stmt_expr(heck_code* c, heck_scope* parent, heck_stmt* stmt) {

@@ -49,12 +49,13 @@ enum heck_expr_type {
 // TODO: resolve_info* structures instead of parent and global among other parameters that will inevitably be added
 
 typedef bool		(*expr_resolve)(heck_code*, heck_scope*, heck_expr*);
+typedef void		(*expr_compile)(heck_expr*);
 typedef heck_expr*	(*expr_copy)(heck_code*, heck_expr*); // for templates
 //typedef void		(*expr_free)(heck_expr*);
-typedef bool		(*expr_compile)(heck_expr*);
 typedef void		(*expr_print)(heck_expr*);
 struct expr_vtable {
 	expr_resolve resolve;
+  expr_compile compile;
 	expr_copy copy;
 	//expr_free free;
 	expr_print print;

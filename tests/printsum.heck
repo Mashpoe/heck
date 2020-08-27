@@ -1,5 +1,8 @@
 //let notType = 6
 
+let testGlobal = 5
+let testGlobal2 = 0.5
+
 import func print_i32(num: int) -> int
 
 func printSum(a: int, b: int) {

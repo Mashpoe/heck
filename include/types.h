@@ -10,6 +10,7 @@
 
 #include "identifier.h"
 #include "declarations.h"
+#include "compiler.h"
 #include "code.h"
 #include <stdint.h>
 
@@ -78,17 +79,20 @@ struct heck_data_type {
 	} value;
 };
 // resolve callback
-typedef heck_data_type* (*type_resolve)(heck_data_type*, heck_scope* parent, heck_scope* global);
+typedef bool (*type_resolve)(heck_data_type*, heck_scope* parent, heck_scope* global);
+typedef void (*type_compile)(heck_compiler*, heck_data_type*);
 //typedef void (*type_free)(heck_data_type*);
 typedef void (*type_print)(const heck_data_type*, FILE*);
 struct type_vtable {
 	type_resolve resolve;
+  type_compile compile;
 	//type_free free;
 	type_print print;
 };
 
 heck_data_type* create_data_type(heck_file_pos* fp, heck_type_name name);
-heck_data_type* resolve_data_type(heck_code* c, heck_scope* parent, heck_data_type* type);
+bool resolve_data_type(heck_code* c, heck_scope* parent, heck_data_type* type);
+void compile_data_type(heck_compiler* cmplr, heck_data_type* type);
 void free_data_type(heck_data_type* type);
 
 // for templates

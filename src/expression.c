@@ -192,10 +192,12 @@ void print_expr_binary(heck_expr* expr);
 
 // error (always resolves to false)
 bool resolve_expr_err(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_err(heck_compiler* cmplr, heck_expr* expr);
 heck_expr* copy_expr_err(heck_code* c, heck_expr* expr);
 void print_expr_err(heck_expr* expr);
 const expr_vtable expr_vtable_err = {
 	resolve_expr_err,
+  compile_expr_err,
 	copy_expr_err,
 	print_expr_err
 };
@@ -204,56 +206,68 @@ const expr_vtable expr_vtable_err = {
 
 // literal
 bool resolve_expr_literal(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_literal(heck_compiler* cmplr, heck_expr* expr);
 heck_expr* copy_expr_literal(heck_code* c, heck_expr* expr);
 void print_expr_literal(heck_expr* expr);
 const expr_vtable expr_vtable_literal = {
 	resolve_expr_literal,
+  compile_expr_literal,
 	copy_expr_literal,
 	print_expr_literal
 };
 
 // variable value
 bool resolve_expr_value(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_value(heck_compiler* cmplr, heck_expr* expr);
 heck_expr* copy_expr_value(heck_code* c, heck_expr* expr);
 void print_expr_value(heck_expr* expr);
 const expr_vtable expr_vtable_value = {
 	resolve_expr_value,
+  compile_expr_value,
 	copy_expr_value,
 	print_expr_value
 };
 
 // postfix increment
 bool resolve_expr_post_incr(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_post_incr(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_post_incr = {
 	resolve_expr_post_incr,
+  compile_expr_post_incr,
 	copy_expr_unary,
 	print_expr_unary
 };
 
 // postfix decrement
 bool resolve_expr_post_decr(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_post_decr(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_post_decr = {
 	resolve_expr_post_decr,
+  compile_expr_post_decr,
 	copy_expr_unary,
 	print_expr_unary
 };
 
 // function call
 bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_call(heck_compiler* cmplr, heck_expr* expr);
 heck_expr* copy_expr_call(heck_code* c, heck_expr* expr);
 void print_expr_call(heck_expr* expr);
 const expr_vtable expr_vtable_call = {
 	resolve_expr_call,
+  compile_expr_call,
 	copy_expr_call,
 	print_expr_call
 };
 
 // array access
 bool resolve_expr_arr_access(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_arr_access(heck_compiler* cmplr, heck_expr* expr);
 heck_expr* copy_expr_arr_access(heck_code* c, heck_expr* expr);
 void print_expr_arr_access(heck_expr* expr);
 const expr_vtable expr_vtable_arr_access = {
 	resolve_expr_arr_access,
+  compile_expr_arr_access,
 	copy_expr_arr_access,
 	print_expr_arr_access
 };
@@ -265,50 +279,62 @@ const expr_vtable expr_vtable_arr_access = {
 
 // prefix increment
 bool resolve_expr_pre_incr(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_pre_incr(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_pre_incr = {
 	resolve_expr_pre_incr,
+  compile_expr_pre_incr,
 	copy_expr_unary,
 	print_expr_unary
 };
 
 // prefix decrement
 bool resolve_expr_pre_decr(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_pre_decr(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_pre_decr = {
 	resolve_expr_pre_decr,
+  compile_expr_pre_decr,
 	copy_expr_unary,
 	print_expr_unary
 };
 
 // unary minus
 bool resolve_expr_unary_minus(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_unary_minus(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_unary_minus = {
 	resolve_expr_unary_minus,
+  compile_expr_unary_minus,
 	copy_expr_unary,
 	print_expr_unary
 };
 
 // logical not
 bool resolve_expr_not(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_not(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_not = {
 	resolve_expr_not,
+  compile_expr_not,
 	copy_expr_unary,
 	print_expr_unary
 };
 
 // bitwise not
 bool resolve_expr_bw_not(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_bw_not(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_bw_not = {
 	resolve_expr_bw_not,
+  compile_expr_bw_not,
 	copy_expr_unary,
 	print_expr_unary
 };
 
 // c-style cast
 bool resolve_expr_cast(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_cast(heck_compiler* cmplr, heck_expr* expr);
 heck_expr* copy_expr_cast(heck_code* c, heck_expr* expr);
 void print_expr_cast(heck_expr* expr);
 const expr_vtable expr_vtable_cast = {
 	resolve_expr_cast,
+  compile_expr_cast,
 	copy_expr_cast,
 	print_expr_cast
 };
@@ -321,24 +347,30 @@ const expr_vtable expr_vtable_cast = {
 
 // multiplication
 bool resolve_expr_mult(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_mult(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_mult = {
 	resolve_expr_mult,
+  compile_expr_mult,
 	copy_expr_binary,
 	print_expr_binary
 };
 
 // division
 bool resolve_expr_div(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_div(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_div = {
 	resolve_expr_mult,
+  compile_expr_div,
 	copy_expr_binary,
 	print_expr_binary
 };
 
 // modulo
 bool resolve_expr_mod(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_mod(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_mod = {
 	resolve_expr_mult,
+  compile_expr_mod,
 	copy_expr_binary,
 	print_expr_binary
 };
@@ -349,16 +381,20 @@ const expr_vtable expr_vtable_mod = {
 
 // addition
 bool resolve_expr_add(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_add(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_add = {
 	resolve_expr_mult,
+  compile_expr_add,
 	copy_expr_binary,
 	print_expr_binary
 };
 
 // subtraction
 bool resolve_expr_sub(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_sub(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_sub = {
 	resolve_expr_mult,
+  compile_expr_sub,
 	copy_expr_binary,
 	print_expr_binary
 };
@@ -369,16 +405,20 @@ const expr_vtable expr_vtable_sub = {
 
 // bitwise left shift
 bool resolve_expr_shift_l(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_shift_l(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_shift_l = {
 	resolve_expr_shift_l,
+  compile_expr_shift_l,
 	copy_expr_binary,
 	print_expr_binary
 };
 
 // bitwise right shift
 bool resolve_expr_shift_r(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_shift_r(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_shift_r = {
 	resolve_expr_shift_r,
+  compile_expr_shift_r,
 	copy_expr_binary,
 	print_expr_binary
 };
@@ -389,8 +429,10 @@ const expr_vtable expr_vtable_shift_r = {
 
 // bitwise and
 bool resolve_expr_bw_and(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_bw_and(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_bw_and = {
 	resolve_expr_bw_and,
+  compile_expr_bw_and,
 	copy_expr_binary,
 	print_expr_binary
 };
@@ -401,8 +443,10 @@ const expr_vtable expr_vtable_bw_and = {
 
 // bitwise xor
 bool resolve_expr_bw_xor(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_bw_xor(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_bw_xor = {
 	resolve_expr_bw_xor,
+  compile_expr_bw_xor,
 	copy_expr_binary,
 	print_expr_binary
 };
@@ -413,8 +457,10 @@ const expr_vtable expr_vtable_bw_xor = {
 
 // bitwise or
 bool resolve_expr_bw_or(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_bw_or(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_bw_or = {
 	resolve_expr_bw_or,
+  compile_expr_bw_or,
 	copy_expr_binary,
 	print_expr_binary
 };
@@ -425,32 +471,40 @@ const expr_vtable expr_vtable_bw_or = {
 
 // less than
 bool resolve_expr_less(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_less(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_less = {
 	resolve_expr_less,
+  compile_expr_less,
 	copy_expr_binary,
 	print_expr_binary
 };
 
 // less than or equal to
 bool resolve_expr_less_eq(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_less_eq(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_less_eq = {
 	resolve_expr_less_eq,
+  compile_expr_less_eq,
 	copy_expr_binary,
 	print_expr_binary
 };
 
 // greater than
 bool resolve_expr_gtr(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_gtr(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_gtr = {
 	resolve_expr_gtr,
+  compile_expr_gtr,
 	copy_expr_binary,
 	print_expr_binary
 };
 
 // greater than or equal to
 bool resolve_expr_gtr_eq(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_gtr_eq(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_gtr_eq = {
 	resolve_expr_gtr_eq,
+  compile_expr_gtr_eq,
 	copy_expr_binary,
 	print_expr_binary
 };
@@ -461,8 +515,10 @@ const expr_vtable expr_vtable_gtr_eq = {
 
 // equal to
 bool resolve_expr_eq(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_eq(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_eq = {
 	resolve_expr_eq,
+  compile_expr_eq,
 	copy_expr_binary,
 	print_expr_binary
 };
@@ -470,8 +526,10 @@ const expr_vtable expr_vtable_eq = {
 // not equal to
 // == and != have the same resolve callbacks
 //bool resolve_expr_n_eq(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_n_eq(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_n_eq = {
 	resolve_expr_eq,
+  compile_expr_n_eq,
 	copy_expr_binary,
 	print_expr_binary
 };
@@ -482,8 +540,10 @@ const expr_vtable expr_vtable_n_eq = {
 
 // logical and
 bool resolve_expr_and(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_and(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_and = {
 	resolve_expr_and,
+  compile_expr_and,
 	copy_expr_binary,
 	print_expr_binary
 };
@@ -494,8 +554,10 @@ const expr_vtable expr_vtable_and = {
 
 // logical xor
 bool resolve_expr_xor(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_xor(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_xor = {
 	resolve_expr_xor,
+  compile_expr_xor,
 	copy_expr_binary,
 	print_expr_binary
 };
@@ -506,8 +568,10 @@ const expr_vtable expr_vtable_xor = {
 
 // logical or
 bool resolve_expr_or(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_or(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_or = {
 	resolve_expr_or,
+  compile_expr_or,
 	copy_expr_binary,
 	print_expr_binary
 };
@@ -518,10 +582,12 @@ const expr_vtable expr_vtable_or = {
 
 // ternary
 bool resolve_expr_ternary(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_ternary(heck_compiler* cmplr, heck_expr* expr);
 heck_expr* copy_expr_ternary(heck_code* c, heck_expr* expr);
 void print_expr_ternary(heck_expr* expr);
 const expr_vtable expr_vtable_ternary = {
 	resolve_expr_ternary,
+  compile_expr_ternary,
 	copy_expr_ternary,
 	print_expr_ternary
 };
@@ -532,9 +598,11 @@ const expr_vtable expr_vtable_ternary = {
 
 // assignment
 bool resolve_expr_asg(heck_code* c, heck_scope* parent, heck_expr* expr);
+void compile_expr_asg(heck_compiler* cmplr, heck_expr* expr);
 void print_expr_asg(heck_expr* expr);
 const expr_vtable expr_vtable_asg = {
 	resolve_expr_asg,
+  compile_expr_asg,
 	copy_expr_binary,
 	print_expr_asg
 };
