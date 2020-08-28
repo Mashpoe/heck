@@ -45,9 +45,10 @@ struct heck_func {
 	bool declared; // heck_func implied definition, so we just need to check if there is a declaration
 	bool generic;
   bool resolved;
-  bool compiled;
+  bool compiled; // set during compile phase
   bool imported;
 
+  // set during parse phase
   // keep track of all local variables within a function
   // excludes parameters
   heck_variable** local_vec;
@@ -56,7 +57,10 @@ struct heck_func {
   
   // argument and return types
   heck_func_decl decl;
-	
+
+  // set during compile phase
+  int index; // call index
+
   union {
 	  heck_block* code;
     str_entry* import; // makes it easier to compile imports

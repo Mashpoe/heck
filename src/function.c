@@ -35,6 +35,8 @@ heck_func* func_create(heck_func_decl* decl, bool declared) {
   func->value.code = NULL;
   func->local_vec = NULL;
   func->local_count = 0;
+
+  func->index = 0;
 	
 	// heck_scope* block_scope = scope_create(decl->scope);
 	// func->value.code = block_create(block_scope);
@@ -94,7 +96,6 @@ bool func_resolve_decl(heck_code* c, heck_scope* parent, heck_func_decl* decl) {
   heck_data_type* return_type = decl->return_type;
 
   if (return_type != NULL) {
-    // multiplication sets success to false on failure
     if (!resolve_data_type(c, parent, return_type)) {
       success = false;
     }
@@ -177,20 +178,26 @@ bool func_resolve_name(heck_code* c, heck_name* func_name, str_entry name_str) {
     for (int i = 0; i < num_decls; ++i) {
       heck_func_decl* decl = &func_list->decl_vec[i];
       success *= func_resolve_decl(c, func_name->parent, decl);
+      if (decl->return_type == NULL)
+        decl->return_type = data_type_void;
 
       bool decl_match = false;      
       for (int j = 0; j < num_defs; ++j) {
+
         heck_func* def = func_list->def_vec[j];
         if (func_decl_cmp(decl, &def->decl)) {
+
           decl_match = true;
           // set "declared" to true
           def->declared = true;
           // if the decl has a return type it better match
           if (decl->return_type != NULL) {
+
             if (def->decl.return_type == NULL) {
               // implicitly set return type
               def->decl.return_type = decl->return_type;
             } else if (!data_type_cmp(decl->return_type, def->decl.return_type)) {
+
               decl_match = false;
               heck_report_error(NULL, def->decl.fp, "definition for function \"{s}\" has a different return type from the corresponding declaration", name_str->value);
             }
@@ -245,27 +252,28 @@ bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def) {
   if (func_def->resolved)
     return true;
 
-  if (func_def->imported) {
-    func_def->resolved = true;
-    return true;
-  }
+  bool success = true;
 
   // set to true either way so we only have to resolve and deal with errors once
   func_def->resolved = true;
-  
-  bool success = true;
 
-  heck_func_decl* func_decl = &func_def->decl;
+  // there is no code block to resolve in an import
+  if (!func_def->imported) {
+    heck_func_decl* func_decl = &func_def->decl;
 
-  // TODO: check for default arguments, resolve them
-  // resolve default arguments with func_name->parent to avoid conflicts with function definition locals
+    // TODO: check for default arguments, resolve them
+    // resolve default arguments with func_name->parent to avoid conflicts with function definition locals
 
-  if (func_def->value.code->type == BLOCK_MAY_RETURN) {
-    success = false;
-    heck_report_error(NULL, func_decl->fp, "function only returns in some cases");
+    if (func_def->value.code->type == BLOCK_MAY_RETURN) {
+      success = false;
+      heck_report_error(NULL, func_decl->fp, "function only returns in some cases");
+    }
+
+    success *= resolve_block(c, func_def->value.code);
   }
-
-  success *= resolve_block(c, func_def->value.code);
+  
+  if (func_def->decl.return_type == NULL)
+    func_def->decl.return_type = data_type_void;
 
   return success;
 

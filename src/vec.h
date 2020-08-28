@@ -56,6 +56,8 @@ void _vector_erase(vector* vec_addr, vec_type_t type_size, vec_size_t pos, vec_s
 
 void _vector_remove(vector* vec_addr, vec_type_t type_size, vec_size_t pos);
 
+void vector_pop(vector vec);
+
 vector _vector_copy(vector vec, vec_type_t type_size);
 
 vec_size_t vector_size(vector vec);

@@ -1,12 +1,20 @@
-//let notType = 6
-
 let testGlobal = 5
-let testGlobal2 = 0.5
 
-import func print_i32(num: int) -> int
+import func print_i32(num: int)
 
 func printSum(a: int, b: int) {
-  print_i32(a + b);
+  print_i32(a + b)
 }
 
-printSum(3, 5);
+printSum(2, 210)
+printSum(5, 78)
+printSum(210, 210)
+printSum(testGlobal, 78)
+
+testGlobal = -6 + 5.3 // declimal is lost, result is -1
+
+printSum(testGlobal, testGlobal)
+printSum(2222222, 222210)
+printSum(1232, 32432210)
+printSum(2342, 210)
+printSum(27, 210)

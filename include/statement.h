@@ -134,6 +134,7 @@ heck_stmt* create_stmt_err(heck_code* c, heck_file_pos* fp);
 void print_stmt(heck_stmt* stmt, int indent);
 
 bool resolve_stmt(heck_code* c, heck_scope* parent, heck_stmt* stmt);
+void compile_stmt(heck_compiler* cmplr, heck_stmt* stmt);
 
 bool resolve_block(heck_code* c, heck_block* block);
 void print_block(heck_block* block, int indent);

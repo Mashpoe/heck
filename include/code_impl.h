@@ -36,7 +36,6 @@ struct heck_code {
 	heck_block* code; // the code block inside of main
   heck_scope* global; // for easy access
 
-  heck_variable** global_vec;
 
   // keep track of normal memory allocations
   void** alloc_vec;
@@ -52,6 +51,10 @@ struct heck_code {
 
   // all unique strings and identifiers
 	str_table* strings;
+  
+  // these are freed elsewhere
+  heck_variable** global_vec;
+  heck_func** func_import_vec;
 	
 };
 

@@ -12,6 +12,7 @@ heck_variable* variable_create(str_entry name, heck_data_type* data_type, heck_e
 	variable->name = name;
 	variable->data_type = data_type;
 	variable->value = value;
+  variable->global = false;
   variable->local_index = 0;
 	return variable;
 }

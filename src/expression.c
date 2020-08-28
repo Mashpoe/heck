@@ -242,7 +242,7 @@ const expr_vtable expr_vtable_post_incr = {
 bool resolve_expr_post_decr(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_post_decr(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_post_decr = {
-	resolve_expr_post_decr,
+	resolve_expr_post_incr, // use post_incr for now
   compile_expr_post_decr,
 	copy_expr_unary,
 	print_expr_unary
@@ -281,7 +281,7 @@ const expr_vtable expr_vtable_arr_access = {
 bool resolve_expr_pre_incr(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_pre_incr(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_pre_incr = {
-	resolve_expr_pre_incr,
+	resolve_expr_post_incr, // use post_incr for now
   compile_expr_pre_incr,
 	copy_expr_unary,
 	print_expr_unary
@@ -291,7 +291,7 @@ const expr_vtable expr_vtable_pre_incr = {
 bool resolve_expr_pre_decr(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_pre_decr(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_pre_decr = {
-	resolve_expr_pre_decr,
+	resolve_expr_post_incr, // use post_incr for now
   compile_expr_pre_decr,
 	copy_expr_unary,
 	print_expr_unary
@@ -301,7 +301,7 @@ const expr_vtable expr_vtable_pre_decr = {
 bool resolve_expr_unary_minus(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_unary_minus(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_unary_minus = {
-	resolve_expr_unary_minus,
+	resolve_expr_post_incr, // use post_incr for now
   compile_expr_unary_minus,
 	copy_expr_unary,
 	print_expr_unary
@@ -327,7 +327,7 @@ const expr_vtable expr_vtable_bw_not = {
 	print_expr_unary
 };
 
-// c-style cast
+// heck-style cast
 bool resolve_expr_cast(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_cast(heck_compiler* cmplr, heck_expr* expr);
 heck_expr* copy_expr_cast(heck_code* c, heck_expr* expr);
@@ -635,7 +635,21 @@ bool resolve_expr_value(heck_code* c, heck_scope* parent, heck_expr* expr) {
 }
 bool resolve_expr_callback(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 bool resolve_expr_unary(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
-bool resolve_expr_post_incr(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_post_incr(heck_code* c, heck_scope* parent, heck_expr* expr) {
+  heck_expr* operand = expr->value.unary.expr;
+  if (!resolve_expr(c, parent, operand))
+    return false;
+  if (operand->data_type == NULL) {
+    heck_report_error(NULL, expr->fp, "operation not permitted on a value with no type");
+    return false;
+  }
+  if (!data_type_is_numeric(operand->data_type)) {
+    heck_report_error(NULL, expr->fp, "operation not permitted on a value with a non-numeric type");
+    return false;
+  }
+  expr->data_type = operand->data_type;
+  return true;
+}
 bool resolve_expr_post_decr(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	
@@ -680,10 +694,19 @@ bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr) {
         return false;
       }
 
-      if (!func_resolve_def(c, name, def)) {
+      if (def->resolved) {
+        // if resolved == true and return_type == NULL,
+        // the function is still being resolved and the return type is unknown
+        if (def->decl.return_type == NULL) {
+          heck_report_error(NULL, expr->fp, "cannot resolve call to function \"{I}\" before its return type has been deduced. Hint: try explicitly declaring a return type, e.g. \"-> int\"", operand->value.value.idf);
+          success = false;
+        }
+      } else if (!func_resolve_def(c, name, def)) {
         heck_report_error(NULL, expr->fp, "error from call to function \"{I}\"", operand->value.value.idf);
         success = false;
       }
+      
+      expr->data_type = def->decl.return_type;
 
       func_call->func = def;
       return success;
@@ -1040,4 +1063,12 @@ void print_expr_ternary(heck_expr* expr) {
 	fputs("] : [", stdout);
 	print_expr(ternary->value_b);
 	fputs("]", stdout);
+}
+
+//
+// main compile definition
+//
+
+void compile_expr(heck_compiler* cmplr, heck_expr* expr) {
+  expr->vtable->compile(cmplr, expr);
 }

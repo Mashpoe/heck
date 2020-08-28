@@ -33,10 +33,17 @@ typedef struct heck_compiler {
   heck_code* c;
   // keep track of function IDs
   int func_index;
+  // list of functions to be compiled
+  // works like a stack
+  heck_func** func_queue;
 } heck_compiler;
 
-// writes an integer to a buffer
-// returns the number of characters written
-int write_int_to_buff(char* buff, int value);
+void write_int(wasm_code* wasm, int value);
+void write_float(wasm_code* wasm, float value);
+
+void compile_var_index(heck_compiler* cmplr, heck_variable* variable);
+void compile_var_get(heck_compiler* cmplr, heck_variable* variable);
+void compile_var_set(heck_compiler* cmplr, heck_variable* variable);
+void compile_prim_cast(heck_compiler* cmplr, heck_data_type* a, heck_data_type* b);
 
 #endif /* compiler_impl_h */

@@ -674,6 +674,7 @@ heck_name* variable_decl(parser* p, heck_scope* parent) {
   // add it to the global/local list
   if (parent == p->code->global) {
     vector_add(&p->code->global_vec, variable);
+    variable->global = true;
   } else {
     heck_func* parent_func = parent->parent_func;
     if (parent_func->local_vec == NULL)
@@ -1366,6 +1367,8 @@ void import_func(parser* p, heck_scope* parent) {
       func_value->def_vec = vector_create();
 
     vector_add(&func_value->def_vec, import_def);
+    // add to the import list
+    vector_add(&p->code->func_import_vec, import_def);
 
   } else {
     parser_error(p, peek(p), true, "expected an identifier");
