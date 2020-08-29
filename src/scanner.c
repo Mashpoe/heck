@@ -524,7 +524,7 @@ bool heck_scan(heck_code* c, FILE* f) {
 						add_token_bool(c, &fp, true);
 						
 					} else if (match_kw(&fp, "false")) {
-						add_token_bool(c, &fp, true);
+						add_token_bool(c, &fp, false);
 						
 					} else if (match_kw(&fp, "global")) {
 						add_token_ctx(c, &fp, CONTEXT_GLOBAL);

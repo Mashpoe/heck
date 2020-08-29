@@ -48,7 +48,6 @@ void compile_expr_value(heck_compiler* cmplr, heck_expr* expr) {
   if (expr->data_type->type_name != TYPE_CLASS) {
     compile_var_get(cmplr, expr_var);
   }
-  wasm_str_lit(cmplr->wasm, "\n");
 }
 
 void compile_expr_post_incr(heck_compiler* cmplr, heck_expr* expr) {

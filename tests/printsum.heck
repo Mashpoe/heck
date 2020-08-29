@@ -18,3 +18,19 @@ printSum(2222222, 222210)
 printSum(1232, 32432210)
 printSum(2342, 210)
 printSum(27, 210)
+
+if (false) {
+  print_i32(1)
+} else if (true) {
+  print_i32(-200)
+} else {
+  print_i32(123456789);
+}
+
+if (true) {
+  print_i32(-50)
+}
+
+if (false) {
+  print_i32(50)
+}

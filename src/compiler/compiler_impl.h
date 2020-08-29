@@ -38,6 +38,8 @@ typedef struct heck_compiler {
   heck_func** func_queue;
 } heck_compiler;
 
+void compile_block(heck_compiler* cmplr, heck_block* block);
+
 void write_int(wasm_code* wasm, int value);
 void write_float(wasm_code* wasm, float value);
 
