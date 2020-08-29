@@ -98,6 +98,16 @@ heck_block* block_create(heck_code* c, heck_scope* child) {
 	
 	return block;
 }
+heck_block* block_copy(heck_code* c, heck_scope* child, heck_block* block) {
+  heck_block* new_block = block_create(c, child);
+  new_block->type = block->type;
+
+  vec_size_t num_stmts = vector_size(block->stmt_vec);
+  for (int i = 0; i < num_stmts; ++i) {
+    vector_add(&new_block->stmt_vec, copy_stmt(c, child, block->stmt_vec[i]));
+  }
+  return new_block;
+}
 
 heck_stmt* create_stmt_block(heck_code* c, heck_file_pos* fp, heck_block* block) {
   heck_stmt* s = heck_alloc(c, STMT_SIZE + sizeof(heck_block*));
@@ -172,7 +182,10 @@ inline bool resolve_stmt(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
 	return stmt->vtable->resolve(c, parent, stmt);
 }
 inline void compile_stmt(heck_compiler* cmplr, heck_stmt* stmt) {
-  return stmt->vtable->compile(cmplr, stmt);
+  stmt->vtable->compile(cmplr, stmt);
+}
+inline heck_stmt* copy_stmt(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
+  return stmt->vtable->copy(c, parent, stmt);
 }
 inline void print_stmt(heck_stmt* stmt, int indent) {
 	
@@ -184,83 +197,98 @@ inline void print_stmt(heck_stmt* stmt, int indent) {
 // vtables
 bool resolve_stmt_expr(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void compile_stmt_expr(heck_compiler* cmplr, heck_stmt* stmt);
+heck_stmt* copy_stmt_expr(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void print_stmt_expr(heck_stmt* stmt, int indent);
 const stmt_vtable stmt_vtable_expr = {
   resolve_stmt_expr,
   compile_stmt_expr,
+  copy_stmt_expr,
   print_stmt_expr
 };
 
 bool resolve_stmt_let(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void compile_stmt_let(heck_compiler* cmplr, heck_stmt* stmt);
+heck_stmt* copy_stmt_let(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void print_stmt_let(heck_stmt* stmt, int indent);
 const stmt_vtable stmt_vtable_let = {
   resolve_stmt_let,
   compile_stmt_let,
+  copy_stmt_let,
   print_stmt_let
 };
 
 bool resolve_stmt_block(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void compile_stmt_block(heck_compiler* cmplr, heck_stmt* stmt);
+heck_stmt* copy_stmt_block(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void print_stmt_block(heck_stmt* stmt, int indent);
 const stmt_vtable stmt_vtable_block = {
   resolve_stmt_block,
   compile_stmt_block,
+  copy_stmt_block,
   print_stmt_block
 };
 
 bool resolve_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void compile_stmt_if(heck_compiler* cmplr, heck_stmt* stmt);
+heck_stmt* copy_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void print_stmt_if(heck_stmt* stmt, int indent);
 const stmt_vtable stmt_vtable_if = {
   resolve_stmt_if,
   compile_stmt_if,
+  copy_stmt_if,
   print_stmt_if
 };
 
 bool resolve_stmt_ret(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void compile_stmt_ret(heck_compiler* cmplr, heck_stmt* stmt);
+heck_stmt* copy_stmt_ret(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void print_stmt_ret(heck_stmt* stmt, int indent);
 const stmt_vtable stmt_vtable_ret = {
   resolve_stmt_ret,
   compile_stmt_ret,
+  copy_stmt_ret,
   print_stmt_ret
 };
 
 bool resolve_stmt_class(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void compile_stmt_class(heck_compiler* cmplr, heck_stmt* stmt);
+heck_stmt* copy_stmt_class(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void print_stmt_class(heck_stmt* stmt, int indent);
 const stmt_vtable stmt_vtable_class = {
   resolve_stmt_class,
   compile_stmt_class,
+  copy_stmt_class,
   print_stmt_class
 };
 
 bool resolve_stmt_func(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void compile_stmt_func(heck_compiler* cmplr, heck_stmt* stmt);
 void print_stmt_func(heck_stmt* stmt, int indent);
+heck_stmt* copy_stmt_func(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 const stmt_vtable stmt_vtable_func = {
   resolve_stmt_func,
   compile_stmt_func,
+  copy_stmt_func,
   print_stmt_func
 };
 
 bool resolve_stmt_err(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void compile_stmt_err(heck_compiler* cmplr, heck_stmt* stmt);
+heck_stmt* copy_stmt_err(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void print_stmt_err(heck_stmt* stmt, int indent);
 const stmt_vtable stmt_vtable_err = {
   resolve_stmt_err,
   compile_stmt_err,
+  copy_stmt_err,
   print_stmt_err
 };
 
 // vtable function defs:
+
+// copy statement definitions
+
 bool resolve_stmt_expr(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
 	return resolve_expr(c, parent, stmt->value.expr_value);
-}
-void print_stmt_expr(heck_stmt* stmt, int indent) {
-	print_expr(stmt->value.expr_value);
-	printf("\n");
 }
 
 bool resolve_stmt_let(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
@@ -290,17 +318,9 @@ bool resolve_stmt_let(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
 	return true;
 		
 }
-void print_stmt_let(heck_stmt* stmt, int indent) {
-	printf("let ");
-	print_variable(stmt->value.var_value);
-	printf("\n");
-}
 
 bool resolve_stmt_block(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
 	return resolve_block(c, stmt->value.block_value);
-}
-void print_stmt_block(heck_stmt* stmt, int indent) {
-	print_block(stmt->value.block_value, indent);
 }
 
 bool resolve_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
@@ -319,34 +339,6 @@ bool resolve_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
 	} while ((node = node->next)); // will evaluate to false if node->next == NULL
 
 	return success;
-}
-void print_stmt_if(heck_stmt* stmt, int indent) {
-	heck_if_node* node = stmt->value.if_stmt.contents;
-	
-	printf("if ");
-	print_expr(node->condition);
-	printf(" ");
-	// traverse linked list for if/else ladder
-	for (;;) {
-		
-		print_block(node->code, indent);
-		
-		if (node->next == NULL) {
-			break;
-		}
-			
-		node = node->next;
-		print_indent(indent);
-		
-		if (node->condition == NULL) {
-			printf("else ");
-		} else {
-			printf("else if ");
-			print_expr(node->condition);
-			printf(" ");
-		}
-		
-	}
 }
 
 bool resolve_stmt_ret(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
@@ -411,6 +403,126 @@ bool resolve_stmt_ret(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
   // no return value, function does not expect one; return true
   return true;
 }
+
+bool resolve_stmt_class(heck_code* c, heck_scope* parent, heck_stmt* stmt) { return true; }
+
+bool resolve_stmt_func(heck_code* c, heck_scope* parent, heck_stmt* stmt) { return false; }
+
+bool resolve_stmt_err(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
+	return false;
+}
+
+// copy statement definitions
+
+heck_stmt* copy_stmt_expr(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
+  return create_stmt_expr(c, stmt->fp, copy_expr(c, stmt->value.expr_value));
+}
+
+heck_stmt* copy_stmt_let(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
+  heck_variable* old_var = stmt->value.var_value;
+  // we need to remake the variable
+  heck_variable* new_variable = variable_create(c, parent, old_var->fp, old_var->name, old_var->data_type, old_var->value);
+  return create_stmt_let(c, stmt->fp, new_variable);
+}
+
+heck_stmt* copy_stmt_block(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
+  heck_block* old_block = stmt->value.block_value;
+  // create child scope
+  heck_scope* block_scope = scope_create(c, parent);
+  return create_stmt_block(c, stmt->fp, block_copy(c, block_scope, old_block));
+}
+
+heck_stmt* copy_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
+  heck_stmt_if* old_if_stmt = &stmt->value.if_stmt;
+  // iterate through the old nodes
+  heck_if_node* old_node = old_if_stmt->contents;
+
+  heck_expr* node_condition = copy_expr(c, old_node->condition);
+  heck_if_node* node = create_if_node(c, parent, node_condition);
+  heck_stmt* if_stmt = create_stmt_if(c, stmt->fp, node);
+
+  while (old_node->next != NULL) {
+    old_node = old_node->next;
+
+    if (old_node->condition == NULL) {
+      // for the "else" node
+      node_condition = NULL;
+    } else {
+      node_condition = copy_expr(c, old_node->condition);
+    }
+
+    node->next = create_if_node(c, parent, node_condition);
+    node = node->next;
+    node->code = block_copy(c, scope_create(c, parent), old_node->code);
+
+  }
+
+  if_stmt->type = old_if_stmt->type;
+  return if_stmt;
+}
+
+heck_stmt* copy_stmt_ret(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
+  return create_stmt_ret(c, stmt->fp, copy_expr(c, stmt->value.expr_value));
+}
+
+heck_stmt* copy_stmt_class(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
+  return NULL;
+}
+
+heck_stmt* copy_stmt_func(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
+  return NULL;
+}
+
+heck_stmt* copy_stmt_err(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
+  return create_stmt_err(c, stmt->fp);
+}
+
+// print statement definitions
+
+void print_stmt_expr(heck_stmt* stmt, int indent) {
+	print_expr(stmt->value.expr_value);
+	printf("\n");
+}
+
+void print_stmt_let(heck_stmt* stmt, int indent) {
+	printf("let ");
+	print_variable(stmt->value.var_value);
+	printf("\n");
+}
+
+void print_stmt_block(heck_stmt* stmt, int indent) {
+	print_block(stmt->value.block_value, indent);
+}
+
+void print_stmt_if(heck_stmt* stmt, int indent) {
+	heck_if_node* node = stmt->value.if_stmt.contents;
+	
+	printf("if ");
+	print_expr(node->condition);
+	printf(" ");
+	// traverse linked list for if/else ladder
+	for (;;) {
+		
+		print_block(node->code, indent);
+		
+		if (node->next == NULL) {
+			break;
+		}
+			
+		node = node->next;
+		print_indent(indent);
+		
+		if (node->condition == NULL) {
+			printf("else ");
+		} else {
+			printf("else if ");
+			print_expr(node->condition);
+			printf(" ");
+		}
+		
+	}
+}
+
 void print_stmt_ret(heck_stmt* stmt, int indent) {
 	printf("return ");
 	if (stmt->value.expr_value != NULL) {
@@ -419,19 +531,14 @@ void print_stmt_ret(heck_stmt* stmt, int indent) {
 	printf("\n");
 }
 
-bool resolve_stmt_class(heck_code* c, heck_scope* parent, heck_stmt* stmt) { return true; }
 void print_stmt_class(heck_stmt* stmt, int indent) {
-	
+	printf("class stmt\n");
 }
 
-bool resolve_stmt_func(heck_code* c, heck_scope* parent, heck_stmt* stmt) { return false; }
 void print_stmt_func(heck_stmt* stmt, int indent) {
 	printf("function stmt\n");
 }
 
-bool resolve_stmt_err(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
-	return false;
-}
 void print_stmt_err(heck_stmt* stmt, int indent) {
 	printf("@error\n");
 }

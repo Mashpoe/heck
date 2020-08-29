@@ -12,8 +12,10 @@
 #include "str.h"
 #include "code.h"
 #include "expression.h"
+#include "token.h"
 
 typedef struct heck_variable {
+  heck_file_pos* fp;
 	str_entry name;
 	heck_data_type* data_type;
 	heck_expr* value;
@@ -21,7 +23,11 @@ typedef struct heck_variable {
   // set during compile phase
   int local_index;
 } heck_variable;
-heck_variable* variable_create(str_entry name, heck_data_type* type, heck_expr* value);
+
+// attempts to create a variable in a given scope
+// returns NULL on failure
+// I sincerely apologize for the number of arguments
+heck_variable* variable_create(heck_code* c, heck_scope* parent, heck_file_pos* fp, str_entry name, heck_data_type* type, heck_expr* value);
 // void variable_free(heck_variable* variable);
 
 #endif /* variable_h */

@@ -66,10 +66,14 @@ bool data_type_cmp(const heck_data_type* a, const heck_data_type* b) {
 	}
 }
 
-bool data_type_is_convertable(const heck_data_type* to, const heck_data_type from) {
+bool data_type_imp_convertable(const heck_data_type* to, const heck_data_type* from) {
+  // can only convert numeric types currently
+  return data_type_is_numeric(to) && data_type_is_numeric(from);
+}
 
-
-  return false;
+bool data_type_exp_convertable(const heck_data_type* to, const heck_data_type* from) {
+  // good enough for now
+  return data_type_imp_convertable(to, from);
 }
 
 inline bool data_type_is_numeric(const heck_data_type* type) {

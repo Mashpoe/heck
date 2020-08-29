@@ -34,3 +34,21 @@ if (true) {
 if (false) {
   print_i32(50)
 }
+
+func gen(a, b) {
+  return a + b
+}
+
+let x = gen(1.2, 1)
+let y = gen(3, 6)
+let z = gen(5.6, 6.7)
+
+let num1 = 5
+let num2 = 6
+num1 + num2
+
+//"hello" + 2
+
+print_i32(x)
+print_i32(y)
+print_i32(z)

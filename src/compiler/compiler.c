@@ -148,7 +148,7 @@ bool heck_compile(heck_code* c) {
   ++cmplr.func_index;
   // compile main code
   compile_block(&cmplr, cmplr.c->code);
-  wasm_str_lit(cmplr.wasm, "i32.const 0\n)\n");
+  wasm_str_lit(cmplr.wasm, "i32.const 0\nreturn\n)\n");
 
   // compile all other functions
   vec_size_t queue_len = vector_size(cmplr.func_queue);

@@ -115,7 +115,9 @@ void compile_expr_bw_not(heck_compiler* cmplr, heck_expr* expr) {
 }
 
 void compile_expr_cast(heck_compiler* cmplr, heck_expr* expr) {
-  
+  heck_expr* cast_val = expr->value.expr;
+  compile_expr(cmplr, cast_val);
+  compile_prim_cast(cmplr, expr->data_type, cast_val->data_type);
 }
 
 void compile_expr_mult(heck_compiler* cmplr, heck_expr* expr) {
@@ -137,14 +139,10 @@ void compile_expr_add(heck_compiler* cmplr, heck_expr* expr) {
   compile_expr(cmplr, add->right);
 
   heck_data_type* l_type = add->left->data_type;
-  heck_data_type* r_type = add->right->data_type;
-  
-  if (!data_type_cmp(l_type, r_type))
-    compile_prim_cast(cmplr, l_type, r_type);
 
-  if (add->left->data_type == data_type_int) {
+  if (l_type == data_type_int) {
     wasm_str_lit(cmplr->wasm, "i32.add\n");
-  } else if (add->left->data_type == data_type_float) {
+  } else if (l_type == data_type_float) {
     wasm_str_lit(cmplr->wasm, "f32.add\n");
   }
 }

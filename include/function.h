@@ -32,9 +32,12 @@ typedef struct heck_func_list {
 struct heck_func_decl {
   heck_file_pos* fp;
   heck_scope* scope;
+  // do not add to this vector after a def has been created
+  // unless you do so through the def, e.g. def->decl.param_vec
   heck_variable** param_vec;
   heck_data_type* return_type;
   const char* source_filename;
+  bool generic;
   int index; // set during compile
 };
 void free_decl_data(heck_func_decl* decl);
@@ -43,7 +46,7 @@ void free_decl_data(heck_func_decl* decl);
 struct heck_func {
 	// TODO: bitmask these bois
 	bool declared; // heck_func implied definition, so we just need to check if there is a declaration
-	bool generic;
+	//bool generic; // moved to decl
   bool resolved;
   bool compiled; // set during compile phase
   bool imported;
@@ -53,7 +56,7 @@ struct heck_func {
   // excludes parameters
   heck_variable** local_vec;
   // the number of locals, including parameters
-  int local_count;
+  //int local_count;
   
   // argument and return types
   heck_func_decl decl;
@@ -85,7 +88,7 @@ bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def);
 
 // finds the correct definition/overload for a given call
 // returns NULL if there is no match
-heck_func* func_match_def(heck_name* func_name, heck_expr_call* call);
+heck_func* func_match_def(heck_code* c, heck_name* func_name, heck_expr_call* call);
 
 // checks if a definition matches a given argument list
 // finds the best match with the precedence exact=>generic=>castable

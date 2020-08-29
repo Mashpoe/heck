@@ -34,7 +34,12 @@ heck_func* func_create(heck_func_decl* decl, bool declared) {
 
   func->value.code = NULL;
   func->local_vec = NULL;
-  func->local_count = 0;
+
+  // if (decl->param_vec == NULL) {
+  //   func->local_count = 0;
+  // } else {
+  //   func->local_count = vector_size(decl->param_vec);
+  // }
 
   func->index = 0;
 	
@@ -130,6 +135,14 @@ bool func_decl_cmp(heck_func_decl* a, heck_func_decl* b) {
 
     heck_data_type* a_type = a->param_vec[i]->data_type;
     heck_data_type* b_type = b->param_vec[i]->data_type;
+
+    // quit if only one type is null
+    if ((a_type == NULL) != (b_type == NULL))
+      return false;
+
+    // both types are null, this is a generic param
+    if (a_type == NULL)
+      continue;
 
     if (!data_type_cmp(a_type, b_type))
       return false;
@@ -263,7 +276,6 @@ bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def) {
 
     // TODO: check for default arguments, resolve them
     // resolve default arguments with func_name->parent to avoid conflicts with function definition locals
-
     if (func_def->value.code->type == BLOCK_MAY_RETURN) {
       success = false;
       heck_report_error(NULL, func_decl->fp, "function only returns in some cases");
@@ -277,6 +289,63 @@ bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def) {
 
   return success;
 
+}
+
+// create an instance of a generic function
+// copies an unresolved function definition
+// uses a resolved function call for types
+// adds the instance to the name
+// returns the instance so it can be matched/resolved
+heck_func* func_create_gen_inst(heck_code* c, heck_name* func_name, heck_func* func, heck_expr_call* call) {
+
+  // copy params and return type
+  heck_func_decl new_decl;
+  new_decl.fp = func->decl.fp;
+  new_decl.scope = scope_create(c, func_name->parent);
+
+  // copy parameters
+  // assumes that the func has params
+  // assumes that the func and call have matching arg/param counts
+  new_decl.param_vec = vector_create();
+  vec_size_t num_params = vector_size(func->decl.param_vec);
+  for (int i = 0; i < num_params; ++i) {
+    heck_variable* old_param = func->decl.param_vec[i];
+    heck_data_type* new_type;
+    heck_expr* new_value;
+    // if this is a generic param
+    if (old_param->data_type == NULL) {
+      new_type = call->arg_vec[i]->data_type;
+      new_value = NULL;
+    } else {
+      new_type = old_param->data_type;
+      new_value = old_param->value;
+    }
+    // create a new variable with the correct type
+    heck_variable* param = variable_create(c, new_decl.scope, old_param->fp, old_param->name, new_type, new_value);
+    // assumes the variable was successfully created
+    // it should be because the original was created
+    vector_add(&new_decl.param_vec, param);
+  }
+
+  // TODO: copy return type instead of assign
+  new_decl.return_type = func->decl.return_type;
+
+  // now copy the func def
+  heck_func* new_func = func_create(&new_decl, true);
+  new_decl.scope->parent_func = new_func;
+
+  // copy the code
+  new_func->value.code = block_copy(c, new_decl.scope, func->value.code);
+
+  // copy variables to var_inits
+  if (new_decl.param_vec != NULL) {
+    new_decl.scope->var_inits = vector_copy(new_decl.param_vec);
+  }
+
+  // add it to the def vec
+  vector_add(&func_name->value.func_value.def_vec, new_func);
+
+  return new_func;
 }
 
 // bool func_overload_exists(heck_func_list* list, heck_func* func) {
@@ -304,7 +373,7 @@ bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def) {
 // 	return false;
 // }
 
-heck_func* func_match_def(heck_name* func_name, heck_expr_call* call) {
+heck_func* func_match_def(heck_code* c, heck_name* func_name, heck_expr_call* call) {
 
   heck_func_list* func_list = &func_name->value.func_value;
   if (func_list->def_vec == NULL) {
@@ -318,6 +387,12 @@ heck_func* func_match_def(heck_name* func_name, heck_expr_call* call) {
   } else {
     arg_count = vector_size(call->arg_vec);
   }
+
+  // if a perfect match hasn't been found yet
+  // zero is the best score, higher is worse
+  // -1 score means N/A
+  int best_score = -1;
+  heck_func* best_match= NULL;
   
   vec_size_t def_count = vector_size(func_list->def_vec);
   for (vec_size_t i = 0; i < def_count; ++i) {
@@ -335,26 +410,47 @@ heck_func* func_match_def(heck_name* func_name, heck_expr_call* call) {
       continue;
     
     bool match = true;
+    int score = 0;
     
     for (vec_size_t i = 0; i < param_count; ++i) {
-      if (call->arg_vec[i]->data_type == NULL || decl->param_vec[i]->data_type == NULL) {
-        match = false;
-        break;
-      }
-
+      heck_data_type* arg_type = call->arg_vec[i]->data_type;
+      heck_data_type* param_type = decl->param_vec[i]->data_type;
       // check for matching parameter types
-      if (!data_type_cmp(call->arg_vec[i]->data_type, decl->param_vec[i]->data_type)) {
-        match = false;
-        break;
+      if (param_type == NULL) {
+        score += 1;
+      } else if (!data_type_cmp(param_type, arg_type)) {
+        // check if there is a possible implicit conversion
+        if (data_type_imp_convertable(param_type, arg_type)) {
+          score += 2;
+        } else {
+          // type is not convertable, no match
+          match = false;
+          break;
+        }
+
       }
     }
     
-    if (match)
+    if (!match)
+      return NULL;
+    
+    // perfect match!
+    if (score == 0)
       return func_def;
+    
+    if (best_score == -1 || score < best_score) {
+      best_score = score;
+      best_match = func_def;
+    }
+  }
+
+  if (best_match != NULL) {
+    if (best_match->decl.generic)
+      return func_create_gen_inst(c, func_name, best_match, call);
+    return best_match;
   }
 
   return NULL;
-
 }
 
 void print_func_decl(heck_func_decl* decl) {

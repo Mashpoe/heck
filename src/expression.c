@@ -86,7 +86,7 @@ heck_expr* create_expr_call(heck_code* c, heck_file_pos* fp, heck_expr* operand)
 	
 	heck_expr_call* call = &e->value.call;
 	call->operand = operand;
-	call->arg_vec = vector_create();
+	call->arg_vec = NULL;
 	//call->type_arg_vec = NULL;
   call->func = NULL;
 	
@@ -663,7 +663,13 @@ bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr) {
   if (func_call->arg_vec != NULL) {
     vec_size_t num_args = vector_size(func_call->arg_vec);
     for (int i = 0; i < num_args; ++i) {
-      args_resolved *= resolve_expr(c, parent, func_call->arg_vec[i]);
+      heck_expr* current_arg = func_call->arg_vec[i];
+      if (!resolve_expr(c, parent, current_arg)) {
+        args_resolved = false;
+      } else if (current_arg->data_type == NULL) {
+        args_resolved = false;
+        heck_report_error(NULL, current_arg->fp, "argument must have a type", operand->value.value.idf);
+      }
     }
   }
   success *= args_resolved;
@@ -687,11 +693,24 @@ bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr) {
     if (args_resolved) {
 
       // try to find a matching overload/def
-      heck_func* def = func_match_def(name, func_call);
+      heck_func* def = func_match_def(c, name, func_call);
 
       if (def == NULL) {
         heck_report_error(NULL, expr->fp, "no function named \"{I}\" exists with matching parameters", operand->value.value.idf);
         return false;
+      }
+
+      // cast arguments that do not match exactly
+      if (def->decl.param_vec != NULL) {
+        vec_size_t num_params = vector_size(def->decl.param_vec);
+        for (int i = 0; i < num_params; ++i) {
+          heck_expr* current_arg = func_call->arg_vec[i];
+          heck_data_type* arg_type = current_arg->data_type;
+          heck_data_type* param_type = def->decl.param_vec[i]->data_type;
+          if (!data_type_cmp(param_type, arg_type)) {
+            func_call->arg_vec[i] = create_expr_cast(c, current_arg->fp, param_type, current_arg);
+          }
+        }
       }
 
       if (def->resolved) {
@@ -706,7 +725,12 @@ bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr) {
         success = false;
       }
       
-      expr->data_type = def->decl.return_type;
+      if (def->decl.return_type == data_type_void) {
+        // an expression cannot return void
+        expr->data_type = NULL;
+      } else {
+        expr->data_type = def->decl.return_type;
+      }
 
       func_call->func = def;
       return success;
@@ -754,14 +778,20 @@ bool resolve_expr_mult(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	
 	heck_expr_binary* binary = &expr->value.binary;
 
+  heck_data_type* l_type = binary->left->data_type;
+  heck_data_type* r_type = binary->right->data_type;
+
 	// check if types are numeric
-	if (data_type_is_numeric(binary->left->data_type) && data_type_is_numeric(binary->right->data_type)) {
-		expr->data_type = binary->left->data_type;
+	if (data_type_is_numeric(l_type) && data_type_is_numeric(r_type)) {
+		expr->data_type = l_type;
+    if (!data_type_cmp(l_type, r_type))
+      // implicit cast
+      binary->right = create_expr_cast(c, binary->right->fp, l_type, binary->right);
+
 		return true;
 	}
 	// TODO: check for operator overloads
-
-  expr->data_type = binary->left->data_type;
+  heck_report_error(NULL, expr->fp, "cannot perform a numeric operation with types \"{t}\" and \"{t}\"", l_type, r_type);
 	
 	return false;
 	
@@ -921,7 +951,8 @@ heck_expr* copy_expr_err(heck_code* c, heck_expr* expr) {
 
 // only used for unresolvable literals in function templates
 heck_expr* copy_expr_literal(heck_code* c, heck_expr* expr) {
-	return create_expr_literal(c, expr->fp, copy_literal(expr->value.literal));
+	//return create_expr_literal(c, expr->fp, copy_literal(expr->value.literal));
+  return create_expr_literal(c, expr->fp, expr->value.literal);
 }
 
 heck_expr* copy_expr_value(heck_code* c, heck_expr* expr) {
@@ -930,9 +961,18 @@ heck_expr* copy_expr_value(heck_code* c, heck_expr* expr) {
 }
 
 heck_expr* copy_expr_call(heck_code* c, heck_expr* expr) {
-	heck_expr_call* call = &expr->value.call;
-//	heck_expr* new_call = create_expr_call(c, expr->fp, call->)
-	return NULL;
+	heck_expr_call* old_call = &expr->value.call;
+  heck_expr* new_expr = create_expr_call(c, expr->fp, old_call->operand);
+  heck_expr_call* new_call = &new_expr->value.call;
+  if (old_call->arg_vec != NULL) {
+    new_call->arg_vec = vector_create();
+    // copy each argument
+    vec_size_t num_args = vector_size(old_call->arg_vec);
+    for (int i = 0; i < num_args; ++i) {
+      vector_add(&new_call->arg_vec, copy_expr(c, old_call->arg_vec[i]));
+    }
+  }
+	return new_expr;
 }
 
 heck_expr* copy_expr_arr_access(heck_code* c, heck_expr* expr) {
@@ -940,26 +980,26 @@ heck_expr* copy_expr_arr_access(heck_code* c, heck_expr* expr) {
 }
 
 heck_expr* copy_expr_cast(heck_code* c, heck_expr* expr) {
-	return NULL;
+	return create_expr_cast(c, expr->fp, expr->data_type, copy_expr(c, expr->value.expr));
 }
 
 heck_expr* copy_expr_unary(heck_code* c, heck_expr* expr) {
 	heck_expr_unary* orig_val = &expr->value.unary;
-	heck_expr* copy = create_expr_unary(c, expr->fp, orig_val->expr, orig_val->operator, expr->vtable);
+	heck_expr* copy = create_expr_unary(c, expr->fp, copy_expr(c, orig_val->expr), orig_val->operator, expr->vtable);
 	copy->flags = expr->flags;
 	return copy;
 }
 
 heck_expr* copy_expr_binary(heck_code* c, heck_expr* expr) {
 	heck_expr_binary* orig_value = &expr->value.binary;
-	heck_expr* copy = create_expr_binary(c, expr->fp, orig_value->left, orig_value->operator, orig_value->right, expr->vtable);
+	heck_expr* copy = create_expr_binary(c, expr->fp, copy_expr(c, orig_value->left), orig_value->operator, copy_expr(c, orig_value->right), expr->vtable);
 	copy->flags = expr->flags;
 	return copy;
 }
 
 heck_expr* copy_expr_ternary(heck_code* c, heck_expr* expr) {
 	heck_expr_ternary* orig_value = &expr->value.ternary;
-	heck_expr* copy = create_expr_ternary(c, expr->fp, orig_value->condition, orig_value->value_a, orig_value->value_b);
+	heck_expr* copy = create_expr_ternary(c, expr->fp, copy_expr(c, orig_value->condition), copy_expr(c, orig_value->value_a), copy_expr(c, orig_value->value_b));
 	copy->flags = expr->flags;
 	return copy;
 }

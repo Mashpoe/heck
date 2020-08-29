@@ -319,9 +319,13 @@ heck_expr* primary_idf(parser* p, heck_scope* parent, idf_context context) { // 
 		heck_expr* call = create_expr_call(p->code, expr_start, idf_expr);
     call->fp = expr_start;
 		
-		if (match(p, TK_PAR_R))
-			return call;
-		
+		if (match(p, TK_PAR_R)) {
+      return call;
+    } else {
+      // there are arguments, create arg_vec
+      call->value.call.arg_vec = vector_create();
+    }
+
 		for (;;) {
 			vector_add(&call->value.call.arg_vec, expression(p, parent));
 			
@@ -649,40 +653,10 @@ heck_name* variable_decl(parser* p, heck_scope* parent) {
 		value = NULL;
 	}
 
-  // try to add the variable to the scope
-  heck_name* var_name = NULL;
-	
-	if (parent->names == NULL) {
-    // create idf map and insert variable
-    parent->names = idf_map_create();
-    
-  } else if (idf_map_get(parent->names, name, &var_name)) {
-
-		parser_error(p, start_tk, true, "cannot create variable with the same name as {s} \"{s}\"", get_idf_type_string(var_name->type), name->value);
-    
-		return NULL;
-	}
-
   // create the variable
-	heck_variable* variable = variable_create(name, data_type, value);
-	
-	// add the variable to the scope
-	var_name = name_create(p->code, parent, IDF_VARIABLE);
-	var_name->value.var_value = variable;
-	idf_map_set(parent->names, variable->name, var_name);
+	heck_variable* variable = variable_create(p->code, parent, &start_tk->fp, name, data_type, value);
 
-  // add it to the global/local list
-  if (parent == p->code->global) {
-    vector_add(&p->code->global_vec, variable);
-    variable->global = true;
-  } else {
-    heck_func* parent_func = parent->parent_func;
-    if (parent_func->local_vec == NULL)
-      parent_func->local_vec = vector_create();
-    vector_add(&parent_func->local_vec, variable);
-  }
-
-  return var_name;
+  return variable;
 }
 
 heck_stmt* let_statement(parser* p, heck_scope* parent) {
@@ -690,7 +664,7 @@ heck_stmt* let_statement(parser* p, heck_scope* parent) {
 
 	step(p);
 	
-	heck_variable* variable = variable_decl(p, parent)->value.var_value;
+	heck_variable* variable = variable_decl(p, parent);//->value.var_value;
 	if (variable == NULL) {
 		//panic_mode(p);
 		return create_stmt_err(p->code, &start_tk->fp);
@@ -811,17 +785,25 @@ bool parse_parameters(parser* p, heck_func_decl* decl) {
 
     // there are parameters
     decl->param_vec = vector_create();
+    decl->generic = false;
 		
 		for (;;) {
 			
       // use decl->scope for parent to put parameters in the same scope
-      heck_name* param_name = variable_decl(p, decl->scope);
-			heck_variable* param = param_name->value.var_value;
+      // heck_name* param_name = variable_decl(p, decl->scope);
+			// heck_variable* param = param_name->value.var_value;
+      heck_variable* param = variable_decl(p, decl->scope);
 			
-			if (param_name == NULL) {
+			if (param == NULL) {
         // variable_decl already reported error
 				return false;
 			}
+
+      // TODO: if param has a default value, do not set generic to true
+      // the type can be deduced in func_resolve_name
+      if (param->data_type == NULL) {
+        decl->generic = true;
+      }
 			
 			vector_add(&decl->param_vec, param);
 			
@@ -1046,7 +1028,6 @@ void parse_func_def(parser* p, heck_scope* parent) {
   // add parameters to var_inits and func locals
   if (func->decl.param_vec != NULL) {
     func->decl.scope->var_inits = vector_copy(func->decl.param_vec);
-    func->local_vec = vector_copy(func->decl.param_vec);
   }
 
 	if (peek(p)->type == TK_BRAC_L) {
@@ -1527,7 +1508,7 @@ bool heck_parse(heck_code* c) {
 	if (p.success) {
 		fputs("successfully resolved!\n", stdout);
 	} else {
-		fputs("error: failed to resolve :(\n", stderr);
+		fputs("error: Aw heck! Failed to resolve :(\n", stderr);
 	}
 
   fflush(stderr);

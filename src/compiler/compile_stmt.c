@@ -58,7 +58,8 @@ void compile_stmt_if(heck_compiler* cmplr, heck_stmt* stmt) {
 }
 
 void compile_stmt_ret(heck_compiler* cmplr, heck_stmt* stmt) {
-  
+  compile_expr(cmplr, stmt->value.expr_value);
+  wasm_str_lit(cmplr->wasm, "return\n");
 }
 
 void compile_stmt_class(heck_compiler* cmplr, heck_stmt* stmt) {

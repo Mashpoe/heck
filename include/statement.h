@@ -32,13 +32,13 @@ typedef enum heck_stmt_type {
 // statement vtable
 typedef bool (*stmt_resolve)(heck_code*, heck_scope*, heck_stmt*);
 typedef void (*stmt_compile)(heck_compiler*, heck_stmt*);
-typedef void (*stmt_copy)(heck_code*, heck_stmt*); // int for number of indents
+typedef heck_stmt* (*stmt_copy)(heck_code*, heck_scope*, heck_stmt*); // int for number of indents
 //typedef void (*stmt_free)(heck_stmt*); // int for number of indents
 typedef void (*stmt_print)(heck_stmt*, int); // int for number of indents
 struct stmt_vtable {
 	stmt_resolve resolve;
   stmt_compile compile;
-  // stmt_copy copy;
+  stmt_copy copy;
 	//stmt_free free;
 	stmt_print print;
 };
@@ -65,6 +65,7 @@ typedef struct heck_block {
 	heck_stmt** stmt_vec;
 } heck_block;
 heck_block* block_create(heck_code* c, heck_scope* child);
+heck_block* block_copy(heck_code* c, heck_scope* child, heck_block* block);
 //void block_free(heck_block* block);
 heck_stmt* create_stmt_block(heck_code* c, heck_file_pos* fp, heck_block* block);
 
@@ -135,6 +136,7 @@ void print_stmt(heck_stmt* stmt, int indent);
 
 bool resolve_stmt(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void compile_stmt(heck_compiler* cmplr, heck_stmt* stmt);
+heck_stmt* copy_stmt(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 
 bool resolve_block(heck_code* c, heck_block* block);
 void print_block(heck_block* block, int indent);
