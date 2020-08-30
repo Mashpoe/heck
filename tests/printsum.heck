@@ -43,7 +43,7 @@ let x = gen(1.2, 1)
 let y = gen(3, 6)
 let z = gen(5.6, 6.7)
 
-let num1 = 5
+let num1 = 5 as float
 let num2 = 6
 num1 + num2
 

@@ -71,7 +71,7 @@ heck_expr* create_expr_res_type(heck_code* c, heck_file_pos* fp, heck_data_type*
 
 heck_expr* create_expr_literal(heck_code* c, heck_file_pos* fp, heck_literal* value);
 
-heck_expr* create_expr_cast(heck_code* c, heck_file_pos* fp, const heck_data_type* type, heck_expr* expr);
+heck_expr* create_expr_cast(heck_code* c, heck_file_pos* fp, heck_expr* expr, const heck_data_type* type);
 
 typedef struct heck_expr_binary {
 	heck_expr* left;

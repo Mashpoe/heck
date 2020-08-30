@@ -34,7 +34,7 @@ heck_expr* create_expr_literal(heck_code* c, heck_file_pos* fp, heck_literal* va
 	return e;
 }
 
-heck_expr* create_expr_cast(heck_code* c, heck_file_pos* fp, const heck_data_type* type, heck_expr* expr) {
+heck_expr* create_expr_cast(heck_code* c, heck_file_pos* fp, heck_expr* expr, const heck_data_type* type) {
 	heck_expr* e = heck_alloc(c, EXPR_SIZE + sizeof(heck_expr*));
   init_expr(fp, e, EXPR_CAST, &expr_vtable_cast);
 	e->data_type = type;
@@ -708,7 +708,7 @@ bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr) {
           heck_data_type* arg_type = current_arg->data_type;
           heck_data_type* param_type = def->decl.param_vec[i]->data_type;
           if (!data_type_cmp(param_type, arg_type)) {
-            func_call->arg_vec[i] = create_expr_cast(c, current_arg->fp, param_type, current_arg);
+            func_call->arg_vec[i] = create_expr_cast(c, current_arg->fp, current_arg, param_type);
           }
         }
       }
@@ -758,13 +758,23 @@ bool resolve_expr_bw_not(heck_code* c, heck_scope* parent, heck_expr* expr) { re
 bool resolve_expr_cast(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	if (!resolve_expr(c, parent, expr->value.expr))
 		return false;
+
+  // this is the only place where expr->data type isn't already resolved
+  if (!resolve_data_type(c, parent, expr->data_type))
+    return false;
+  
+  heck_data_type* l_type = expr->value.expr->data_type;
+  heck_data_type* r_type = expr->data_type;
 	
 	// check if the types are identical first
-	if (data_type_cmp(expr->data_type, expr->value.expr->data_type))
+	if (data_type_cmp(l_type, r_type))
 		return true;
 	
 	// TODO: check if types are convertable
-	fputs("error: unable to resolve type cast", stderr);
+  if (data_type_exp_convertable(l_type, r_type))
+    return true;
+
+  heck_report_error(NULL, expr->fp, "unable to convert from type \"{t}\" to \"{t}\"", l_type, r_type);
 
   // cast already has data type set
 	
@@ -786,7 +796,7 @@ bool resolve_expr_mult(heck_code* c, heck_scope* parent, heck_expr* expr) {
 		expr->data_type = l_type;
     if (!data_type_cmp(l_type, r_type))
       // implicit cast
-      binary->right = create_expr_cast(c, binary->right->fp, l_type, binary->right);
+      binary->right = create_expr_cast(c, binary->right->fp, binary->right, l_type);
 
 		return true;
 	}
@@ -980,7 +990,7 @@ heck_expr* copy_expr_arr_access(heck_code* c, heck_expr* expr) {
 }
 
 heck_expr* copy_expr_cast(heck_code* c, heck_expr* expr) {
-	return create_expr_cast(c, expr->fp, expr->data_type, copy_expr(c, expr->value.expr));
+	return create_expr_cast(c, expr->fp, copy_expr(c, expr->value.expr), expr->data_type);
 }
 
 heck_expr* copy_expr_unary(heck_code* c, heck_expr* expr) {
@@ -1064,9 +1074,9 @@ void print_expr_arr_access(heck_expr* expr) {
 
 void print_expr_cast(heck_expr* expr) {
 	putc('[', stdout);
-	print_data_type((const heck_data_type*)expr->data_type);
-	fputs(" as ", stdout);
 	print_expr(expr->value.expr);
+	fputs(" as ", stdout);
+	print_data_type((const heck_data_type*)expr->data_type);
 	putc(']', stdout);
 }
 

@@ -397,19 +397,19 @@ heck_expr* unary(parser* p, heck_scope* parent) {
 		case TK_OP_SUB:
 			vtable = &expr_vtable_unary_minus;
 			break;
-		case TK_OP_LESS: { // <type>cast
-			step(p);
-			const heck_data_type* data_type = parse_data_type(p, parent);
-			if (data_type->type_name == TYPE_ERR)
-				return create_expr_err(p->code, expr_start);
-			if (data_type->type_name != TYPE_CLASS || data_type->value.class_type.type_arg_vec == NULL) {
-				if (!match(p, TK_OP_GTR)) {
-					parser_error(p, peek(p), true, "unexpected token");
-					return create_expr_err(p->code, expr_start);
-				}
-			}
-			return create_expr_cast(p->code, expr_start, data_type, primary(p, parent));
-		}
+		// case TK_OP_LESS: { // <type>cast
+		// 	step(p);
+		// 	const heck_data_type* data_type = parse_data_type(p, parent);
+		// 	if (data_type->type_name == TYPE_ERR)
+		// 		return create_expr_err(p->code, expr_start);
+		// 	if (data_type->type_name != TYPE_CLASS || data_type->value.class_type.type_arg_vec == NULL) {
+		// 		if (!match(p, TK_OP_GTR)) {
+		// 			parser_error(p, peek(p), true, "unexpected token");
+		// 			return create_expr_err(p->code, expr_start);
+		// 		}
+		// 	}
+		// 	return create_expr_cast(p->code, expr_start, data_type, primary(p, parent));
+		// }
 		default:
 			return primary(p, parent);
 	}
@@ -417,9 +417,25 @@ heck_expr* unary(parser* p, heck_scope* parent) {
 	return create_expr_unary(p->code, expr_start, unary(p, parent), operator, vtable);
 }
 
-heck_expr* multiplication(parser* p, heck_scope* parent) {
+heck_expr* type_cast(parser* p, heck_scope* parent) {
   heck_file_pos* expr_start = &peek(p)->fp;
 	heck_expr* expr = unary(p, parent);
+
+  for (;;) {
+		heck_tk_type operator = peek(p)->type;
+		const expr_vtable* vtable;
+		
+		if (operator != TK_KW_AS)
+      return expr;
+		
+		step(p);
+		expr = create_expr_cast(p->code, expr_start, expr, parse_data_type(p, parent));
+	}
+}
+
+heck_expr* multiplication(parser* p, heck_scope* parent) {
+  heck_file_pos* expr_start = &peek(p)->fp;
+	heck_expr* expr = type_cast(p, parent);
 	
 	for (;;) {
 		heck_tk_type operator = peek(p)->type;

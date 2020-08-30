@@ -117,7 +117,9 @@ void compile_expr_bw_not(heck_compiler* cmplr, heck_expr* expr) {
 void compile_expr_cast(heck_compiler* cmplr, heck_expr* expr) {
   heck_expr* cast_val = expr->value.expr;
   compile_expr(cmplr, cast_val);
-  compile_prim_cast(cmplr, expr->data_type, cast_val->data_type);
+  // do nothing if the types are the same
+  if (!data_type_cmp(expr->data_type, cast_val->data_type))
+    compile_prim_cast(cmplr, expr->data_type, cast_val->data_type);
 }
 
 void compile_expr_mult(heck_compiler* cmplr, heck_expr* expr) {
