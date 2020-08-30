@@ -39,6 +39,17 @@ void wasm_code_add(wasm_code* code, char* bytes, size_t count) {
 	code->pos = new_pos;
 }
 
+void wasm_add_byte(wasm_code* code, char byte) {
+	size_t new_pos = code->pos + 1;
+	
+	if (new_pos >= code->alloc)
+		code->bytes = realloc(code->bytes, new_pos * REALLOC_FACTOR); 
+	
+	code->bytes[code->pos] = byte;
+	
+	code->pos = new_pos;
+}
+
 void wasm_code_print(wasm_code* code) {
 	
 	printf("offset: 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");

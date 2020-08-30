@@ -30,6 +30,7 @@ heck_code* heck_create() {
   c->type_vec = vector_create();
 	c->token_vec = vector_create();
 	c->strings = str_table_create();
+  c->string_literals = idf_map_create();
 
 	c->global = scope_create_global(c);
   
@@ -242,6 +243,7 @@ void heck_free(heck_code* c) {
   free_types(c);
 	free_tokens(c);
 	str_table_free(c->strings);
+  idf_map_free(c->string_literals);
 	free(c);
 }
 

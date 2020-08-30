@@ -122,6 +122,40 @@ void compile_globals(heck_compiler* cmplr) {
   }
 }
 
+// callback
+void compile_string_literal(str_entry key, void* value, void* user_ptr) {
+  heck_compiler* cmplr = user_ptr;
+  heck_literal* string_literal = value;
+
+  wasm_str_lit(cmplr->wasm, "(data (i32.const ");
+  write_int(cmplr->wasm, cmplr->literal_mem);
+  wasm_str_lit(cmplr->wasm, ") \"");
+
+  // write the length in little-endian format
+  uint32_t string_len = key->size;
+  for (int i = 0; i < sizeof(uint32_t); ++i) {
+    uint8_t byte = (string_len >> (i * 8)) & 0x000000FF;
+    write_hex_byte(cmplr->wasm, byte);
+    //printf("current_byte: %02x\n", byte);
+  }
+
+  // write the string data
+  for (int i = 0; i < key->size; ++i) {
+    char byte = key->value[i];
+    if (byte > '\x1f' && byte < '\x7f') {
+      wasm_add_byte(cmplr->wasm, byte);
+    } else {
+      write_hex_byte(cmplr->wasm, byte);
+    }
+  }
+  wasm_str_lit(cmplr->wasm, "\")\n");
+
+  // update literal_mem
+  cmplr->literal_mem += sizeof(uint32_t) + key->size;
+}
+void compile_string_literals(heck_compiler* cmplr) {
+  idf_map_iterate(cmplr->c->string_literals, compile_string_literal, cmplr);
+}
 
 // assumes everything was resolved
 // there shouldn't be any issues
@@ -132,14 +166,23 @@ bool heck_compile(heck_code* c) {
   heck_compiler cmplr = {
     .wasm = wasm_code_create(),
     .c = c,
-    .func_index = 0, // account for main
-    .func_queue = vector_create()
+    .func_index = 0,
+    .func_queue = vector_create(),
+    .literal_mem = 0 
   };
 
+  // module start
   wasm_str_lit(cmplr.wasm, "(module\n");
 
+  // import 1 page of memory
+  wasm_str_lit(cmplr.wasm, "(import \"js\" \"mem\" (memory 1))\n");
+
+  // function imports, globals
   compile_func_imports(&cmplr);
   compile_globals(&cmplr);
+
+  // string literals
+  compile_string_literals(&cmplr);
 
   // compile main function
   heck_func* main = cmplr.c->main;
@@ -177,6 +220,12 @@ void write_float(wasm_code* wasm, float value) {
   // snprintf is good enough for now
   int num_chars = snprintf(buff, 50, "%f", value);
   wasm_code_add(wasm, buff, num_chars);
+}
+
+void write_hex_byte(wasm_code* wasm, uint8_t byte) {
+  char buff[4]; // 4th byte for null terminator
+  snprintf(buff, 4, "\\%02x", byte);
+  wasm_code_add(wasm, buff, 3);
 }
 
 void compile_var_index(heck_compiler* cmplr, heck_variable* variable) {

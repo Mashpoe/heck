@@ -7,9 +7,11 @@
 
 #include <literal.h>
 #include <stdlib.h>
+#include <code_impl.h>
+#include <idf_map.h>
 
-heck_literal* create_literal_int(int value) {
-	heck_literal* literal = malloc(sizeof(heck_literal));
+heck_literal* create_literal_int(heck_code* c, int value) {
+	heck_literal* literal = heck_alloc(c, sizeof(heck_literal));
 	
 	literal->data_type = data_type_int;
 	literal->value.int_value = value;
@@ -17,8 +19,8 @@ heck_literal* create_literal_int(int value) {
 	return literal;
 }
 
-heck_literal* create_literal_float(float value) {
-	heck_literal* literal = malloc(sizeof(heck_literal));
+heck_literal* create_literal_float(heck_code* c, float value) {
+	heck_literal* literal = heck_alloc(c, sizeof(heck_literal));
 	
 	literal->data_type = data_type_float;
 	literal->value.float_value = value;
@@ -26,8 +28,8 @@ heck_literal* create_literal_float(float value) {
 	return literal;
 }
 
-heck_literal* create_literal_bool(bool value) {
-	heck_literal* literal = malloc(sizeof(heck_literal));
+heck_literal* create_literal_bool(heck_code* c, bool value) {
+	heck_literal* literal = heck_alloc(c, sizeof(heck_literal));
 	
 	literal->data_type = data_type_bool;
 	literal->value.bool_value = value;
@@ -35,11 +37,21 @@ heck_literal* create_literal_bool(bool value) {
 	return literal;
 }
 
-heck_literal* create_literal_string(str_entry value) {
-	heck_literal* literal = malloc(sizeof(heck_literal));
+heck_literal* create_literal_string(heck_code* c, str_entry value) {
+
+  // check for an existing literal
+  heck_literal* literal;
+  if (idf_map_get(c->string_literals, value, (void**)&literal)) {
+    return literal;
+  }  
+
+	literal = heck_alloc(c, sizeof(heck_literal));
 	
 	literal->data_type = data_type_string;
 	literal->value.str_value = value;
+
+  // add the new literal to the map
+  idf_map_set(c->string_literals, value, literal);
 	
 	return literal;
 }

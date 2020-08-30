@@ -76,7 +76,6 @@ bool match_newline(file_pos* fp) {
 
 	// no unescaped newlines were found
 	// escaped newlines may have been passed over
-	fp->pos = new_pos;
 	return false;
 }
 
@@ -183,10 +182,10 @@ heck_token* add_token(heck_code* c, file_pos* fp, enum heck_tk_type type) {
 }
 
 #define add_token_literal(c, fp, val)		(add_token(c, fp, TK_LITERAL)->value.literal_value = val)
-#define add_token_int(c, fp, intval)		(add_token_literal(c, fp, create_literal_int(intval)))
-#define add_token_float(c, fp, floatval)	(add_token_literal(c, fp, create_literal_float(floatval)))
-#define add_token_bool(c, fp, boolval)		(add_token_literal(c, fp, create_literal_bool(boolval)))
-#define add_token_string(c, fp, strval)		(add_token_literal(c, fp, create_literal_string(strval)))
+#define add_token_int(c, fp, intval)		(add_token_literal(c, fp, create_literal_int(c, intval)))
+#define add_token_float(c, fp, floatval)	(add_token_literal(c, fp, create_literal_float(c, floatval)))
+#define add_token_bool(c, fp, boolval)		(add_token_literal(c, fp, create_literal_bool(c, boolval)))
+#define add_token_string(c, fp, strval)		(add_token_literal(c, fp, create_literal_string(c, strval)))
 #define add_token_prim(c, fp, primtype)		(add_token(c, fp, TK_PRIM_TYPE)->value.prim_type = primtype)
 #define add_token_idf(c, fp, idf)			(add_token(c, fp, TK_IDF)->value.str_value = idf)
 #define add_token_err(c, fp)				(add_token(c, fp, TK_ERR))
@@ -600,8 +599,8 @@ bool parse_string(heck_code* c, file_pos* fp) {
 	
 	char quote = fp->current; // keep track of the quote type we're using
 	
-	int index, len;
-	char* str = str_create(&index, &len, NULL);
+	int len, size;
+	char* str = str_create(&len, &size, NULL);
 	
 	// add to the string until we reach an unescaped quote of the same type
 	bool ch_escaped = false;
@@ -628,19 +627,19 @@ bool parse_string(heck_code* c, file_pos* fp) {
 				case '\'': // fallthrough
 				case '"':
 				case '\\':
-					str = str_add_char(str, &index, &len, fp->current);
+					str = str_add_char(str, &len, &size, fp->current);
 					break;
 				case 'n':
-					str = str_add_char(str, &index, &len, '\n');
+					str = str_add_char(str, &len, &size, '\n');
 					break;
 				case 'r':
-					str = str_add_char(str, &index, &len, '\r');
+					str = str_add_char(str, &len, &size, '\r');
 					break;
 				case 'b':
-					str = str_add_char(str, &index, &len, '\b');
+					str = str_add_char(str, &len, &size, '\b');
 					break;
 				case 't':
-					str = str_add_char(str, &index, &len, '\t');
+					str = str_add_char(str, &len, &size, '\t');
 					break;
 					// TODO: handle more escape sequences:
 					// https://en.wikipedia.org/wiki/Escape_sequences_in_C#Table_of_escape_sequences
@@ -674,7 +673,7 @@ bool parse_string(heck_code* c, file_pos* fp) {
 			continue;
 			
 		} else {
-			str = str_add_char(str, &index, &len, fp->current);
+			str = str_add_char(str, &len, &size, fp->current);
 		}
 		
 	}

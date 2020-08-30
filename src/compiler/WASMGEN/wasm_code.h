@@ -30,6 +30,8 @@ wasm_code* wasm_code_create(void);
 
 void wasm_code_add(wasm_code* code, char* bytes, size_t count);
 
+void wasm_add_byte(wasm_code* code, char byte);
+
 void wasm_code_print(wasm_code* code);
 
 bool wasm_code_output(wasm_code* code, const char* filename);

@@ -18,6 +18,7 @@
 #include <scope.h>
 #include "../vec.h"
 #include <limits.h>
+#include <stdint.h>
 
 // compile time constants
 enum {
@@ -36,12 +37,17 @@ typedef struct heck_compiler {
   // list of functions to be compiled
   // works like a stack
   heck_func** func_queue;
+  // the amount of memory needed to store literals
+  uint32_t literal_mem;
 } heck_compiler;
 
 void compile_block(heck_compiler* cmplr, heck_block* block);
 
 void write_int(wasm_code* wasm, int value);
 void write_float(wasm_code* wasm, float value);
+// writes an escaped hex byte
+// used for non-printable characters
+void write_hex_byte(wasm_code* wasm, uint8_t byte);
 
 void compile_var_index(heck_compiler* cmplr, heck_variable* variable);
 void compile_var_get(heck_compiler* cmplr, heck_variable* variable);

@@ -379,7 +379,6 @@ heck_expr* primary(parser* p, heck_scope* parent) {
 			return create_expr_err(p->code, expr_start);
 		}
 	}
-
 	parser_error(p, peek(p), true, "expected an expression");
 	return create_expr_err(p->code, expr_start);
 }

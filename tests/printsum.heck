@@ -39,6 +39,8 @@ func gen(a, b) {
   return a + b
 }
 
+(6)
+
 let x = gen(1.2, 1)
 let y = gen(3, 6)
 let z = gen(5.6, 6.7)
@@ -52,3 +54,9 @@ num1 + num2
 print_i32(x)
 print_i32(y)
 print_i32(z)
+
+"string data 1"
+
+"string data \n 尺200a"
+
+//*

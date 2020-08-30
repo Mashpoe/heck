@@ -49,8 +49,12 @@ struct heck_code {
   heck_expr** call_vec;
   heck_data_type** type_vec;
 
-  // all unique strings and identifiers
+  // all unique string literals and identifiers
 	str_table* strings;
+
+  // map of string literals
+  // maps strings to heck_literal*s
+  idf_map* string_literals;
   
   // these are freed elsewhere
   heck_variable** global_vec;
