@@ -109,9 +109,8 @@ void panic_mode(parser* p) {
 	
 	// step until we are in a new statement
 	for (;;) {
-		if (at_end(p)) {
+		if (at_end(p))
 			return;
-		}
 		switch (peek(p)->type) {
 			case TK_BRAC_L:
 			case TK_BRAC_R:
@@ -1373,13 +1372,80 @@ void import_func(parser* p, heck_scope* parent) {
 
 }
 
+void parse_code_import(parser* p, const char* code) {
+
+  // temporarily swap tokens
+  heck_token** temp = p->code->token_vec;
+  size_t temp_pos = p->pos;
+  p->code->token_vec = vector_create();
+  p->pos = 0;
+
+  heck_scan(p->code, code);
+
+  printf("num tokens: %i\n", vector_size(p->code->token_vec));
+
+
+  //parser pi = { .pos = 0, .code = c, .success = true };
+  if (!at_end(p)) {
+    for (;;) {
+      
+      parse_statement(p, p->code->code, STMT_FLAG_GLOBAL);
+
+      // match semicolon before end
+      match(p, TK_SEMI);
+
+      if (at_end(p))
+        break;
+      
+      // TODO: check for newline or ;
+      if (!at_newline(p) && previous(p)->type != TK_SEMI) {
+        parser_error(p, peek(p), true, "expected ; or newline between statements");
+      }
+
+    }
+  }
+
+  // swap tokens back to normal
+  heck_add_token_vec(p->code, p->code->token_vec);
+  p->code->token_vec = temp;
+  p->pos = temp_pos;
+
+}
+
+void import_file(parser* p, heck_scope* parent) {
+  heck_token* import_tk = peek(p);
+  if (import_tk->type != TK_LITERAL || import_tk->value.literal_value->data_type != data_type_string) {
+    parser_error(p, import_tk, true, "expected a string literal");
+    return;
+  }
+
+  if (parent != p->code->global) {
+    parser_error(p, previous(p), false, "import outside of the global scope");
+    step(p);
+    return;
+  }
+  step(p);
+
+  str_entry filename = import_tk->value.literal_value->value.str_value;
+
+  const char* code = heck_load_file(filename->value);
+
+	if (code != NULL) {
+    parse_code_import(p, code);
+  } else {
+    parser_error(p, peek(p), false, "unable to open file \"{s}\"", filename->value);
+  }
+
+}
+
 void import(parser* p, heck_scope* parent) {
   step(p);
   if (match(p, TK_KW_FUNC)) {
     import_func(p, parent);
   } else {
-    // TODO: add other extern declaration types
-    parser_error(p, peek(p), true, "expected a function declaration");
+    import_file(p, parent);
+    // // TODO: add other extern declaration types
+    // parser_error(p, peek(p), true, "expected a function declaration");
   }
 }
 
@@ -1498,6 +1564,10 @@ void parse_statement(parser* p, heck_block* block, uint8_t flags) {
 bool heck_parse(heck_code* c) {
 	
 	parser p = { .pos = 0, .code = c, .success = true };
+
+  const char* stdlib_code = heck_load_file("stdlib.heck");
+  if (stdlib_code != NULL)
+    parse_code_import(&p, stdlib_code);
 	
 	for (;;) {
 		

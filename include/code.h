@@ -20,4 +20,6 @@ void heck_print_tokens(heck_code* c);
 
 void heck_print_tree(heck_code* c); // prints a complete syntax tree
 
+const char* heck_load_file(const char* filename);
+
 #endif /* code_h */

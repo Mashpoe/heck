@@ -39,6 +39,10 @@ void compile_expr_literal(heck_compiler* cmplr, heck_expr* expr) {
     }
     wasm_str_lit(cmplr->wasm, "\n");
 
+  } else if (literal->data_type == data_type_string) {
+    wasm_str_lit(cmplr->wasm, "i32.const ");
+    write_int(cmplr->wasm, literal->memory_addr);
+    wasm_str_lit(cmplr->wasm, "\n");
   }
 }
 

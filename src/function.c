@@ -432,7 +432,7 @@ heck_func* func_match_def(heck_code* c, heck_name* func_name, heck_expr_call* ca
     }
     
     if (!match)
-      return NULL;
+      continue;
     
     // perfect match!
     if (score == 0)

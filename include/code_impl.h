@@ -19,9 +19,10 @@
 #include "literal.h"
 #include "types.h"
 #include "variable.h"
+#include "idf_map.h"
 
 struct heck_code {
-  heck_code** import_vec;
+  // heck_code** import_vec;
 
   // indicates the main file or an imported file
   bool main_file;
@@ -31,6 +32,10 @@ struct heck_code {
 
   // token vector
 	heck_token** token_vec;
+
+  // vector of token vectors
+  // TODO: free
+  heck_token*** import_tokens;
 
   heck_func* main; // code/syntax tree
 	heck_block* code; // the code block inside of main
@@ -61,6 +66,11 @@ struct heck_code {
   heck_func** func_import_vec;
 	
 };
+
+// heck_code* heck_create_import(heck_code* c);
+
+// transfer ownership of token_vec to c
+void heck_add_token_vec(heck_code* c, heck_token** token_vec);
 
 // allocates memory that will be freed
 void* heck_alloc(heck_code* c, size_t amt);

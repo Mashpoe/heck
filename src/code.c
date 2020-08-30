@@ -12,12 +12,15 @@
 #include <function.h>
 #include <operator.h>
 #include <class.h>
+#include <idf_map.h>
 #include <str.h>
 #include <stdio.h>
 #include "vec.h"
 
 heck_code* heck_create() {
 	heck_code* c = malloc(sizeof(heck_code));
+  // c->import_vec = NULL;
+  c->import_tokens = NULL;
 
   c->global_vec = vector_create();
   c->func_import_vec = vector_create();
@@ -289,4 +292,36 @@ bool heck_add_token(heck_code* c, heck_token* tk) {
 	vector_add(&c->token_vec, tk);
 	
 	return true;
+}
+
+void heck_add_token_vec(heck_code* c, heck_token** token_vec) {
+  if (c->import_tokens == NULL)
+    c->import_tokens = vector_create();
+  
+  vector_add(&c->import_tokens, token_vec);
+}
+
+const char* heck_load_file(const char* filename) {
+
+  FILE* f = fopen(filename, "rb");
+
+  if (f) {
+
+    // load the file into memory
+    fseek(f, 0, SEEK_END);
+    size_t size = ftell(f);
+    rewind(f);
+    
+    char* buffer = (char*)malloc(size + 1);
+    fread(buffer, sizeof(char), size, f);
+    buffer[size] = '\0';
+    
+	  fclose(f);
+
+    return buffer;
+
+  } else {
+    return NULL;
+  }
+
 }

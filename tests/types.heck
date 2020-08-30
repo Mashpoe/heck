@@ -1,13 +1,10 @@
-let var1 = true
+import "stdlib.heck"
 
-var1 = false
+print_int(5)
 
-let var2 = 1
+func P尺INT(a: string) {
+  return a
+}
 
-var2 = 2
-
-let var3 = "meme"
-
-var3 = "oof"
-
-var1 = 4
+P尺INT("HELLO WO尺LD")
+P尺INT("Привет, мир!")

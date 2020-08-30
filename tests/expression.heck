@@ -1,15 +1,5 @@
-1 + 1
+1
 
-func print(a: string) {
+print2(3.4)
 
-}
-
-print("foo")
-
-let ternary = 4
-
-ternary == true ? 5 : 6
-
-!ternary ? 4 : 3
-
-8 - 4 + 2 * 90 / 6
+doNothing("testdfksjdfl")

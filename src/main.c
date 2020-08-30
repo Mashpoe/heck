@@ -50,13 +50,13 @@ int main(int argc, const char * argv[]) {
 	
 	clock_t begin = clock();
 
-	FILE* f = fopen(input_path, "rb");
+  const char* code = heck_load_file(input_path);
 
-	if (f) {
+	if (code != NULL) {
 
 		//printf("start.\n");
 		heck_code* c = heck_create();
-		heck_scan(c, f);
+		heck_scan(c, code);
 		//heck_print_tokens(c);
 		bool success = heck_parse(c); // parsing includes resolving for now, since it completes the syntax tree
 
@@ -74,7 +74,6 @@ int main(int argc, const char * argv[]) {
 
 		//heck_free(c);
 
-	  fclose(f);
 	} else {
 		printf("error: unable to open source file: %s\n", input_path);
 		return 1;

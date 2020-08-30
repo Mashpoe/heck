@@ -36,7 +36,8 @@ void compile_func_decl(heck_compiler* cmplr, heck_func_decl* decl) {
 
   }
 
-  if (decl->return_type != data_type_void) {
+  // TODO: figure out how this could even be NULL
+  if (decl->return_type != NULL && decl->return_type != data_type_void) {
 
     wasm_str_lit(cmplr->wasm, " (result ");
     compile_data_type(cmplr, decl->return_type);
@@ -127,6 +128,9 @@ void compile_string_literal(str_entry key, void* value, void* user_ptr) {
   heck_compiler* cmplr = user_ptr;
   heck_literal* string_literal = value;
 
+  // set the memory offset
+  string_literal->memory_addr = cmplr->literal_mem;
+
   wasm_str_lit(cmplr->wasm, "(data (i32.const ");
   write_int(cmplr->wasm, cmplr->literal_mem);
   wasm_str_lit(cmplr->wasm, ") \"");
@@ -154,6 +158,10 @@ void compile_string_literal(str_entry key, void* value, void* user_ptr) {
   cmplr->literal_mem += sizeof(uint32_t) + key->size;
 }
 void compile_string_literals(heck_compiler* cmplr) {
+  // add empty string so null string addresses have no value
+  wasm_str_lit(cmplr->wasm, "(data (i32.const 0) \"\\00\\00\\00\\00\")\n");
+  cmplr->literal_mem = 4;
+  // compile all unique string literals
   idf_map_iterate(cmplr->c->string_literals, compile_string_literal, cmplr);
 }
 
@@ -168,7 +176,7 @@ bool heck_compile(heck_code* c) {
     .c = c,
     .func_index = 0,
     .func_queue = vector_create(),
-    .literal_mem = 0 
+    .literal_mem = 0
   };
 
   // module start

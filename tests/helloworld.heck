@@ -1,5 +1,1 @@
-func P尺INT(a: string) {
-  return a
-}
-
-P尺INT("HELLO WO尺LD")
+print("hello world")

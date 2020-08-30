@@ -21,8 +21,14 @@ heck_data_type* create_data_type(heck_file_pos* fp, heck_type_name name) {
 }
 
 bool data_type_cmp(const heck_data_type* a, const heck_data_type* b) {
-	if (a->type_name != b->type_name) return false;
-	
+
+  // compare addresses
+  if (a == b)
+    return true;
+
+	if (a->type_name != b->type_name)
+    return false;
+
 	switch (a->type_name) {
 		case TYPE_CLASS: {
 			

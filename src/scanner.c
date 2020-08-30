@@ -197,28 +197,16 @@ void parse_number(heck_code* c, file_pos* fp);
 // modifies a float* parameter rather than adding it to the token list
 float parse_float(heck_code* c, file_pos* fp, int whole);
 
-bool heck_scan(heck_code* c, FILE* f) {
+bool heck_scan(heck_code* c, const char* code) {
 	
 	file_pos fp = {
 		.size = 0,
 		.pos = 0,
-		.file = NULL,
+		.file = code,
 		.current = '\0',
 		.ch_fp = {.ln = 1, .ch = 0},
 		.tk_fp = {.ln = 1, .ch = 0},
 	};
-	
-	// load the file into memory
-	fseek(f, 0, SEEK_END);
-	fp.size = ftell(f);
-	rewind(f);
-	
-	char* buffer = (char*)malloc(fp.size + 1);
-	fread(buffer, sizeof(char), fp.size, f);
-	buffer[fp.size] = '\0';
-	
-	fp.file = buffer;
-	buffer = NULL;
 	
 	// initialize scanner state
 	match_newline(&fp); // prevents the scanner from ignoring newlines at the beginning of a file

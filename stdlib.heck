@@ -1,0 +1,20 @@
+import func print_int(value: int)
+import func print_float(value: float)
+import func print_bool(value: bool)
+import func print_string(value: string)
+
+func print(value: int) {
+  print_int(value)
+}
+
+func print(value: float) {
+  print_float(value)
+}
+
+func print(value: bool) {
+  print_bool(value)
+}
+
+func print(value: string) {
+  print_string(value)
+}

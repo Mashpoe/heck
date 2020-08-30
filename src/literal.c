@@ -57,11 +57,11 @@ heck_literal* create_literal_string(heck_code* c, str_entry value) {
 }
 
 // TODO: rewrite function, as it's only called on unresolved object literals
-heck_literal* copy_literal(heck_literal* literal) {
-	heck_literal* new_literal = malloc(sizeof(heck_literal));
-	*new_literal = *literal; // copy data
-	return new_literal;
-}
+// heck_literal* copy_literal(heck_literal* literal) {
+// 	heck_literal* new_literal = malloc(sizeof(heck_literal));
+// 	*new_literal = *literal; // copy data
+// 	return new_literal;
+// }
 
 void free_literal(heck_literal* literal) {
 	// TODO: free object literals
