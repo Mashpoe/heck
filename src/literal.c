@@ -69,15 +69,15 @@ heck_literal* create_literal_string(heck_code* c, str_entry value) {
 // 	return new_literal;
 // }
 
-void free_literal(heck_literal* literal) {
-	// TODO: free object literals
-	/*if (literal->type == TYPE_OBJ) {
+// void free_literal(heck_literal* literal) {
+// 	// TODO: free object literals
+// 	/*if (literal->type == TYPE_OBJ) {
 	 
-	 }*/
+// 	 }*/
 	
-	// string literals will be freed when the str_table is freed
-	free(literal);
-}
+// 	// string literals will be freed when the str_table is freed
+// 	free(literal);
+// }
 
 void print_literal(heck_literal* literal) {
 	switch (literal->data_type->type_name) {

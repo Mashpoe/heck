@@ -16,6 +16,7 @@
 #include <types.h>
 #include <operator.h>
 #include <resolver.h>
+#include <scanner.h>
 #include <error.h>
 #include "vec.h"
 
@@ -23,6 +24,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <string.h>
 
 typedef struct parser parser;
 

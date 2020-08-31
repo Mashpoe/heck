@@ -22,7 +22,7 @@ void heck_free_token_data(heck_token* tk) {
 			//free((char*)tk->value.str_value);
 			break;
 		case TK_LITERAL:
-			free_literal(tk->value.literal_value);
+			//free_literal(tk->value.literal_value);
 		default:
 			break;
 			
