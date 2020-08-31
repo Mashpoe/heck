@@ -50,6 +50,8 @@ heck_code* heck_create() {
   c->main->value.code = c->code;
   c->code->scope->parent_func = c->main;
 
+  c->str_cmp = NULL;
+
 	return c;
 }
 

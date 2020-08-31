@@ -127,15 +127,53 @@ void compile_expr_cast(heck_compiler* cmplr, heck_expr* expr) {
 }
 
 void compile_expr_mult(heck_compiler* cmplr, heck_expr* expr) {
-  
+    heck_expr_binary* mul = &expr->value.binary;
+
+  compile_expr(cmplr, mul->left);
+  compile_expr(cmplr, mul->right);
+
+  heck_data_type* l_type = mul->left->data_type;
+
+  if (l_type == data_type_int) {
+    wasm_str_lit(cmplr->wasm, "i32.mul\n");
+  } else if (l_type == data_type_float) {
+    wasm_str_lit(cmplr->wasm, "f32.mul\n");
+  }
 }
 
 void compile_expr_div(heck_compiler* cmplr, heck_expr* expr) {
-  
+  heck_expr_binary* div = &expr->value.binary;
+
+  compile_expr(cmplr, div->left);
+  compile_expr(cmplr, div->right);
+
+  heck_data_type* l_type = div->left->data_type;
+
+  if (l_type == data_type_int) {
+    wasm_str_lit(cmplr->wasm, "i32.div_s\n");
+  } else if (l_type == data_type_float) {
+    wasm_str_lit(cmplr->wasm, "f32.div_s\n");
+  }
 }
 
 void compile_expr_mod(heck_compiler* cmplr, heck_expr* expr) {
-  
+  // heck_expr_binary* mod = &expr->value.binary;
+
+
+  // compile_expr(cmplr, mod->left);
+
+  // compile_expr(cmplr, mod->left);
+  // compile_expr(cmplr, mod->right);
+
+  // heck_data_type* l_type = mod->left->data_type;
+
+  // if (l_type == data_type_int) {
+  //   wasm_str_lit(cmplr->wasm, "i32.div_s\n");
+  //   wasm_str_lit(cmplr->wasm, "i32.sub\n");
+  // } else if (l_type == data_type_float) {
+  //   wasm_str_lit(cmplr->wasm, "f32.div_s\n");
+  //   wasm_str_lit(cmplr->wasm, "f32.sub\n");
+  // }
 }
 
 void compile_expr_add(heck_compiler* cmplr, heck_expr* expr) {
@@ -154,7 +192,18 @@ void compile_expr_add(heck_compiler* cmplr, heck_expr* expr) {
 }
 
 void compile_expr_sub(heck_compiler* cmplr, heck_expr* expr) {
-  
+  heck_expr_binary* add = &expr->value.binary;
+
+  compile_expr(cmplr, add->left);
+  compile_expr(cmplr, add->right);
+
+  heck_data_type* l_type = add->left->data_type;
+
+  if (l_type == data_type_int) {
+    wasm_str_lit(cmplr->wasm, "i32.sub\n");
+  } else if (l_type == data_type_float) {
+    wasm_str_lit(cmplr->wasm, "f32.sub\n");
+  }
 }
 
 void compile_expr_shift_l(heck_compiler* cmplr, heck_expr* expr) {
@@ -194,7 +243,15 @@ void compile_expr_gtr_eq(heck_compiler* cmplr, heck_expr* expr) {
 }
 
 void compile_expr_eq(heck_compiler* cmplr, heck_expr* expr) {
-  
+  heck_expr_binary* eq = &expr->value.binary;
+  compile_expr(cmplr, eq->left);
+  compile_expr(cmplr, eq->right);
+  if (eq->left->data_type == data_type_float) {
+    wasm_str_lit(cmplr->wasm, "f32.eq\n");
+  } else {
+    // handles bool and int
+    wasm_str_lit(cmplr->wasm, "i32.eq\n");
+  }
 }
 
 void compile_expr_n_eq(heck_compiler* cmplr, heck_expr* expr) {

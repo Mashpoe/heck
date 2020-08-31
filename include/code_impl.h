@@ -64,6 +64,8 @@ struct heck_code {
   // these are freed elsewhere
   heck_variable** global_vec;
   heck_func** func_import_vec;
+
+  heck_func* str_cmp;
 	
 };
 

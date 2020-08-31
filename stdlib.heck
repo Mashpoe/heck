@@ -14,6 +14,7 @@ import func _concat_float_r(a: string, b: float) -> string
 import func _concat_bool_l(a: bool, b: string) -> string
 import func _concat_bool_r(a: string, b: bool) -> string
 import func _concat_str(a: string, b: string) -> string
+import func _str_cmp(a: string, b: string) -> bool
 
 func print(value: int) {
   _print_int(value)

@@ -184,7 +184,7 @@ heck_token* add_token(heck_code* c, file_pos* fp, enum heck_tk_type type) {
 #define add_token_literal(c, fp, val)		(add_token(c, fp, TK_LITERAL)->value.literal_value = val)
 #define add_token_int(c, fp, intval)		(add_token_literal(c, fp, create_literal_int(c, intval)))
 #define add_token_float(c, fp, floatval)	(add_token_literal(c, fp, create_literal_float(c, floatval)))
-#define add_token_bool(c, fp, boolval)		(add_token_literal(c, fp, create_literal_bool(c, boolval)))
+#define add_token_bool(c, fp, boolval)		(add_token_literal(c, fp, boolval))
 #define add_token_string(c, fp, strval)		(add_token_literal(c, fp, create_literal_string(c, strval)))
 #define add_token_prim(c, fp, primtype)		(add_token(c, fp, TK_PRIM_TYPE)->value.prim_type = primtype)
 #define add_token_idf(c, fp, idf)			(add_token(c, fp, TK_IDF)->value.str_value = idf)
@@ -508,10 +508,10 @@ bool heck_scan(heck_code* c, const char* code) {
 						add_token(c, &fp, TK_KW_RETURN);
 						
 					} else if (match_kw(&fp, "true")) {
-						add_token_bool(c, &fp, true);
+						add_token_bool(c, &fp, literal_true);
 						
 					} else if (match_kw(&fp, "false")) {
-						add_token_bool(c, &fp, false);
+						add_token_bool(c, &fp, literal_false);
 						
 					} else if (match_kw(&fp, "global")) {
 						add_token_ctx(c, &fp, CONTEXT_GLOBAL);

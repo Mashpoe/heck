@@ -29,7 +29,9 @@ heck_literal* create_literal_int(heck_code* c, int value);
 
 heck_literal* create_literal_float(heck_code* c, float value);
 
-heck_literal* create_literal_bool(heck_code* c, bool value);
+//heck_literal* create_literal_bool(heck_code* c, bool value);
+extern heck_literal* literal_true;
+extern heck_literal* literal_false;
 
 heck_literal* create_literal_string(heck_code* c, str_entry value);
 

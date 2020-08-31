@@ -28,14 +28,20 @@ heck_literal* create_literal_float(heck_code* c, float value) {
 	return literal;
 }
 
-heck_literal* create_literal_bool(heck_code* c, bool value) {
-	heck_literal* literal = heck_alloc(c, sizeof(heck_literal));
+// heck_literal* create_literal_bool(heck_code* c, bool value) {
+// 	heck_literal* literal = heck_alloc(c, sizeof(heck_literal));
 	
-	literal->data_type = data_type_bool;
-	literal->value.bool_value = value;
+// 	literal->data_type = data_type_bool;
+// 	literal->value.bool_value = value;
 	
-	return literal;
-}
+// 	return literal;
+// }
+
+heck_literal literal_true_val = {data_type_bool, true, 0};
+heck_literal literal_false_val = {data_type_bool, false, 0};
+
+heck_literal* literal_true = &literal_true_val;
+heck_literal* literal_false = &literal_false_val;
 
 heck_literal* create_literal_string(heck_code* c, str_entry value) {
 

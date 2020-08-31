@@ -439,6 +439,7 @@ heck_stmt* copy_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
 
   heck_expr* node_condition = copy_expr(c, old_node->condition);
   heck_if_node* node = create_if_node(c, parent, node_condition);
+  node->code = block_copy(c, scope_create(c, parent), old_node->code);
   heck_stmt* if_stmt = create_stmt_if(c, stmt->fp, node);
 
   while (old_node->next != NULL) {
@@ -454,7 +455,6 @@ heck_stmt* copy_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
     node->next = create_if_node(c, parent, node_condition);
     node = node->next;
     node->code = block_copy(c, scope_create(c, parent), old_node->code);
-
   }
 
   if_stmt->type = old_if_stmt->type;

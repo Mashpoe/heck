@@ -1365,6 +1365,12 @@ void import_func(parser* p, heck_scope* parent) {
     // add to the import list
     vector_add(&p->code->func_import_vec, import_def);
 
+    // check if it is a special builtin
+    // (currently only str_cmp)
+    if (strcmp(name_str->value, "_str_cmp") == 0) {
+      p->code->str_cmp = import_def;
+    }
+
   } else {
     parser_error(p, peek(p), true, "expected an identifier");
     return;
@@ -1381,9 +1387,6 @@ void parse_code_import(parser* p, const char* code) {
   p->pos = 0;
 
   heck_scan(p->code, code);
-
-  printf("num tokens: %i\n", vector_size(p->code->token_vec));
-
 
   //parser pi = { .pos = 0, .code = c, .success = true };
   if (!at_end(p)) {

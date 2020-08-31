@@ -677,7 +677,6 @@ bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr) {
   if (operand->type == EXPR_VALUE) {
 
     // try to find the identifier
-    heck_print_fmt("looking up function: {i}", operand->value.value);
     heck_name* name = scope_resolve_value(c, parent, &operand->value.value);
 
     if (name == NULL) {
@@ -840,13 +839,46 @@ bool resolve_expr_eq(heck_code* c, heck_scope* parent, heck_expr* expr) {
   if (!resolve_expr_binary(c, parent, expr))
     return false;
 
+  heck_data_type* l_type = eq_expr->left->data_type;
+  heck_data_type* r_type = eq_expr->right->data_type;
+
 	// TODO: support casting and overloaded asg operators
-  if (!data_type_cmp(eq_expr->left->data_type, eq_expr->right->data_type))
-    return false;
+  if (!data_type_cmp(l_type, r_type)) {
+
+    if (data_type_imp_convertable(l_type, r_type)) {
+      eq_expr->right = create_expr_cast(c, eq_expr->right->fp, eq_expr->right, l_type);
+    } else {
+      heck_report_error(NULL, expr->fp, "cannot compare between values of type \"{t}\" and \"{t}\"", l_type, r_type);
+      return false;
+    }
+
+  }
+
+  if (l_type == data_type_string) {
+
+    if (c->str_cmp == NULL) {
+      heck_report_error(NULL, expr->fp, "cannot compare strings without standard library function \"_str_cmp\"");
+      return false;
+    }
+    // create resolved call to _str_cmp
+    heck_expr* call_expr = create_expr_call(c, expr->fp, NULL);
+    heck_expr_call* func_call = &call_expr->value.call;
+    func_call->func = c->str_cmp;
+    // set the arguments as the comparison operands
+    func_call->arg_vec = vector_create();
+    vector_add(&func_call->arg_vec, eq_expr->left);
+    vector_add(&func_call->arg_vec, eq_expr->right);
+    // set the return type
+    call_expr->data_type = data_type_bool;
+    
+    // compare result to true
+    eq_expr->left = call_expr;
+    eq_expr->right = create_expr_literal(c, NULL, literal_true);
+  }
 
   expr->data_type = data_type_bool;
 	
-	return data_type_cmp(eq_expr->left->data_type, eq_expr->right->data_type);
+	return true;
 }
 bool resolve_expr_n_eq(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 
