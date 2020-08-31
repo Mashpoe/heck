@@ -15,6 +15,14 @@ import func _concat_bool_l(a: bool, b: string) -> string
 import func _concat_bool_r(a: string, b: bool) -> string
 import func _concat_str(a: string, b: string) -> string
 import func _str_cmp(a: string, b: string) -> bool
+import func intArray(size: int) -> int[]
+import func intArray2d(width: int, height: int) -> int[][]
+import func floatArray(size: int) -> float[]
+import func floatArray2d(width: int, height: int) -> float[][]
+import func stringArray(size: int) -> string[]
+import func stringArray2d(width: int, height: int) -> string[][]
+import func boolArray(size: int) -> bool[]
+import func boolArray2d(width: int, height: int) -> bool[][]
 
 func print(value: int) {
   _print_int(value)

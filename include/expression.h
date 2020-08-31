@@ -39,6 +39,7 @@ enum heck_expr_type {
 	EXPR_LITERAL,	// always constexpr
 	EXPR_VALUE,		// value of a variable
 	EXPR_CALL,
+  EXPR_ARR_ACCESS,
 	EXPR_CALLBACK,
 	EXPR_ASG,
 	EXPR_TERNARY,
@@ -110,6 +111,7 @@ typedef struct heck_expr_arr_access {
 	heck_expr* operand;
 	heck_expr* value;
 } heck_expr_arr_access;
+heck_expr* create_expr_arr_access(heck_code* c, heck_file_pos* fp, heck_expr* operand, heck_expr* value);
 
 //typedef struct heck_expr_asg {
 //	heck_expr_value* name;

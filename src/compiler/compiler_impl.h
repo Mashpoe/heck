@@ -53,5 +53,6 @@ void compile_var_index(heck_compiler* cmplr, heck_variable* variable);
 void compile_var_get(heck_compiler* cmplr, heck_variable* variable);
 void compile_var_set(heck_compiler* cmplr, heck_variable* variable);
 void compile_prim_cast(heck_compiler* cmplr, heck_data_type* a, heck_data_type* b);
+void compile_arr_access_addr(heck_compiler* cmplr, heck_expr_arr_access* arr_access);
 
 #endif /* compiler_impl_h */

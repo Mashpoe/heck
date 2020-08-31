@@ -272,3 +272,17 @@ void compile_prim_cast(heck_compiler* cmplr, heck_data_type* a, heck_data_type* 
   compile_data_type(cmplr, b);
   wasm_str_lit(cmplr->wasm, "_s\n");
 }
+
+void compile_arr_access_addr(heck_compiler* cmplr, heck_expr_arr_access* arr_access) {
+  // get the address of the array
+  compile_expr(cmplr, arr_access->operand);
+  // step over the array size (4 bytes)
+  wasm_str_lit(cmplr->wasm, "i32.const 4\ni32.add\n");
+  // get the element index
+  compile_expr(cmplr, arr_access->value);
+  // multiply index by value size
+  // TODO: support sizes other than 4 bytes (32 bit)
+  wasm_str_lit(cmplr->wasm, "i32.const 4\ni32.mul\n");
+  // add the memory offset to the array address
+  wasm_str_lit(cmplr->wasm, "i32.add\n");
+}

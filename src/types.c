@@ -232,7 +232,7 @@ bool resolve_type_class(heck_code* c, heck_scope* parent, heck_data_type* type) 
 	class_type->class_value = n->value.class_value;
 	
   // until classes are supported
-  heck_report_error(NULL, type->fp, "unable to resolve class type \"{I}\" because classes are not yet fully supported", class_type->class_name);
+  heck_report_error(NULL, type->fp, "unable to resolve class type \"{I}\" because classes are not fully supported yet", class_type->class_name);
 	return false;
   // return true
 }

@@ -91,7 +91,10 @@ void compile_expr_call(heck_compiler* cmplr, heck_expr* expr) {
 }
 
 void compile_expr_arr_access(heck_compiler* cmplr, heck_expr* expr) {
-  
+  heck_expr_arr_access* arr_access = &expr->value.arr_access;
+  compile_arr_access_addr(cmplr, arr_access);
+  compile_data_type(cmplr, expr->data_type);
+  wasm_str_lit(cmplr->wasm, ".load\n");
 }
 
 void compile_expr_pre_incr(heck_compiler* cmplr, heck_expr* expr) {
@@ -280,5 +283,11 @@ void compile_expr_asg(heck_compiler* cmplr, heck_expr* expr) {
   if (asg->left->type == EXPR_VALUE) {
     compile_expr(cmplr, asg->right);
     compile_var_set(cmplr, asg->left->value.value.name->value.var_value);
+  } else if (asg->left->type == EXPR_ARR_ACCESS) {
+    heck_expr_arr_access* arr_access = &asg->left->value.arr_access;
+    compile_arr_access_addr(cmplr, arr_access);
+    compile_expr(cmplr, asg->right);
+    compile_data_type(cmplr, asg->left->data_type);
+    wasm_str_lit(cmplr->wasm, ".store\n");
   }
 }

@@ -355,33 +355,44 @@ heck_expr* primary(parser* p, heck_scope* parent) {
 	if (match(p, TK_LITERAL)) {
 		return create_expr_literal(p->code, expr_start, previous(p)->value.literal_value);
 	}
+
+  heck_expr* expr = NULL;
 	
 	if (match(p, TK_PAR_L)) { // parentheses grouping
-		heck_expr* expr = expression(p, parent);
-		if (match(p, TK_PAR_R)) {
-			return expr;
-		} else {
+		expr = expression(p, parent);
+		if (!match(p, TK_PAR_R)) {
 			parser_error(p, peek(p), true, "expected )");
 			return create_expr_err(p->code, expr_start);
 		}
-	}
-	
-	// This is the ONLY place where the global and local keywords should be parsed
-	if (match(p, TK_IDF)) {
-		return primary_idf(p, parent, CONTEXT_LOCAL);
-	}
-	
-	if (match(p, TK_CTX)) {
+	} else if (match(p, TK_IDF)) {
+	  // This is the ONLY place where the global and local keywords should be parsed
+		expr = primary_idf(p, parent, CONTEXT_LOCAL);
+	} else if (match(p, TK_CTX)) {
 		idf_context ctx = previous(p)->value.ctx_value;
 		if (match(p, TK_DOT) && match(p, TK_IDF)) {
-			return primary_idf(p, parent, ctx);
+			expr = primary_idf(p, parent, ctx);
 		} else {
 			parser_error(p, peek(p), true, "expected an identifier");
 			return create_expr_err(p->code, expr_start);
 		}
 	}
-	parser_error(p, peek(p), true, "expected an expression");
-	return create_expr_err(p->code, expr_start);
+
+  if (expr == NULL) {
+    parser_error(p, peek(p), true, "expected an expression");
+    return create_expr_err(p->code, expr_start);
+  }
+
+  // parse array access
+  while (match(p, TK_SQR_L)) {
+    expr = create_expr_arr_access(p->code, expr_start, expr, expression(p, parent));
+    if (!match(p, TK_SQR_R)) {
+      parser_error(p, peek(p), true, "expected ]");
+      return create_expr_err(p->code, expr_start);
+    }
+    printf("in array %i\n", peek(p)->fp.ch);
+  }
+
+  return expr;
 }
 
 // TODO: associate operators with their corresponding vtables during token creation
@@ -594,7 +605,7 @@ heck_expr* assignment(parser* p, heck_scope* parent) {
 	
 	if (match(p, TK_OP_ASG)) {
 		
-		if (expr->type == EXPR_VALUE) {
+		if (expr->type == EXPR_VALUE || expr->type == EXPR_ARR_ACCESS) {
 			heck_expr* left = expression(p, parent);
 			heck_expr* asg = create_expr_asg(p->code, expr_start, expr, left);
 			//asg->data_type = expr->data_type;

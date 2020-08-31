@@ -93,6 +93,17 @@ heck_expr* create_expr_call(heck_code* c, heck_file_pos* fp, heck_expr* operand)
 	return e;
 }
 
+heck_expr* create_expr_arr_access(heck_code* c, heck_file_pos* fp, heck_expr* operand, heck_expr* value) {
+  heck_expr* e = heck_alloc(c, EXPR_SIZE + sizeof(heck_expr_arr_access));
+  init_expr(fp, e, EXPR_ARR_ACCESS, &expr_vtable_arr_access);
+
+  heck_expr_arr_access* arr_access = &e->value.arr_access;
+  arr_access->operand = operand;
+  arr_access->value = value;
+
+  return e;
+}
+
 heck_expr* create_expr_asg(heck_code* c, heck_file_pos* fp, heck_expr* left, heck_expr* right) {
 	heck_expr* e = heck_alloc(c, EXPR_SIZE + sizeof(heck_expr_binary));
   init_expr(fp, e, EXPR_BINARY, &expr_vtable_asg);
@@ -708,7 +719,7 @@ bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr) {
           heck_data_type* arg_type = current_arg->data_type;
           heck_data_type* param_type = def->decl.param_vec[i]->data_type;
           if (!data_type_cmp(param_type, arg_type)) {
-            func_call->arg_vec[i] = create_expr_cast(c, current_arg->fp, current_arg, param_type);
+            func_call->arg_vec[i] = create_expr_cast(c, NULL, current_arg, param_type);
           }
         }
       }
@@ -747,7 +758,36 @@ bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr) {
   return success;
 	
 }
-bool resolve_expr_arr_access(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_arr_access(heck_code* c, heck_scope* parent, heck_expr* expr) {
+  heck_expr_arr_access* arr_access = &expr->value.arr_access;
+
+  if (!resolve_expr(c, parent, arr_access->operand))
+    return false;
+
+  if (!resolve_expr(c, parent, arr_access->value))
+    return false;
+
+  heck_data_type* arr_type = arr_access->operand->data_type;
+
+  if (arr_type->type_name != TYPE_ARR) {
+    heck_report_error(NULL, expr->fp, "cannot use array access on a non-array type");
+    return false;
+  }
+
+  if (!data_type_is_numeric(arr_access->value->data_type)) {
+    heck_report_error(NULL, arr_access->value->fp, "cannot access an array element using a non-numeric type");
+    return false;
+  }
+
+  if (arr_access->value->data_type == data_type_float) {
+    // implicit cast to int
+    arr_access->value = create_expr_cast(c, NULL, arr_access->value, data_type_int);
+  }
+  
+  // get the underlying type of the array
+  expr->data_type = arr_type->value.arr_type;
+  return true;
+}
 
 // precedence 2
 bool resolve_expr_pre_incr(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
@@ -796,7 +836,7 @@ bool resolve_expr_mult(heck_code* c, heck_scope* parent, heck_expr* expr) {
 		expr->data_type = l_type;
     if (!data_type_cmp(l_type, r_type))
       // implicit cast
-      binary->right = create_expr_cast(c, binary->right->fp, binary->right, l_type);
+      binary->right = create_expr_cast(c, NULL, binary->right, l_type);
 
 		return true;
 	}
@@ -846,7 +886,7 @@ bool resolve_expr_eq(heck_code* c, heck_scope* parent, heck_expr* expr) {
   if (!data_type_cmp(l_type, r_type)) {
 
     if (data_type_imp_convertable(l_type, r_type)) {
-      eq_expr->right = create_expr_cast(c, eq_expr->right->fp, eq_expr->right, l_type);
+      eq_expr->right = create_expr_cast(c, NULL, eq_expr->right, l_type);
     } else {
       heck_report_error(NULL, expr->fp, "cannot compare between values of type \"{t}\" and \"{t}\"", l_type, r_type);
       return false;
@@ -954,26 +994,34 @@ bool resolve_expr_asg(heck_code* c, heck_scope* parent, heck_expr* expr) {
       vector_add(&parent->var_inits, value->name->value.var_value);
     }
 
-  } else { // TODO: resolve and handle other types of lvalues
+  } else if (asg->left->type = EXPR_ARR_ACCESS) {
+    
+    if (!resolve_expr(c, parent, asg->left))
+      return false;
+
+  } else {
+    // TODO: resolve and handle other types of lvalues
     heck_report_error(NULL, expr->fp, "unable to assign to expression");
     return false;
   }
 
-  if (!data_type_cmp(asg->left->data_type, asg->right->data_type)) {
-		// fputs("error: unable to convert ", stderr);
-    // fprint_data_type(asg->left->data_type, stderr);
-    // fputs(" to ", stderr);
-    // fprint_data_type(asg->right->data_type, stderr);
-    // fputc('\n', stderr);
-    /*heck_fprint_fmt(stderr, "error: unable to convert {t} to {t}\n",
-      asg->right->data_type, asg->left->data_type);*/
+  heck_data_type* l_type = asg->left->data_type;
+  heck_data_type* r_type = asg->right->data_type;
 
-    heck_report_error(NULL, expr->fp, "unable to convert {t} to {t}", asg->right->data_type, asg->left->data_type);
-    
-    return false;
+  if (!data_type_cmp(l_type, r_type)) {
+
+    if (data_type_imp_convertable(l_type, r_type)) {
+      
+      asg->right = create_expr_cast(c, NULL, asg->right, l_type);
+
+    } else {
+      heck_report_error(NULL, expr->fp, "unable to convert {t} to {t}", asg->right->data_type, asg->left->data_type);
+      
+      return false;
+    }
+
   }
 
-  // TODO: free each type once
   expr->data_type = asg->left->data_type;
 	
   return true;
