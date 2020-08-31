@@ -49,10 +49,10 @@ void str_table_free(str_table* t) {
 static void resize_entry(str_table* t, str_entry old_entry) {
 	uint32_t index = old_entry->hash % t->capacity;
 	for (;;) {
-		str_entry entry = t->buckets[index];
+		str_entry* entry = &t->buckets[index];
 		
-		if (entry == NULL) {
-			entry = old_entry; // copy data from old entry
+		if (*entry == NULL) {
+			*entry = old_entry; // copy data from old entry
 			break;
 		}
 		
@@ -86,7 +86,7 @@ static str_entry* find_entry(str_table* t, str_entry value) {
 	for (;;) {
 		str_entry* entry = &t->buckets[index];
 		
-		if ((*entry) == NULL) {
+		if (*entry == NULL) {
 			
 			//if (!b->info.tombstone) commented out because we don't use tombstones
 			return entry;

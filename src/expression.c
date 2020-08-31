@@ -677,6 +677,7 @@ bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr) {
   if (operand->type == EXPR_VALUE) {
 
     // try to find the identifier
+    heck_print_fmt("looking up function: {i}", operand->value.value);
     heck_name* name = scope_resolve_value(c, parent, &operand->value.value);
 
     if (name == NULL) {
@@ -1050,17 +1051,19 @@ void print_expr_call(heck_expr* expr) {
 	putc('[', stdout);
 	print_expr(call->operand);
 	putc('(', stdout);
-	vec_size_t size = vector_size(call->arg_vec);
-	if (size > 0) {
-		vec_size_t i = 0;
-		for (;;) {
-			print_expr(call->arg_vec[i]);
-			if (i == size - 1)
-				break;
-			fputs(", ", stdout);
-			++i;
-		}
-	}
+  if (call->arg_vec != NULL) {
+    vec_size_t size = vector_size(call->arg_vec);
+    if (size > 0) {
+      vec_size_t i = 0;
+      for (;;) {
+        print_expr(call->arg_vec[i]);
+        if (i == size - 1)
+          break;
+        fputs(", ", stdout);
+        ++i;
+      }
+    }
+  }
   printf(")%s]", call->func != NULL ? "[resolved]" : "");
 }
 

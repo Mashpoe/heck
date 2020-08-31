@@ -67,7 +67,6 @@ static idf_entry* resize_entry(idf_map* m, idf_entry* old_entry) {
 
 static void idf_map_resize(idf_map* m) {
 	
-	size_t old_capacity = m->capacity;
 	idf_entry* old_buckets = m->buckets;
 	
 	m->capacity *= TABLE_RESIZE_FACTOR;
@@ -109,14 +108,13 @@ bool idf_map_get(idf_map* m, str_entry key, void** output_val) {
 	
 	// if there is no match output val will just be NULL
 	*output_val = entry->value;
+
 	return entry->key != NULL;
 }
 
 void idf_map_set(idf_map* m, str_entry key, void* input_val) {
-	
-	if (m->count + 1 > TABLE_MAX_LOAD * m->capacity) {
+	if (m->count + 1 > TABLE_MAX_LOAD * m->capacity)
 		idf_map_resize(m);
-	}
 	
 	idf_entry* entry = find_entry(m, key);
 	entry->key = key;

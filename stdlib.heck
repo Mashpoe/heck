@@ -1,20 +1,68 @@
-import func print_int(value: int)
-import func print_float(value: float)
-import func print_bool(value: bool)
-import func print_string(value: string)
+import func _print_int(value: int)
+import func _print_float(value: float)
+import func _print_bool(value: bool)
+import func _print_string(value: string)
+import func _rand_float() -> float
+import func _rand_range(start: float, end: float) -> float
+import func input() -> string
+import func parseInt(value: string) -> int
+import func parseFloat(value: string) -> float
+import func _concat_int_l(a: int, b: string) -> string
+import func _concat_int_r(a: string, b: int) -> string
+import func _concat_float_l(a: float, b: string) -> string
+import func _concat_float_r(a: string, b: float) -> string
+import func _concat_bool_l(a: bool, b: string) -> string
+import func _concat_bool_r(a: string, b: bool) -> string
+import func _concat_str(a: string, b: string) -> string
 
 func print(value: int) {
-  print_int(value)
+  _print_int(value)
 }
 
 func print(value: float) {
-  print_float(value)
+  _print_float(value)
 }
 
 func print(value: bool) {
-  print_bool(value)
+  _print_bool(value)
 }
 
 func print(value: string) {
-  print_string(value)
+  _print_string(value)
+}
+
+func random() {
+  return _rand_float()
+}
+
+func random(start: float, end: float) {
+  return _rand_range(start, end)
+}
+
+func concat(a: int, b: string) {
+  return _concat_int_l(a, b)
+}
+
+func concat(a: string, b: int) {
+  return _concat_int_r(a, b)
+}
+
+func concat(a: float, b: string) {
+  return _concat_float_l(a, b)
+}
+
+func concat(a: string, b: float) {
+  return _concat_float_r(a, b)
+}
+
+func concat(a: bool, b: string) {
+  return _concat_bool_l(a, b)
+}
+
+func concat(a: string, b: bool) {
+  return _concat_bool_r(a, b)
+}
+
+func concat(a: string, b: string) {
+  return _concat_str(a, b)
 }

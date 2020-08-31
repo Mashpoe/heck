@@ -204,11 +204,15 @@ heck_name* scope_resolve_idf(const heck_scope* parent, heck_idf idf) {
 	while (parent->names == NULL || !idf_map_get(parent->names, idf[0], (void*)&name)) {
 		
 		// we have likely reached the global scope if parent->parent == NULL
-		if (parent->parent == NULL)
+		if (parent->parent == NULL) {
+
+    //printf("not found idf: %i, %s\n", idf[0]->hash, idf[0]->value);
 			return NULL;
+    }
 		
 		parent = parent->parent; // check for the identifier in the parent nmsp
 	}
+    //printf("found idf: %i, %s\n", idf[0]->hash, idf[0]->value);
 	
 	/*	we have found the parent of the identifier
 		now find the identifier "children" if they exist */

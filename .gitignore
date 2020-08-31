@@ -68,3 +68,4 @@ run.sh
 rundb.sh
 *.code-workspace
 .vscode/
+test2/
