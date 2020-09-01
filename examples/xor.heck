@@ -1,0 +1,66 @@
+let a = false
+let b = true
+
+if a xor b {
+  print("xor")
+}
+
+if b xor b {
+  print("xor 2")
+}
+
+if a xor a {
+  print("xor 3")
+}
+
+if a && b {
+  print("and")
+}
+
+if b && b {
+  print("and 2")
+}
+
+if a && a {
+  print("and 3")
+}
+
+if a || b {
+  print("or")
+}
+
+if b || b {
+  print("or 2")
+}
+
+if a || a {
+  print("or 3")
+}
+
+if !b || b && b {
+  print("or 4")
+}
+
+if 5 > 3 {
+  print("5 > 3")
+}
+
+if 5 < 3 {
+  print("5 < 3")
+}
+
+if 5 >= 3 {
+  print("5 >= 3")
+}
+
+if 5 <= 3 {
+  print("5 <= 3")
+}
+
+if 5 >= 5 {
+  print("5 >= 5")
+}
+
+if 5 <= 5 {
+  print("5 <= 5")
+}

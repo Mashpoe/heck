@@ -1,0 +1,8 @@
+let x = intArray(100)
+
+let counter = 0
+while counter < len(x) {
+  x[counter] = counter
+  print(x[counter])
+  counter = counter + 1
+}

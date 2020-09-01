@@ -1,0 +1,13 @@
+/*
+
+/*
+
+heck supports nested comments btw
+
+*/
+
+*/
+
+
+// russian hello world, from MDN
+print("Привет, мир! 😎\n")

@@ -1,0 +1,14 @@
+func heck(a, b) {
+  print(concat(a, "aaa"))
+  print(concat(b, "aaa"))
+  print("\n")
+}
+
+heck(12, 2.44)
+
+heck("help", "no")
+
+heck(true, 27)
+
+heck(false, false)
+

@@ -1,0 +1,9 @@
+let x = concat("hello", 24)
+
+print("\nconcatenated string:")
+
+print(x)
+
+print("\nlength:")
+
+print(len(x))

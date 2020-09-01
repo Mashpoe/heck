@@ -1,0 +1,35 @@
+print("Welcome to the calculator!")
+let run = true
+let num1 = 0.0
+let num2 = 0.0
+let op = ""
+let answer = 0.0
+
+while run == true {
+  print("Enter your first number:")
+  num1 = parseInt(input())
+
+  print("Enter your second number:")
+  num2 = parseInt(input())
+
+  print("Enter an operator: (+, -, *, /)")
+  op = input()
+
+  if op == "+" {
+    answer = num1 + num2
+  } else if op == "-" {
+    answer = num1 - num2
+  } else if op == "*" {
+    answer = num1 * num2
+  } else {
+    answer = num1 / num2
+  }
+
+  print(concat("You got: ", answer))
+
+  print("Want to try again? (y/n)")
+
+  if input() != "y" {
+    run = false
+  }
+}

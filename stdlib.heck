@@ -23,6 +23,15 @@ import func stringArray(size: int) -> string[]
 import func stringArray2d(width: int, height: int) -> string[][]
 import func boolArray(size: int) -> bool[]
 import func boolArray2d(width: int, height: int) -> bool[][]
+import func _string_len(str: string) -> int
+import func _intArray_len(arr: int[]) -> int
+import func _floatArray_len(arr: float[]) -> int
+import func _stringArray_len(arr: string[]) -> int
+import func _boolArray_len(arr: bool[]) -> int
+import func _intArray2d_len(arr: int[][]) -> int
+import func _floatArray2d_len(arr: float[][]) -> int
+import func _stringArray2d_len(arr: string[][]) -> int
+import func _boolArray2d_len(arr: bool[][]) -> int
 
 func print(value: int) {
   _print_int(value)
@@ -74,4 +83,40 @@ func concat(a: string, b: bool) {
 
 func concat(a: string, b: string) {
   return _concat_str(a, b)
+}
+
+func len(str: string) {
+  return _string_len(str)
+}
+
+func len(arr: int[]) {
+  return _intArray_len(arr)
+}
+
+func len(arr: float[]) {
+  return _floatArray_len(arr)
+}
+
+func len(arr: string[]) {
+  return _stringArray_len(arr)
+}
+
+func len(arr: bool[]) {
+  return _boolArray_len(arr)
+}
+
+func len(arr: int[][]) {
+  return _intArray2d_len(arr)
+}
+
+func len(arr: float[][]) {
+  return _floatArray2d_len(arr)
+}
+
+func len(arr: string[][]) {
+  return _stringArray2d_len(arr)
+}
+
+func len(arr: bool[][]) {
+  return _boolArray2d_len(arr)
 }

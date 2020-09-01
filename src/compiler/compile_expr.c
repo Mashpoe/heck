@@ -134,7 +134,7 @@ void compile_expr_cast(heck_compiler* cmplr, heck_expr* expr) {
 }
 
 void compile_expr_mult(heck_compiler* cmplr, heck_expr* expr) {
-    heck_expr_binary* mul = &expr->value.binary;
+  heck_expr_binary* mul = &expr->value.binary;
 
   compile_expr(cmplr, mul->left);
   compile_expr(cmplr, mul->right);
@@ -159,7 +159,7 @@ void compile_expr_div(heck_compiler* cmplr, heck_expr* expr) {
   if (l_type == data_type_int) {
     wasm_str_lit(cmplr->wasm, "i32.div_s\n");
   } else if (l_type == data_type_float) {
-    wasm_str_lit(cmplr->wasm, "f32.div_s\n");
+    wasm_str_lit(cmplr->wasm, "f32.div\n");
   }
 }
 
