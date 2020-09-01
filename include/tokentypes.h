@@ -66,7 +66,7 @@ typedef enum heck_tk_type {
 	TK_OP_BW_OR,		// |
 	
 	TK_OP_AND,			// &&
-	TK_OP_XOR,			// ^^ that's right, I'm adding the sought after logical XOR operator!
+	TK_OP_XOR,			// ^^ (or xor) that's right, I'm adding the sought after logical XOR operator!
 	TK_OP_OR,			// ||
 	TK_OP_LESS,			// <
 	TK_OP_LESS_EQ,		// <=

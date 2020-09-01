@@ -234,19 +234,51 @@ void compile_expr_bw_or(heck_compiler* cmplr, heck_expr* expr) {
 }
 
 void compile_expr_less(heck_compiler* cmplr, heck_expr* expr) {
-  
+  heck_expr_binary* binary = &expr->value.binary;
+  compile_expr(cmplr, binary->left);
+  compile_expr(cmplr, binary->right);
+  if (binary->left->data_type == data_type_float) {
+    wasm_str_lit(cmplr->wasm, "f32.lt_s\n");
+  } else {
+    // handles bool and int
+    wasm_str_lit(cmplr->wasm, "i32.lt_s\n");
+  }
 }
 
 void compile_expr_less_eq(heck_compiler* cmplr, heck_expr* expr) {
-  
+  heck_expr_binary* binary = &expr->value.binary;
+  compile_expr(cmplr, binary->left);
+  compile_expr(cmplr, binary->right);
+  if (binary->left->data_type == data_type_float) {
+    wasm_str_lit(cmplr->wasm, "f32.le_s\n");
+  } else {
+    // handles bool and int
+    wasm_str_lit(cmplr->wasm, "i32.le_s\n");
+  }
 }
 
 void compile_expr_gtr(heck_compiler* cmplr, heck_expr* expr) {
-  
+  heck_expr_binary* binary = &expr->value.binary;
+  compile_expr(cmplr, binary->left);
+  compile_expr(cmplr, binary->right);
+  if (binary->left->data_type == data_type_float) {
+    wasm_str_lit(cmplr->wasm, "f32.gt_s\n");
+  } else {
+    // handles bool and int
+    wasm_str_lit(cmplr->wasm, "i32.gt_s\n");
+  }
 }
 
 void compile_expr_gtr_eq(heck_compiler* cmplr, heck_expr* expr) {
-  
+  heck_expr_binary* binary = &expr->value.binary;
+  compile_expr(cmplr, binary->left);
+  compile_expr(cmplr, binary->right);
+  if (binary->left->data_type == data_type_float) {
+    wasm_str_lit(cmplr->wasm, "f32.ge_s\n");
+  } else {
+    // handles bool and int
+    wasm_str_lit(cmplr->wasm, "i32.ge_s\n");
+  }
 }
 
 void compile_expr_eq(heck_compiler* cmplr, heck_expr* expr) {
@@ -286,7 +318,15 @@ void compile_expr_and(heck_compiler* cmplr, heck_expr* expr) {
 }
 
 void compile_expr_xor(heck_compiler* cmplr, heck_expr* expr) {
-  
+  heck_expr_binary* binary = &expr->value.binary;
+  compile_expr(cmplr, binary->left);
+  compile_expr(cmplr, binary->right);
+  if (binary->left->data_type == data_type_float) {
+    wasm_str_lit(cmplr->wasm, "f32.xor\n");
+  } else {
+    // handles bool and int
+    wasm_str_lit(cmplr->wasm, "i32.xor\n");
+  }
 }
 
 void compile_expr_or(heck_compiler* cmplr, heck_expr* expr) {

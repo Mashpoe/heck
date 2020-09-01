@@ -358,7 +358,7 @@ bool resolve_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
       success *= resolve_expr(c, parent, node->condition);
       heck_data_type* condition_type = node->condition->data_type;
       if (!data_type_is_truthy(condition_type)) {
-        heck_report_error(NULL, stmt->fp, "if statement condition must be a type with truthiness");
+        heck_report_error(NULL, stmt->fp, "if statement condition must be a truthy type");
         success = false;
       }
     }

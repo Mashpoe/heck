@@ -530,6 +530,9 @@ bool heck_scan(heck_code* c, const char* code) {
 						
 					} else if (match_kw(&fp, "string")) {
 						add_token_prim(c, &fp, data_type_string);
+          
+					} else if (match_kw(&fp, "xor")) {
+						add_token(c, &fp, TK_OP_XOR);
 					
           // the following keywords are reserved but not in use
 					} else if (match_kw(&fp, "null")) {

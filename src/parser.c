@@ -581,9 +581,42 @@ heck_expr* equality(parser* p, heck_scope* parent) {
 //	}
 }
 
-heck_expr* ternary(parser* p, heck_scope* parent) {
+heck_expr* logical_and(parser* p, heck_scope* parent) {
   heck_file_pos* expr_start = &peek(p)->fp;
 	heck_expr* expr = equality(p, parent);
+
+  while (match(p, TK_OP_AND)) {
+    expr = create_expr_binary(p->code, expr_start, expr, TK_OP_AND, equality(p, parent), &expr_vtable_and);
+  }
+
+  return expr;
+}
+
+heck_expr* logical_xor(parser* p, heck_scope* parent) {
+  heck_file_pos* expr_start = &peek(p)->fp;
+	heck_expr* expr = logical_and(p, parent);
+
+  while (match(p, TK_OP_XOR)) {
+    expr = create_expr_binary(p->code, expr_start, expr, TK_OP_XOR, logical_and(p, parent), &expr_vtable_xor);
+  }
+
+  return expr;
+}
+
+heck_expr* logical_or(parser* p, heck_scope* parent) {
+  heck_file_pos* expr_start = &peek(p)->fp;
+	heck_expr* expr = logical_xor(p, parent);
+
+  while (match(p, TK_OP_OR)) {
+    expr = create_expr_binary(p->code, expr_start, expr, TK_OP_OR, logical_xor(p, parent), &expr_vtable_or);
+  }
+
+  return expr;
+}
+
+heck_expr* ternary(parser* p, heck_scope* parent) {
+  heck_file_pos* expr_start = &peek(p)->fp;
+	heck_expr* expr = logical_or(p, parent);
 	
 	if (match(p, TK_Q_MARK)) {
 		heck_expr* value_a = expression(p, parent);
