@@ -580,7 +580,9 @@ bool heck_scan(heck_code* c, const char* code) {
 	// add the end token
 	add_token(c, &fp, TK_EOF);
 	
+  #ifndef __EMSCRIPTEN__
 	free((void*)fp.file); // clean up the file we loaded into memory
+  #endif
 	
 	return true;
 }

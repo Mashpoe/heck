@@ -168,7 +168,7 @@ void compile_string_literals(heck_compiler* cmplr) {
 // assumes everything was resolved
 // there shouldn't be any issues
 // generates wasm in binary format
-bool heck_compile(heck_code* c) {
+const char* heck_compile(heck_code* c) {
 	
   // func decls go at the beginning of a file
   heck_compiler cmplr = {
@@ -213,7 +213,13 @@ bool heck_compile(heck_code* c) {
 
   wasm_str_lit(cmplr.wasm, ")");
 
-  return wasm_code_output(cmplr.wasm, "a.out.wat");
+  #ifdef __EMSCRIPTEN__
+    wasm_add_byte(cmplr.wasm, '\0');
+    return wasm_code_get_str(cmplr.wasm);
+  #else
+    wasm_code_output(cmplr.wasm, "a.out.wat");
+    return NULL;
+  #endif
 }
 
 void write_int(wasm_code* wasm, int value) {

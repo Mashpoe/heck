@@ -12,9 +12,6 @@
 
 typedef struct heck_compiler heck_compiler;
 
-// resolves & compiles everything.
-// if the syntax tree ends up being too simple for compiling, resolving can be moved elsewhere
-
-bool heck_compile(heck_code* c);
+const char* heck_compile(heck_code* c);
 
 #endif /* compiler_h */

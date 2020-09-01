@@ -76,3 +76,7 @@ bool wasm_code_output(wasm_code* code, const char* output) {
 	return true;
 	
 }
+
+const char* wasm_code_get_str(wasm_code* code) {
+  return code->bytes;
+}

@@ -24,6 +24,31 @@ func run() {
 	return a
 }*/
 
+const char* compile_code(const char* code) {
+  if (code != NULL) {
+
+		//printf("start.\n");
+		heck_code* c = heck_create();
+		heck_scan(c, code);
+		//heck_print_tokens(c);
+		bool success = heck_parse(c); // parsing includes resolving for now, since it completes the syntax tree
+
+		//heck_print_tree(c);
+
+    if (success) {
+      return heck_compile(c);
+    }
+
+		//printf("done.\n");
+		//printf("press ENTER to continue...");
+		//getchar();
+
+		//heck_free(c);
+
+	}
+  return NULL;
+}
+
 int main(int argc, const char * argv[]) {
 	// insert code here...
 	

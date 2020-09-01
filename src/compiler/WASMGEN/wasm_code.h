@@ -36,4 +36,6 @@ void wasm_code_print(wasm_code* code);
 
 bool wasm_code_output(wasm_code* code, const char* filename);
 
+const char* wasm_code_get_str(wasm_code* code);
+
 #endif /* wasm_code_h */
