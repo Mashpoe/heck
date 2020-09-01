@@ -562,6 +562,7 @@ heck_expr* equality(parser* p, heck_scope* parent) {
 				break;
 			case TK_OP_N_EQ:
 				vtable = &expr_vtable_n_eq;
+        break;
 			default:
 				return expr;
 		}
@@ -748,9 +749,8 @@ heck_stmt* if_statement(parser* p, heck_scope* parent, uint8_t flags) {
 	for (;;) {
 		
 		if (peek(p)->type != TK_BRAC_L) {
-			// TODO: report expected '{'
-			panic_mode(p);
-			break;
+			parser_error(p, peek(p), true, "expected {");
+      break;
 		}
 
 		heck_scope* block_scope = scope_create(p->code, parent);
@@ -796,6 +796,25 @@ heck_stmt* if_statement(parser* p, heck_scope* parent, uint8_t flags) {
 	s->value.if_stmt.type = type;
 	
 	return s;
+}
+
+heck_stmt* while_statement(parser* p, heck_scope* parent, uint8_t flags) {
+  heck_token* start_tk = peek(p);
+
+  step(p);
+
+  heck_expr* condition = expression(p, parent);
+
+  if (peek(p)->type != TK_BRAC_L) {
+    parser_error(p, peek(p), true, "expected {");
+    return create_stmt_err(p->code, peek(p));
+  }
+
+	heck_scope* block_scope = scope_create(p->code, parent);
+  heck_block* block = parse_block(p, block_scope, flags);
+
+  return create_stmt_while(p->code, &start_tk->fp, condition, block);
+
 }
 
 // returns true if parameters are successfully parsed
@@ -1524,6 +1543,9 @@ void parse_statement(parser* p, heck_block* block, uint8_t flags) {
         if (block->type != BLOCK_BREAKS && block->type < stmt->value.if_stmt.type) {
           block->type = stmt->value.if_stmt.type;
         }
+				break;
+			case TK_KW_WHILE:
+				stmt = while_statement(p, block->scope, flags);
 				break;
 			case TK_KW_NAMESPACE:
 				if (STMT_IN_GLOBAL(flags)) {

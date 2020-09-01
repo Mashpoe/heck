@@ -58,6 +58,16 @@ heck_stmt* create_stmt_if(heck_code* c, heck_file_pos* fp, heck_if_node* content
 	return s;
 }
 
+heck_stmt* create_stmt_while(heck_code* c, heck_file_pos* fp, heck_expr* condition, heck_block* code) {
+  heck_stmt* s = heck_alloc(c, STMT_SIZE + sizeof(heck_stmt_while));
+  init_stmt(fp, s, STMT_WHILE, &stmt_vtable_while);
+	
+	s->value.while_stmt.condition = condition;
+	s->value.while_stmt.code = code;
+	
+	return s;
+}
+
 heck_stmt* create_stmt_class(heck_code* c, heck_file_pos* fp, heck_scope* class_scope) {
   heck_stmt* s = heck_alloc(c, STMT_SIZE + sizeof(heck_stmt_class));
   init_stmt(fp, s, STMT_CLASS, &stmt_vtable_class);
@@ -239,6 +249,17 @@ const stmt_vtable stmt_vtable_if = {
   print_stmt_if
 };
 
+bool resolve_stmt_while(heck_code* c, heck_scope* parent, heck_stmt* stmt);
+void compile_stmt_while(heck_compiler* cmplr, heck_stmt* stmt);
+heck_stmt* copy_stmt_while(heck_code* c, heck_scope* parent, heck_stmt* stmt);
+void print_stmt_while(heck_stmt* stmt, int indent);
+const stmt_vtable stmt_vtable_while = {
+  resolve_stmt_while,
+  compile_stmt_while,
+  copy_stmt_while,
+  print_stmt_while
+};
+
 bool resolve_stmt_ret(heck_code* c, heck_scope* parent, heck_stmt* stmt);
 void compile_stmt_ret(heck_compiler* cmplr, heck_stmt* stmt);
 heck_stmt* copy_stmt_ret(heck_code* c, heck_scope* parent, heck_stmt* stmt);
@@ -333,12 +354,35 @@ bool resolve_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
 		// since true * false = false and false * false = false
 		success *= resolve_block(c, node->code);
 
-    if (node->condition != NULL)
+    if (node->condition != NULL) {
       success *= resolve_expr(c, parent, node->condition);
+      heck_data_type* condition_type = node->condition->data_type;
+      if (!data_type_is_truthy(condition_type)) {
+        heck_report_error(NULL, stmt->fp, "if statement condition must be a type with truthiness");
+        success = false;
+      }
+    }
 
 	} while ((node = node->next)); // will evaluate to false if node->next == NULL
 
 	return success;
+}
+
+bool resolve_stmt_while(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
+  heck_stmt_while* while_stmt = &stmt->value.while_stmt;
+
+  bool success = resolve_expr(c, parent, while_stmt->condition);
+  
+  heck_data_type* condition_type = while_stmt->condition->data_type;
+
+  if (!data_type_is_truthy(condition_type)) {
+    heck_report_error(NULL, stmt->fp, "while loop condition must be a truthy type");
+    success = false;
+  }
+
+  success *= resolve_block(c, while_stmt->code);
+
+  return success;
 }
 
 bool resolve_stmt_ret(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
@@ -461,6 +505,11 @@ heck_stmt* copy_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
   return if_stmt;
 }
 
+heck_stmt* copy_stmt_while(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
+  heck_stmt_while* while_stmt = &stmt->value.while_stmt;
+  return create_stmt_while(c, stmt->fp, copy_expr(c, while_stmt->condition), block_copy(c, parent, while_stmt->code));
+}
+
 heck_stmt* copy_stmt_ret(heck_code* c, heck_scope* parent, heck_stmt* stmt) {
   return create_stmt_ret(c, stmt->fp, copy_expr(c, stmt->value.expr_value));
 }
@@ -521,6 +570,14 @@ void print_stmt_if(heck_stmt* stmt, int indent) {
 		}
 		
 	}
+}
+
+void print_stmt_while(heck_stmt* stmt, int indent) {
+  heck_stmt_while* while_stmt = &stmt->value.while_stmt;
+  printf("while ");
+	print_expr(while_stmt->condition);
+	printf(" ");
+  print_block(while_stmt->code, indent);
 }
 
 void print_stmt_ret(heck_stmt* stmt, int indent) {

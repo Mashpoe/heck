@@ -581,7 +581,7 @@ const expr_vtable expr_vtable_xor = {
 bool resolve_expr_or(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_or(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_or = {
-	resolve_expr_or,
+	resolve_expr_and,
   compile_expr_or,
 	copy_expr_binary,
 	print_expr_binary
@@ -793,7 +793,18 @@ bool resolve_expr_arr_access(heck_code* c, heck_scope* parent, heck_expr* expr) 
 bool resolve_expr_pre_incr(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 bool resolve_expr_pre_decr(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 bool resolve_expr_unary_minus(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
-bool resolve_expr_not(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+bool resolve_expr_not(heck_code* c, heck_scope* parent, heck_expr* expr) {
+  heck_expr_unary* unary_expr = &expr->value.unary;
+  
+  bool success = resolve_expr(c, parent, unary_expr->expr);
+
+  if (!data_type_is_truthy(unary_expr->expr->data_type)) {
+    heck_report_error(NULL, expr->fp, "cannot perform operation on a truthy value");
+    success = false;
+  }
+
+  return success;
+}
 bool resolve_expr_bw_not(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
 bool resolve_expr_cast(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	if (!resolve_expr(c, parent, expr->value.expr))
@@ -901,7 +912,7 @@ bool resolve_expr_eq(heck_code* c, heck_scope* parent, heck_expr* expr) {
       return false;
     }
     // create resolved call to _str_cmp
-    heck_expr* call_expr = create_expr_call(c, expr->fp, NULL);
+    heck_expr* call_expr = create_expr_call(c, NULL, NULL);
     heck_expr_call* func_call = &call_expr->value.call;
     func_call->func = c->str_cmp;
     // set the arguments as the comparison operands
@@ -929,11 +940,13 @@ bool resolve_expr_and(heck_code* c, heck_scope* parent, heck_expr* expr) {
   if (!resolve_expr_binary(c, parent, expr))
     return false;
   
+  heck_data_type* l_type = binary->left->data_type;
+  heck_data_type* r_type = binary->right->data_type;
+
   // cannot check truthiness of void
-  if (binary->left->data_type->type_name == TYPE_VOID ||
-      binary->right->data_type->type_name == TYPE_VOID) {
-    
-		fprintf(stderr, "error: cannot check truthiness of void\n");
+  if (!data_type_is_truthy(l_type) ||
+      !data_type_is_truthy(r_type)) {
+    heck_report_error(NULL, expr->fp, "cannot perform operation on a non-truthy value");
     return false;
   }
 
@@ -1129,7 +1142,11 @@ void print_expr_value(heck_expr* expr) {
 void print_expr_call(heck_expr* expr) {
 	heck_expr_call* call = &expr->value.call;
 	putc('[', stdout);
-	print_expr(call->operand);
+  if (call->operand != NULL) {
+  	print_expr(call->operand);
+  } else {
+    printf("_UNKNOWN_FUNC_CALL_");
+  }
 	putc('(', stdout);
   if (call->arg_vec != NULL) {
     vec_size_t size = vector_size(call->arg_vec);

@@ -83,7 +83,11 @@ bool data_type_exp_convertable(const heck_data_type* to, const heck_data_type* f
 }
 
 inline bool data_type_is_numeric(const heck_data_type* type) {
-	return type->type_name == TYPE_INT || type->type_name == TYPE_FLOAT;
+	return type == data_type_int || type == data_type_float;
+}
+
+inline bool data_type_is_truthy(const heck_data_type* type) {
+  return type == data_type_bool || data_type_is_numeric(type);
 }
 
 // locates classes, hashes types, etc

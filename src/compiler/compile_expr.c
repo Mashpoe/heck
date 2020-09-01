@@ -114,7 +114,11 @@ void compile_expr_unary_minus(heck_compiler* cmplr, heck_expr* expr) {
 }
 
 void compile_expr_not(heck_compiler* cmplr, heck_expr* expr) {
-  
+  compile_expr(cmplr, expr->value.unary.expr);
+  compile_data_type(cmplr, expr->value.unary.expr->data_type);
+  wasm_str_lit(cmplr->wasm, ".const 0\n");
+  compile_data_type(cmplr, expr->value.unary.expr->data_type);
+  wasm_str_lit(cmplr->wasm, ".eq\n");
 }
 
 void compile_expr_bw_not(heck_compiler* cmplr, heck_expr* expr) {
@@ -258,11 +262,27 @@ void compile_expr_eq(heck_compiler* cmplr, heck_expr* expr) {
 }
 
 void compile_expr_n_eq(heck_compiler* cmplr, heck_expr* expr) {
-  
+  heck_expr_binary* n_eq = &expr->value.binary;
+  compile_expr(cmplr, n_eq->left);
+  compile_expr(cmplr, n_eq->right);
+  if (n_eq->left->data_type == data_type_float) {
+    wasm_str_lit(cmplr->wasm, "f32.ne\n");
+  } else {
+    // handles bool and int
+    wasm_str_lit(cmplr->wasm, "i32.ne\n");
+  }
 }
 
 void compile_expr_and(heck_compiler* cmplr, heck_expr* expr) {
-  
+  heck_expr_binary* binary = &expr->value.binary;
+  compile_expr(cmplr, binary->left);
+  compile_expr(cmplr, binary->right);
+  if (binary->left->data_type == data_type_float) {
+    wasm_str_lit(cmplr->wasm, "f32.and\n");
+  } else {
+    // handles bool and int
+    wasm_str_lit(cmplr->wasm, "i32.and\n");
+  }
 }
 
 void compile_expr_xor(heck_compiler* cmplr, heck_expr* expr) {
@@ -270,7 +290,15 @@ void compile_expr_xor(heck_compiler* cmplr, heck_expr* expr) {
 }
 
 void compile_expr_or(heck_compiler* cmplr, heck_expr* expr) {
-  
+  heck_expr_binary* binary = &expr->value.binary;
+  compile_expr(cmplr, binary->left);
+  compile_expr(cmplr, binary->right);
+  if (binary->left->data_type == data_type_float) {
+    wasm_str_lit(cmplr->wasm, "f32.or\n");
+  } else {
+    // handles bool and int
+    wasm_str_lit(cmplr->wasm, "i32.or\n");
+  }
 }
 
 void compile_expr_ternary(heck_compiler* cmplr, heck_expr* expr) {

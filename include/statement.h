@@ -22,6 +22,7 @@ typedef enum heck_stmt_type {
 	STMT_EXPR,
 	STMT_LET,
 	STMT_IF,
+	STMT_WHILE,
 	STMT_RET,
 	STMT_CLASS,
 	STMT_FUNC,
@@ -83,6 +84,13 @@ typedef struct heck_stmt_if {
 } heck_stmt_if;
 heck_stmt* create_stmt_if(heck_code* c, heck_file_pos* fp, heck_if_node* contents);
 
+// WHILE STATEMENT
+typedef struct heck_stmt_while {
+  heck_expr* condition;
+  heck_block* code;
+} heck_stmt_while;
+heck_stmt* create_stmt_while(heck_code* c, heck_file_pos* fp, heck_expr* condition, heck_block* code);
+
 // not currently in use, but could be used for debugging
 //typedef struct heck_stmt_nmsp {
 //	heck_idf* name;
@@ -104,6 +112,7 @@ heck_stmt* create_stmt_func(heck_code* c, heck_file_pos* fp, heck_func* func);
 
 typedef union {
   struct heck_stmt_if if_stmt;
+  struct heck_stmt_while while_stmt;
   struct heck_stmt_class class_stmt;
   struct heck_stmt_func func_stmt;
   struct heck_block* block_value;
@@ -149,6 +158,7 @@ extern const stmt_vtable stmt_vtable_expr;
 extern const stmt_vtable stmt_vtable_let;
 extern const stmt_vtable stmt_vtable_block;
 extern const stmt_vtable stmt_vtable_if;
+extern const stmt_vtable stmt_vtable_while;
 extern const stmt_vtable stmt_vtable_ret;
 extern const stmt_vtable stmt_vtable_class;
 extern const stmt_vtable stmt_vtable_func;
