@@ -190,7 +190,7 @@ bool resolve_value(heck_code* c, heck_scope* parent, heck_expr* expr) {
  ************************/
 
 bool resolve_not_supported(heck_code* c, heck_scope* parent, heck_expr* expr) {
-  parser_error(NULL, expr->fp, "operator is not fully supported yet");
+  heck_report_error(NULL, expr->fp, "operator is not fully supported yet");
   return false;
 }
 
