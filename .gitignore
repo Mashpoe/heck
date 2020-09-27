@@ -69,3 +69,4 @@ rundb.sh
 *.code-workspace
 .vscode/
 test2/
+node_modules/
