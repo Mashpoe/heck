@@ -49,14 +49,14 @@ enum heck_expr_type {
 // TODO: maybe make these callbacks take void pointers instead of heck_expr
 // TODO: resolve_info* structures instead of parent and global among other parameters that will inevitably be added
 
-typedef bool		(*expr_resolve)(heck_code*, heck_scope*, heck_expr*);
+typedef heck_expr*	(*expr_resolve)(heck_code*, heck_scope*, heck_expr*);
 typedef void		(*expr_compile)(heck_compiler*, heck_expr*);
 typedef heck_expr*	(*expr_copy)(heck_code*, heck_expr*); // for templates
 //typedef void		(*expr_free)(heck_expr*);
 typedef void		(*expr_print)(heck_expr*);
 struct expr_vtable {
 	expr_resolve resolve;
-  expr_compile compile;
+	expr_compile compile;
 	expr_copy copy;
 	//expr_free free;
 	expr_print print;
@@ -156,7 +156,7 @@ enum {
 
 heck_expr* create_expr_err(heck_code* c, heck_file_pos* fp);
 
-bool resolve_expr(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr(heck_code* c, heck_scope* parent, heck_expr* expr);
 
 void compile_expr(heck_compiler* cmplr, heck_expr* expr);
 

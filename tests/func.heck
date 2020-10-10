@@ -1,6 +1,9 @@
-func add(a, b) {
-  return a + b
-}
+print("enter first number")
 
-sum = add(2, 3)
-print(sum)
+let a = parseInt(input())
+
+print("enter second number")
+
+let b = parseInt(input())
+
+print(a + b)

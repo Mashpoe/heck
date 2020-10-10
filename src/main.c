@@ -16,14 +16,6 @@
 #include <time.h>
 #include <string.h>
 
-// solve this problem in heck
-/*
-let a = run()
-
-func run() {
-	return a
-}*/
-
 const char* compile_code(const char* code) {
   if (code != NULL) {
 

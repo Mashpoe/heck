@@ -140,13 +140,15 @@ heck_expr* create_expr_err(heck_code* c, heck_file_pos* fp) {
 // internal use only, for quickly checking binary expressions, doesn't actually fully resolve the expression
 // meant to be called by the resolve functions for binary expressions
 //
-bool resolve_expr_binary(heck_code* c, heck_scope* parent, heck_expr* expr);
-inline bool resolve_expr_binary(heck_code* c, heck_scope* parent, heck_expr* expr) {
+heck_expr* resolve_expr_binary(heck_code* c, heck_scope* parent, heck_expr* expr);
+inline heck_expr* resolve_expr_binary(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	heck_expr_binary* binary = &expr->value.binary;
-	return (
-		  binary->left->vtable->resolve(c, parent, binary->left) &&
-		  binary->right->vtable->resolve(c, parent, binary->right)
-	);
+
+  binary->left = resolve_expr(c, parent, binary->left);
+	binary->right = resolve_expr(c, parent, binary->right);
+
+  // returns NULL on failure without branching
+	return (heck_expr*)((binary->left && binary->right) * (uintptr_t)expr);
 }
 
 // expects a heck_expr_value.
@@ -189,9 +191,9 @@ bool resolve_value(heck_code* c, heck_scope* parent, heck_expr* expr) {
  * all vtable definitions
  ************************/
 
-bool resolve_not_supported(heck_code* c, heck_scope* parent, heck_expr* expr) {
+heck_expr* resolve_not_supported(heck_code* c, heck_scope* parent, heck_expr* expr) {
   heck_report_error(NULL, expr->fp, "operator is not fully supported yet");
-  return false;
+  return NULL;
 }
 
 heck_expr* copy_expr_unary(heck_code* c, heck_expr* expr);
@@ -207,7 +209,7 @@ void print_expr_binary(heck_expr* expr);
  */
 
 // error (always resolves to false)
-bool resolve_expr_err(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_err(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_err(heck_compiler* cmplr, heck_expr* expr);
 heck_expr* copy_expr_err(heck_code* c, heck_expr* expr);
 void print_expr_err(heck_expr* expr);
@@ -218,10 +220,10 @@ const expr_vtable expr_vtable_err = {
 	print_expr_err
 };
 
-// resolved (always resolves to true, frees nothing)
+// resolved (always resolves to true (expr), frees nothing)
 
 // literal
-bool resolve_expr_literal(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_literal(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_literal(heck_compiler* cmplr, heck_expr* expr);
 heck_expr* copy_expr_literal(heck_code* c, heck_expr* expr);
 void print_expr_literal(heck_expr* expr);
@@ -233,7 +235,7 @@ const expr_vtable expr_vtable_literal = {
 };
 
 // variable value
-bool resolve_expr_value(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_value(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_value(heck_compiler* cmplr, heck_expr* expr);
 heck_expr* copy_expr_value(heck_code* c, heck_expr* expr);
 void print_expr_value(heck_expr* expr);
@@ -245,7 +247,7 @@ const expr_vtable expr_vtable_value = {
 };
 
 // postfix increment
-bool resolve_expr_post_incr(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_post_incr(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_post_incr(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_post_incr = {
 	resolve_not_supported,
@@ -255,7 +257,7 @@ const expr_vtable expr_vtable_post_incr = {
 };
 
 // postfix decrement
-bool resolve_expr_post_decr(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_post_decr(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_post_decr(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_post_decr = {
 	resolve_not_supported, // use post_incr for now
@@ -265,7 +267,7 @@ const expr_vtable expr_vtable_post_decr = {
 };
 
 // function call
-bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_call(heck_compiler* cmplr, heck_expr* expr);
 heck_expr* copy_expr_call(heck_code* c, heck_expr* expr);
 void print_expr_call(heck_expr* expr);
@@ -277,7 +279,7 @@ const expr_vtable expr_vtable_call = {
 };
 
 // array access
-bool resolve_expr_arr_access(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_arr_access(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_arr_access(heck_compiler* cmplr, heck_expr* expr);
 heck_expr* copy_expr_arr_access(heck_code* c, heck_expr* expr);
 void print_expr_arr_access(heck_expr* expr);
@@ -294,7 +296,7 @@ const expr_vtable expr_vtable_arr_access = {
  */
 
 // prefix increment
-bool resolve_expr_pre_incr(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_pre_incr(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_pre_incr(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_pre_incr = {
 	resolve_not_supported, // use post_incr for now
@@ -304,7 +306,7 @@ const expr_vtable expr_vtable_pre_incr = {
 };
 
 // prefix decrement
-bool resolve_expr_pre_decr(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_pre_decr(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_pre_decr(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_pre_decr = {
 	resolve_not_supported, // use post_incr for now
@@ -314,7 +316,7 @@ const expr_vtable expr_vtable_pre_decr = {
 };
 
 // unary minus
-bool resolve_expr_unary_minus(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_unary_minus(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_unary_minus(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_unary_minus = {
 	resolve_expr_post_incr, // use post_incr for now
@@ -324,7 +326,7 @@ const expr_vtable expr_vtable_unary_minus = {
 };
 
 // logical not
-bool resolve_expr_not(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_not(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_not(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_not = {
 	resolve_expr_not,
@@ -334,7 +336,7 @@ const expr_vtable expr_vtable_not = {
 };
 
 // bitwise not
-bool resolve_expr_bw_not(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_bw_not(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_bw_not(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_bw_not = {
 	resolve_not_supported,
@@ -344,7 +346,7 @@ const expr_vtable expr_vtable_bw_not = {
 };
 
 // heck-style cast
-bool resolve_expr_cast(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_cast(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_cast(heck_compiler* cmplr, heck_expr* expr);
 heck_expr* copy_expr_cast(heck_code* c, heck_expr* expr);
 void print_expr_cast(heck_expr* expr);
@@ -362,7 +364,7 @@ const expr_vtable expr_vtable_cast = {
 // the basic operators (*, /, %, +, -) share a resolve function currently
 
 // multiplication
-bool resolve_expr_mult(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_mult(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_mult(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_mult = {
 	resolve_expr_mult,
@@ -372,7 +374,7 @@ const expr_vtable expr_vtable_mult = {
 };
 
 // division
-bool resolve_expr_div(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_div(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_div(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_div = {
 	resolve_expr_mult,
@@ -382,7 +384,7 @@ const expr_vtable expr_vtable_div = {
 };
 
 // modulo
-bool resolve_expr_mod(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_mod(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_mod(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_mod = {
 	resolve_not_supported,
@@ -396,7 +398,7 @@ const expr_vtable expr_vtable_mod = {
  */
 
 // addition
-bool resolve_expr_add(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_add(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_add(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_add = {
 	resolve_expr_mult,
@@ -406,7 +408,7 @@ const expr_vtable expr_vtable_add = {
 };
 
 // subtraction
-bool resolve_expr_sub(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_sub(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_sub(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_sub = {
 	resolve_expr_mult,
@@ -420,7 +422,7 @@ const expr_vtable expr_vtable_sub = {
  */
 
 // bitwise left shift
-bool resolve_expr_shift_l(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_shift_l(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_shift_l(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_shift_l = {
 	resolve_not_supported,
@@ -430,7 +432,7 @@ const expr_vtable expr_vtable_shift_l = {
 };
 
 // bitwise right shift
-bool resolve_expr_shift_r(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_shift_r(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_shift_r(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_shift_r = {
 	resolve_not_supported,
@@ -444,7 +446,7 @@ const expr_vtable expr_vtable_shift_r = {
  */
 
 // bitwise and
-bool resolve_expr_bw_and(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_bw_and(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_bw_and(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_bw_and = {
 	resolve_not_supported,
@@ -458,7 +460,7 @@ const expr_vtable expr_vtable_bw_and = {
  */
 
 // bitwise xor
-bool resolve_expr_bw_xor(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_bw_xor(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_bw_xor(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_bw_xor = {
 	resolve_not_supported,
@@ -472,7 +474,7 @@ const expr_vtable expr_vtable_bw_xor = {
  */
 
 // bitwise or
-bool resolve_expr_bw_or(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_bw_or(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_bw_or(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_bw_or = {
 	resolve_not_supported,
@@ -486,7 +488,7 @@ const expr_vtable expr_vtable_bw_or = {
  */
 
 // less than
-bool resolve_expr_less(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_less(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_less(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_less = {
 	resolve_expr_mult,
@@ -496,7 +498,7 @@ const expr_vtable expr_vtable_less = {
 };
 
 // less than or equal to
-bool resolve_expr_less_eq(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_less_eq(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_less_eq(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_less_eq = {
 	resolve_expr_mult,
@@ -506,7 +508,7 @@ const expr_vtable expr_vtable_less_eq = {
 };
 
 // greater than
-bool resolve_expr_gtr(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_gtr(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_gtr(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_gtr = {
 	resolve_expr_mult,
@@ -516,7 +518,7 @@ const expr_vtable expr_vtable_gtr = {
 };
 
 // greater than or equal to
-bool resolve_expr_gtr_eq(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_gtr_eq(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_gtr_eq(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_gtr_eq = {
 	resolve_expr_mult,
@@ -530,7 +532,7 @@ const expr_vtable expr_vtable_gtr_eq = {
  */
 
 // equal to
-bool resolve_expr_eq(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_eq(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_eq(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_eq = {
 	resolve_expr_eq,
@@ -541,7 +543,7 @@ const expr_vtable expr_vtable_eq = {
 
 // not equal to
 // == and != have the same resolve callbacks
-//bool resolve_expr_n_eq(heck_code* c, heck_scope* parent, heck_expr* expr);
+//heck_expr* resolve_expr_n_eq(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_n_eq(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_n_eq = {
 	resolve_expr_eq,
@@ -555,7 +557,7 @@ const expr_vtable expr_vtable_n_eq = {
  */
 
 // logical and
-bool resolve_expr_and(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_and(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_and(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_and = {
 	resolve_expr_and,
@@ -569,7 +571,7 @@ const expr_vtable expr_vtable_and = {
  */
 
 // logical xor
-bool resolve_expr_xor(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_xor(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_xor(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_xor = {
 	resolve_expr_and,
@@ -583,7 +585,7 @@ const expr_vtable expr_vtable_xor = {
  */
 
 // logical or
-bool resolve_expr_or(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_or(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_or(heck_compiler* cmplr, heck_expr* expr);
 const expr_vtable expr_vtable_or = {
 	resolve_expr_and,
@@ -597,7 +599,7 @@ const expr_vtable expr_vtable_or = {
  */
 
 // ternary
-bool resolve_expr_ternary(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_ternary(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_ternary(heck_compiler* cmplr, heck_expr* expr);
 heck_expr* copy_expr_ternary(heck_code* c, heck_expr* expr);
 void print_expr_ternary(heck_expr* expr);
@@ -613,7 +615,7 @@ const expr_vtable expr_vtable_ternary = {
  */
 
 // assignment
-bool resolve_expr_asg(heck_code* c, heck_scope* parent, heck_expr* expr);
+heck_expr* resolve_expr_asg(heck_code* c, heck_scope* parent, heck_expr* expr);
 void compile_expr_asg(heck_compiler* cmplr, heck_expr* expr);
 void print_expr_asg(heck_expr* expr);
 const expr_vtable expr_vtable_asg = {
@@ -626,48 +628,48 @@ const expr_vtable expr_vtable_asg = {
 /************************
 * all resolve definitions
 ************************/
-inline bool resolve_expr(heck_code* c, heck_scope* parent, heck_expr* expr) {
+inline heck_expr* resolve_expr(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	return expr->vtable->resolve(c, parent, expr);
 }
 
 // precedence 1
-bool resolve_expr_err(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+heck_expr* resolve_expr_err(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
 // literals are always resolved immediatley during scanning
-bool resolve_expr_literal(heck_code* c, heck_scope* parent, heck_expr* expr) { return true; }
-bool resolve_expr_value(heck_code* c, heck_scope* parent, heck_expr* expr) {
+heck_expr* resolve_expr_literal(heck_code* c, heck_scope* parent, heck_expr* expr) { return expr; }
+heck_expr* resolve_expr_value(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	
 	// try to find the identifier
 	if (!resolve_value(c, parent, expr))
-		return false;
+		return NULL;
 
 	heck_name* name = expr->value.value.name;
 
   if (name->type == IDF_VARIABLE && !scope_var_is_init(parent, name)) {
     heck_report_error(NULL, expr->fp, "use of uninitialized variable \"{I}\"", expr->value.value.idf);
-    return false;
+    return NULL;
   }
 
-	return true;
+	return expr;
 }
-bool resolve_expr_callback(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
-bool resolve_expr_unary(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
-bool resolve_expr_post_incr(heck_code* c, heck_scope* parent, heck_expr* expr) {
+heck_expr* resolve_expr_callback(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
+heck_expr* resolve_expr_unary(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
+heck_expr* resolve_expr_post_incr(heck_code* c, heck_scope* parent, heck_expr* expr) {
   heck_expr* operand = expr->value.unary.expr;
   if (!resolve_expr(c, parent, operand))
-    return false;
+    return NULL;
   if (operand->data_type == NULL) {
     heck_report_error(NULL, expr->fp, "operation not permitted on a value with no type");
-    return false;
+    return NULL;
   }
   if (!data_type_is_numeric(operand->data_type)) {
     heck_report_error(NULL, expr->fp, "operation not permitted on a value with a non-numeric type");
-    return false;
+    return NULL;
   }
   expr->data_type = operand->data_type;
-  return true;
+  return expr;
 }
-bool resolve_expr_post_decr(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
-bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr) {
+heck_expr* resolve_expr_post_decr(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
+heck_expr* resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	
 	heck_expr_call* func_call = &expr->value.call;
 
@@ -697,13 +699,13 @@ bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr) {
 
     if (name == NULL) {
       heck_report_error(NULL, expr->fp, "call to undeclared identifier \"{I}\"", operand->value.value.idf);
-      return false;
+      return NULL;
     }
 
     // TODO: check declaration/definition status
     if (name->type != IDF_FUNCTION) {
       heck_report_error(NULL, expr->fp, "call to \"{s}\" \"{I}\"", get_idf_type_string(name->type), operand->value.value.idf);
-      return false;
+      return NULL;
     }
     
     if (args_resolved) {
@@ -713,7 +715,7 @@ bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr) {
 
       if (def == NULL) {
         heck_report_error(NULL, expr->fp, "no function named \"{I}\" exists with matching parameters", operand->value.value.idf);
-        return false;
+        return NULL;
       }
 
       // cast arguments that do not match exactly
@@ -755,33 +757,33 @@ bool resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr) {
 
   } else {
     // TODO: check for callback function type
-    // just return false for now
+    // just return NULL for now
     heck_report_error(NULL, expr->fp, "callbacks are not supported yet");
-    return false;
+    return NULL;
   }
 
-  return success;
+  return success ? expr : NULL;
 	
 }
-bool resolve_expr_arr_access(heck_code* c, heck_scope* parent, heck_expr* expr) {
+heck_expr* resolve_expr_arr_access(heck_code* c, heck_scope* parent, heck_expr* expr) {
   heck_expr_arr_access* arr_access = &expr->value.arr_access;
 
   if (!resolve_expr(c, parent, arr_access->operand))
-    return false;
+    return NULL;
 
   if (!resolve_expr(c, parent, arr_access->value))
-    return false;
+    return NULL;
 
   heck_data_type* arr_type = arr_access->operand->data_type;
 
   if (arr_type->type_name != TYPE_ARR) {
     heck_report_error(NULL, expr->fp, "cannot use array access on a non-array type");
-    return false;
+    return NULL;
   }
 
   if (!data_type_is_numeric(arr_access->value->data_type)) {
     heck_report_error(NULL, arr_access->value->fp, "cannot access an array element using a non-numeric type");
-    return false;
+    return NULL;
   }
 
   if (arr_access->value->data_type == data_type_float) {
@@ -791,17 +793,19 @@ bool resolve_expr_arr_access(heck_code* c, heck_scope* parent, heck_expr* expr) 
   
   // get the underlying type of the array
   expr->data_type = arr_type->value.arr_type;
-  return true;
+  return expr;
 }
 
 // precedence 2
-bool resolve_expr_pre_incr(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
-bool resolve_expr_pre_decr(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
-bool resolve_expr_unary_minus(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
-bool resolve_expr_not(heck_code* c, heck_scope* parent, heck_expr* expr) {
+heck_expr* resolve_expr_pre_incr(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
+heck_expr* resolve_expr_pre_decr(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
+heck_expr* resolve_expr_unary_minus(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
+heck_expr* resolve_expr_not(heck_code* c, heck_scope* parent, heck_expr* expr) {
   heck_expr_unary* unary_expr = &expr->value.unary;
   
-  bool success = resolve_expr(c, parent, unary_expr->expr);
+  unary_expr->expr = resolve_expr(c, parent, unary_expr->expr);
+
+  bool success = unary_expr->expr != NULL;
 
   if (!data_type_is_truthy(unary_expr->expr->data_type)) {
     heck_report_error(NULL, expr->fp, "cannot perform operation on a truthy value");
@@ -812,37 +816,40 @@ bool resolve_expr_not(heck_code* c, heck_scope* parent, heck_expr* expr) {
 
   return success;
 }
-bool resolve_expr_bw_not(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
-bool resolve_expr_cast(heck_code* c, heck_scope* parent, heck_expr* expr) {
-	if (!resolve_expr(c, parent, expr->value.expr))
-		return false;
+heck_expr* resolve_expr_bw_not(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
+heck_expr* resolve_expr_cast(heck_code* c, heck_scope* parent, heck_expr* expr) {
+
+  expr->value.expr = resolve_expr(c, parent, expr->value.expr);
+
+	if (expr->value.expr == NULL)
+		return NULL;
 
   // this is the only place where expr->data type isn't already resolved
   if (!resolve_data_type(c, parent, expr->data_type))
-    return false;
+    return NULL;
   
   heck_data_type* l_type = expr->value.expr->data_type;
   heck_data_type* r_type = expr->data_type;
 	
 	// check if the types are identical first
 	if (data_type_cmp(l_type, r_type))
-		return true;
+		return expr;
 	
 	// TODO: check if types are convertable
   if (data_type_exp_convertable(l_type, r_type))
-    return true;
+    return expr;
 
   heck_report_error(NULL, expr->fp, "unable to convert from type \"{t}\" to \"{t}\"", l_type, r_type);
 
   // cast already has data type set
 	
-	return false;
+	return NULL;
 }
 
 // precedence 3
-bool resolve_expr_mult(heck_code* c, heck_scope* parent, heck_expr* expr) {
+heck_expr* resolve_expr_mult(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	if (!resolve_expr_binary(c, parent, expr))
-		return false;
+		return NULL;
 	
 	heck_expr_binary* binary = &expr->value.binary;
 
@@ -856,46 +863,46 @@ bool resolve_expr_mult(heck_code* c, heck_scope* parent, heck_expr* expr) {
       // implicit cast
       binary->right = create_expr_cast(c, NULL, binary->right, l_type);
 
-		return true;
+		return expr;
 	}
 	// TODO: check for operator overloads
   heck_report_error(NULL, expr->fp, "cannot perform a numeric operation with types \"{t}\" and \"{t}\"", l_type, r_type);
 	
-	return false;
+	return NULL;
 	
 }
-bool resolve_expr_div(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
-bool resolve_expr_mod(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+heck_expr* resolve_expr_div(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
+heck_expr* resolve_expr_mod(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
 
 // precedence 4
-bool resolve_expr_add(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
-bool resolve_expr_sub(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+heck_expr* resolve_expr_add(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
+heck_expr* resolve_expr_sub(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
 
 // precedence 5
-bool resolve_expr_shift_l(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
-bool resolve_expr_shift_r(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+heck_expr* resolve_expr_shift_l(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
+heck_expr* resolve_expr_shift_r(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
 
 // precedence 6
-bool resolve_expr_bw_and(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+heck_expr* resolve_expr_bw_and(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
 
 // precedence 7
-bool resolve_expr_bw_xor(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+heck_expr* resolve_expr_bw_xor(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
 
 // precedence 8
-bool resolve_expr_bw_or(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+heck_expr* resolve_expr_bw_or(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
 
 // precedence 9
-bool resolve_expr_less(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
-bool resolve_expr_less_eq(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
-bool resolve_expr_gtr(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
-bool resolve_expr_gtr_eq(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+heck_expr* resolve_expr_less(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
+heck_expr* resolve_expr_less_eq(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
+heck_expr* resolve_expr_gtr(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
+heck_expr* resolve_expr_gtr_eq(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
 
 // precedence 10
-bool resolve_expr_eq(heck_code* c, heck_scope* parent, heck_expr* expr) {
+heck_expr* resolve_expr_eq(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	heck_expr_binary* eq_expr = &expr->value.binary;
 	
   if (!resolve_expr_binary(c, parent, expr))
-    return false;
+    return NULL;
 
   heck_data_type* l_type = eq_expr->left->data_type;
   heck_data_type* r_type = eq_expr->right->data_type;
@@ -907,7 +914,7 @@ bool resolve_expr_eq(heck_code* c, heck_scope* parent, heck_expr* expr) {
       eq_expr->right = create_expr_cast(c, NULL, eq_expr->right, l_type);
     } else {
       heck_report_error(NULL, expr->fp, "cannot compare between values of type \"{t}\" and \"{t}\"", l_type, r_type);
-      return false;
+      return NULL;
     }
 
   }
@@ -916,7 +923,7 @@ bool resolve_expr_eq(heck_code* c, heck_scope* parent, heck_expr* expr) {
 
     if (c->str_cmp == NULL) {
       heck_report_error(NULL, expr->fp, "cannot compare strings without standard library function \"_str_cmp\"");
-      return false;
+      return NULL;
     }
     // create resolved call to _str_cmp
     heck_expr* call_expr = create_expr_call(c, NULL, NULL);
@@ -936,16 +943,16 @@ bool resolve_expr_eq(heck_code* c, heck_scope* parent, heck_expr* expr) {
 
   expr->data_type = data_type_bool;
 	
-	return true;
+	return expr;
 }
-bool resolve_expr_n_eq(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+heck_expr* resolve_expr_n_eq(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
 
 // precedence 11
-bool resolve_expr_and(heck_code* c, heck_scope* parent, heck_expr* expr) {
+heck_expr* resolve_expr_and(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	heck_expr_binary* binary = &expr->value.binary;
 
   if (!resolve_expr_binary(c, parent, expr))
-    return false;
+    return NULL;
   
   heck_data_type* l_type = binary->left->data_type;
   heck_data_type* r_type = binary->right->data_type;
@@ -954,34 +961,36 @@ bool resolve_expr_and(heck_code* c, heck_scope* parent, heck_expr* expr) {
   if (!data_type_is_truthy(l_type) ||
       !data_type_is_truthy(r_type)) {
     heck_report_error(NULL, expr->fp, "cannot perform operation on a non-truthy value");
-    return false;
+    return NULL;
   }
 
   expr->data_type = data_type_bool;
 	
 	// values can be truthy or falsy as long as they can be resolved (unless operator bool() is deleted)
-	return true;
+	return expr;
 }
 
 // precedence 12
-bool resolve_expr_xor(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+heck_expr* resolve_expr_xor(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
 
 // precedence 13
-bool resolve_expr_or(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+heck_expr* resolve_expr_or(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
 
 // precedence 14
-bool resolve_expr_ternary(heck_code* c, heck_scope* parent, heck_expr* expr) { return false; }
+heck_expr* resolve_expr_ternary(heck_code* c, heck_scope* parent, heck_expr* expr) { return NULL; }
 
 // precedence 15
-bool resolve_expr_asg(heck_code* c, heck_scope* parent, heck_expr* expr) {
+heck_expr* resolve_expr_asg(heck_code* c, heck_scope* parent, heck_expr* expr) {
 	
 	heck_expr_binary* asg = &expr->value.binary;
 
-  if (!resolve_expr(c, parent, asg->right))
-    return false;
+  asg->right = resolve_expr(c, parent, asg->right);
+
+  if (asg->right == NULL)
+    return NULL;
 
   //if (!resolve_expr_binary(c, parent, expr))
-  // return false;
+  // return NULL;
 	
 	/*
 	 *	TODO: check if it's a expr_value
@@ -993,13 +1002,13 @@ bool resolve_expr_asg(heck_code* c, heck_scope* parent, heck_expr* expr) {
 
     // will report error on its own
     if (!resolve_value(c, parent, asg->left))
-      return false;
+      return NULL;
 
     heck_expr_value* value = &asg->left->value.value;
 
     if (value->name->type != IDF_VARIABLE) {
       heck_report_error(NULL, expr->fp, "unable to assign to {s} {I}", get_idf_type_string(value->name->type), value->idf);
-      return false;
+      return NULL;
     }
     
     // TODO: check for mutability
@@ -1016,13 +1025,15 @@ bool resolve_expr_asg(heck_code* c, heck_scope* parent, heck_expr* expr) {
 
   } else if (asg->left->type = EXPR_ARR_ACCESS) {
     
-    if (!resolve_expr(c, parent, asg->left))
-      return false;
+    asg->left = resolve_expr(c, parent, asg->left);
+
+    if (asg->left == NULL)
+      return NULL;
 
   } else {
     // TODO: resolve and handle other types of lvalues
     heck_report_error(NULL, expr->fp, "unable to assign to expression");
-    return false;
+    return NULL;
   }
 
   heck_data_type* l_type = asg->left->data_type;
@@ -1037,14 +1048,14 @@ bool resolve_expr_asg(heck_code* c, heck_scope* parent, heck_expr* expr) {
     } else {
       heck_report_error(NULL, expr->fp, "unable to convert {t} to {t}", asg->right->data_type, asg->left->data_type);
       
-      return false;
+      return NULL;
     }
 
   }
 
   expr->data_type = asg->left->data_type;
 	
-  return true;
+  return expr;
 }
 
 //
