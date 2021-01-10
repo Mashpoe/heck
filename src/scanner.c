@@ -89,7 +89,7 @@ int scan_step(file_pos* fp) {
 	if (match_newline(fp))
 		return fp->current;
 	
-	return fp->current = fp->file[fp->pos];
+	return (fp->current = fp->file[fp->pos]);
 }
 
 int scan_peek_next(file_pos* fp) {
