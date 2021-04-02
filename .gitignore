@@ -70,6 +70,7 @@ rundb.sh
 .vscode/
 test2/
 node_modules/
+package-lock.json
 
 # CMake files
 CMakeLists.txt.user
