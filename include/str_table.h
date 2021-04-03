@@ -11,8 +11,8 @@
 #ifndef str_table_h
 #define str_table_h
 
-#include <stdlib.h>
 #include "str.h" // str_objs are used as buckets (they have hashes)
+#include <stdlib.h>
 
 typedef struct str_table str_table;
 
@@ -20,7 +20,8 @@ str_table* str_table_create(void);
 void str_table_free(str_table* t);
 
 // returns either an existing entry or a new one if no matching value exists
-// assumes ownership of the data if creating a new entry (to avoid copying), frees data if entry exists
+// assumes ownership of the data if creating a new entry (to avoid copying),
+// frees data if entry exists
 // TODO: better function name
 str_entry str_table_get_entry(str_table* t, str_entry value);
 

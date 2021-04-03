@@ -8,27 +8,31 @@
 #ifndef token_h
 #define token_h
 
-#include "tokentypes.h"
-#include "literal.h"
-#include "declarations.h"
 #include "context.h"
+#include "declarations.h"
+#include "literal.h"
+#include "tokentypes.h"
 #include <stdbool.h>
 
 typedef struct heck_token heck_token;
 
-typedef struct heck_file_pos {
-  int ln;
-  int ch;
+typedef struct heck_file_pos
+{
+	int ln;
+	int ch;
 } heck_file_pos;
 
-typedef union heck_token_value {
-	str_entry str_value; // for identifiers only, string literals are stored in literal_value
+typedef union heck_token_value
+{
+	str_entry str_value; // for identifiers only, string literals are stored
+			     // in literal_value
 	heck_literal* literal_value;
 	const heck_data_type* prim_type;
 	idf_context ctx_value;
 } heck_token_value;
 
-struct heck_token {
+struct heck_token
+{
 	heck_file_pos fp;
 	enum heck_tk_type type;
 	heck_token_value value;

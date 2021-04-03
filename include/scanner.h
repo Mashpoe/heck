@@ -8,9 +8,9 @@
 #ifndef scanner_h
 #define scanner_h
 
-#include <stdio.h>
-#include <stdbool.h>
 #include "code.h"
+#include <stdbool.h>
+#include <stdio.h>
 
 // returns 0 on failure
 bool heck_scan(heck_code* c, const char* code);

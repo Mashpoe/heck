@@ -10,13 +10,13 @@
 #define hashmap_str_lit(str) (str), sizeof(str) - 1
 #define hashmap_static_arr(arr) (arr), sizeof(arr)
 
-// removal of map elements is disabled by default because of its slight overhead.
-// if you want to enable this feature, uncomment the line below:
+// removal of map elements is disabled by default because of its slight
+// overhead. if you want to enable this feature, uncomment the line below:
 //#define __HASHMAP_REMOVABLE
 
-#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 // hashmaps can associate keys with pointer values or integral types.
 typedef struct hashmap hashmap;
@@ -24,7 +24,8 @@ typedef struct hashmap hashmap;
 // a callback type used for iterating over a map/freeing entries:
 // `void <function name>(void* key, size_t size, uintptr_t value, void* usr)`
 // `usr` is a user pointer which can be passed through `hashmap_iterate`.
-typedef void (*hashmap_callback)(void *key, size_t ksize, uintptr_t value, void *usr);
+typedef void (*hashmap_callback)(void* key, size_t ksize, uintptr_t value,
+				 void* usr);
 
 hashmap* hashmap_create(void);
 
@@ -47,17 +48,20 @@ bool hashmap_get_set(hashmap* map, void* key, size_t ksize, uintptr_t* out_in);
 
 // similar to `hashmap_set()`, but when overwriting an entry,
 // you'll be able properly free the old entry's data via a callback.
-// unlike `hashmap_set()`, this function will overwrite the original key pointer,
-// which means you can free the old key in the callback if applicable.
-void hashmap_set_free(hashmap* map, void* key, size_t ksize, uintptr_t value, hashmap_callback c, void* usr);
+// unlike `hashmap_set()`, this function will overwrite the original key
+// pointer, which means you can free the old key in the callback if applicable.
+void hashmap_set_free(hashmap* map, void* key, size_t ksize, uintptr_t value,
+		      hashmap_callback c, void* usr);
 
 bool hashmap_get(hashmap* map, void* key, size_t ksize, uintptr_t* out_val);
 
 #ifdef __HASHMAP_REMOVABLE
-void hashmap_remove(hashmap *map, void *key, size_t ksize);
+void hashmap_remove(hashmap* map, void* key, size_t ksize);
 
-// same as `hashmap_remove()`, but it allows you to free an entry's data first via a callback.
-void hashmap_remove_free(hashmap* m, void* key, size_t ksize, hashmap_callback c, void* usr);
+// same as `hashmap_remove()`, but it allows you to free an entry's data first
+// via a callback.
+void hashmap_remove_free(hashmap* m, void* key, size_t ksize,
+			 hashmap_callback c, void* usr);
 #endif
 
 int hashmap_size(hashmap* map);
@@ -70,6 +74,6 @@ void hashmap_iterate(hashmap* map, hashmap_callback c, void* usr);
 // dumps bucket info for debugging.
 // allows you to see how many collisions you are getting.
 // `0` is an empty bucket, `1` is occupied, and `x` is removed.
-//void bucket_dump(hashmap *m);
+// void bucket_dump(hashmap *m);
 
 #endif // map_h

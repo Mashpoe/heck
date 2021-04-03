@@ -5,40 +5,44 @@
 //  Created by Mashpoe on 3/20/19.
 //
 
-#include <stdlib.h>
-#include <token.h>
-#include <literal.h>
-#include <str.h>
 #include "vec.h"
+#include <literal.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <str.h>
+#include <token.h>
 
-void heck_free_token_data(heck_token* tk) {
-	switch (tk->type) {
+void heck_free_token_data(heck_token* tk)
+{
+	switch (tk->type)
+	{
 		case TK_KW:
 		case TK_OP:
 			break;
 		case TK_ERR: // fallthrough
 		case TK_IDF:
-			//free((char*)tk->value.str_value);
+			// free((char*)tk->value.str_value);
 			break;
 		case TK_LITERAL:
-			//free_literal(tk->value.literal_value);
+			// free_literal(tk->value.literal_value);
 		default:
 			break;
-			
 	}
 }
 
-void heck_print_token(heck_token* tk) {
-	
-	switch (tk->type) {
+void heck_print_token(heck_token* tk)
+{
+
+	switch (tk->type)
+	{
 		case TK_IDF:
 			printf("[%s]", (char*)tk->value.str_value);
 			break;
 		case TK_LITERAL:
 			print_literal(tk->value.literal_value);
 		case TK_ERR:
-			printf("\nerr: ln %i ch %i - %s\n", tk->fp.ln, tk->fp.ch, (char*)tk->value.str_value);
+			printf("\nerr: ln %i ch %i - %s\n", tk->fp.ln,
+			       tk->fp.ch, (char*)tk->value.str_value);
 			break;
 		case TK_KW_IF:
 			printf("if ");
@@ -110,5 +114,4 @@ void heck_print_token(heck_token* tk) {
 			printf(" @tk ");
 			break;
 	}
-	
 }

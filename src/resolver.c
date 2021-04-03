@@ -6,13 +6,11 @@
 //
 
 #include "resolver.h"
-#include "types.h"
-#include "scope.h"
-#include "function.h"
-#include "statement.h"
 #include "code_impl.h"
+#include "function.h"
+#include "scope.h"
+#include "statement.h"
+#include "types.h"
 
 // WOW, this function really deserves its own file
-bool heck_resolve(heck_code* c) {
-	return resolve_block(c, c->code);
-}
+bool heck_resolve(heck_code* c) { return resolve_block(c, c->code); }

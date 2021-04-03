@@ -32,10 +32,10 @@ struct hashmap
 	int capacity;
 	int count;
 
-	#ifdef __HASHMAP_REMOVABLE
-	// "tombstones" are empty buckets from removing elements 
+#ifdef __HASHMAP_REMOVABLE
+	// "tombstones" are empty buckets from removing elements
 	int tombstone_count;
-	#endif
+#endif
 
 	// a linked list of all valid entries, in order
 	struct bucket* first;
@@ -48,17 +48,18 @@ hashmap* hashmap_create(void)
 	hashmap* m = malloc(sizeof(hashmap));
 	m->capacity = HASHMAP_DEFAULT_CAPACITY;
 	m->count = 0;
-	
-	#ifdef __HASHMAP_REMOVABLE
+
+#ifdef __HASHMAP_REMOVABLE
 	m->tombstone_count = 0;
-	#endif
+#endif
 
 	m->buckets = calloc(HASHMAP_DEFAULT_CAPACITY, sizeof(struct bucket));
 	m->first = NULL;
 
 	// this prevents branching in hashmap_set.
-	// m->first will be treated as the "next" pointer in an imaginary bucket.
-	// when the first item is added, m->first will be set to the correct address.
+	// m->first will be treated as the "next" pointer in an imaginary
+	// bucket. when the first item is added, m->first will be set to the
+	// correct address.
 	m->last = (struct bucket*)&m->first;
 	return m;
 }
@@ -98,15 +99,15 @@ static void hashmap_resize(hashmap* m)
 	// same trick; avoids branching
 	m->last = (struct bucket*)&m->first;
 
-	#ifdef __HASHMAP_REMOVABLE
+#ifdef __HASHMAP_REMOVABLE
 	m->count -= m->tombstone_count;
 	m->tombstone_count = 0;
-	#endif
+#endif
 
 	// assumes that an empty map won't be resized
 	do
 	{
-		#ifdef __HASHMAP_REMOVABLE
+#ifdef __HASHMAP_REMOVABLE
 		// skip entry if it's a "tombstone"
 		struct bucket* current = m->last->next;
 		if (current->key == NULL)
@@ -115,8 +116,8 @@ static void hashmap_resize(hashmap* m)
 			// skip to loop condition
 			continue;
 		}
-		#endif
-		
+#endif
+
 		m->last->next = resize_entry(m, m->last->next);
 		m->last = m->last->next;
 	} while (m->last->next != NULL);
@@ -142,7 +143,8 @@ static inline uint32_t hash_data(const unsigned char* data, size_t size)
 	return hash ^ hash >> 32;
 }
 
-static struct bucket* find_entry(hashmap* m, void* key, size_t ksize, uint32_t hash)
+static struct bucket* find_entry(hashmap* m, void* key, size_t ksize,
+				 uint32_t hash)
 {
 	uint32_t index = hash % m->capacity;
 
@@ -150,39 +152,41 @@ static struct bucket* find_entry(hashmap* m, void* key, size_t ksize, uint32_t h
 	{
 		struct bucket* entry = &m->buckets[index];
 
-		#ifdef __HASHMAP_REMOVABLE
+#ifdef __HASHMAP_REMOVABLE
 
 		// compare sizes, then hashes, then key data as a last resort.
 		bool null_key = entry->key == NULL;
 		bool null_value = entry->value == 0;
 		// check for tombstone
 		if ((null_key && null_value) ||
-			// check for valid matching entry
-			(!null_key &&
-			 entry->ksize == ksize &&
-			 entry->hash == hash &&
-			 memcmp(entry->key, key, ksize) == 0))
+		    // check for valid matching entry
+		    (!null_key && entry->ksize == ksize &&
+		     entry->hash == hash &&
+		     memcmp(entry->key, key, ksize) == 0))
 		{
-			// return the entry if a match or an empty bucket is found
+			// return the entry if a match or an empty bucket is
+			// found
 			return entry;
 		}
 
-		#else
+#else
 
 		// kind of a thicc condition;
-		// I didn't want this to span multiple if statements or functions.
+		// I didn't want this to span multiple if statements or
+		// functions.
 		if (entry->key == NULL ||
-			// compare sizes, then hashes, then key data as a last resort.
-			(entry->ksize == ksize &&
-			 entry->hash == hash &&
-			 memcmp(entry->key, key, ksize) == 0))
+		    // compare sizes, then hashes, then key data as a last
+		    // resort.
+		    (entry->ksize == ksize && entry->hash == hash &&
+		     memcmp(entry->key, key, ksize) == 0))
 		{
-			// return the entry if a match or an empty bucket is found
+			// return the entry if a match or an empty bucket is
+			// found
 			return entry;
 		}
-		#endif
+#endif
 
-		//printf("collision\n");
+		// printf("collision\n");
 		index = (index + 1) % m->capacity;
 	}
 }
@@ -235,13 +239,14 @@ bool hashmap_get_set(hashmap* m, void* key, size_t ksize, uintptr_t* out_in)
 	return true;
 }
 
-void hashmap_set_free(hashmap* m, void* key, size_t ksize, uintptr_t val, hashmap_callback c, void* usr)
+void hashmap_set_free(hashmap* m, void* key, size_t ksize, uintptr_t val,
+		      hashmap_callback c, void* usr)
 {
 	if (m->count + 1 > HASHMAP_MAX_LOAD * m->capacity)
 		hashmap_resize(m);
 
 	uint32_t hash = hash_data(key, ksize);
-	struct bucket *entry = find_entry(m, key, ksize, hash);
+	struct bucket* entry = find_entry(m, key, ksize, hash);
 	if (entry->key == NULL)
 	{
 		m->last->next = entry;
@@ -288,9 +293,10 @@ void hashmap_remove(hashmap* m, void* key, size_t ksize)
 
 	if (entry->key != NULL)
 	{
-		
-		// "tombstone" entry is signified by a NULL key with a nonzero value
-		// element removal is optional because of the overhead of tombstone checks
+
+		// "tombstone" entry is signified by a NULL key with a nonzero
+		// value element removal is optional because of the overhead of
+		// tombstone checks
 		entry->key = NULL;
 		entry->value = 0xDEAD; // I mean, it's a tombstone...
 
@@ -298,7 +304,8 @@ void hashmap_remove(hashmap* m, void* key, size_t ksize)
 	}
 }
 
-void hashmap_remove_free(hashmap* m, void* key, size_t ksize, hashmap_callback c, void* usr)
+void hashmap_remove_free(hashmap* m, void* key, size_t ksize,
+			 hashmap_callback c, void* usr)
 {
 	uint32_t hash = hash_data(key, ksize);
 	struct bucket* entry = find_entry(m, key, ksize, hash);
@@ -306,9 +313,10 @@ void hashmap_remove_free(hashmap* m, void* key, size_t ksize, hashmap_callback c
 	if (entry->key != NULL)
 	{
 		c(entry->key, entry->ksize, entry->value, usr);
-		
-		// "tombstone" entry is signified by a NULL key with a nonzero value
-		// element removal is optional because of the overhead of tombstone checks
+
+		// "tombstone" entry is signified by a NULL key with a nonzero
+		// value element removal is optional because of the overhead of
+		// tombstone checks
 		entry->key = NULL;
 		entry->value = 0xDEAD; // I mean, it's a tombstone...
 
@@ -320,11 +328,11 @@ void hashmap_remove_free(hashmap* m, void* key, size_t ksize, hashmap_callback c
 int hashmap_size(hashmap* m)
 {
 
-	#ifdef __HASHMAP_REMOVABLE
+#ifdef __HASHMAP_REMOVABLE
 	return m->count - m->tombstone_count;
-	#else
+#else
 	return m->count;
-	#endif
+#endif
 }
 
 void hashmap_iterate(hashmap* m, hashmap_callback c, void* user_ptr)
@@ -332,17 +340,18 @@ void hashmap_iterate(hashmap* m, hashmap_callback c, void* user_ptr)
 	// loop through the linked list of valid entries
 	// this way we can skip over empty buckets
 	struct bucket* current = m->first;
-	
+
 	int co = 0;
 
 	while (current != NULL)
 	{
-		#ifdef __HASHMAP_REMOVABLE
+#ifdef __HASHMAP_REMOVABLE
 		// "tombstone" check
 		if (current->key != NULL)
-		#endif
-			c(current->key, current->ksize, current->value, user_ptr);
-		
+#endif
+			c(current->key, current->ksize, current->value,
+			  user_ptr);
+
 		current = current->next;
 
 		if (co > 1000)
@@ -350,7 +359,6 @@ void hashmap_iterate(hashmap* m, hashmap_callback c, void* user_ptr)
 			break;
 		}
 		co++;
-
 	}
 }
 

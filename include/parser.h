@@ -8,8 +8,8 @@
 #ifndef parser_h
 #define parser_h
 
-#include <stdbool.h>
 #include "code.h"
+#include <stdbool.h>
 
 typedef struct heck_parser heck_parser;
 

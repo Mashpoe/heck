@@ -11,25 +11,28 @@
 #include "types.h"
 #include <stdint.h>
 
-typedef struct heck_literal {
-	const heck_data_type* data_type; // use one of the const primitive data types
-	union {
+typedef struct heck_literal
+{
+	const heck_data_type*
+	    data_type; // use one of the const primitive data types
+	union
+	{
 		void* obj_value; // can objects be literals?
 		str_entry str_value;
 		int int_value;
 		float float_value;
 		bool bool_value;
 	} value;
-  // hardcoded address
-  // set in compile phase
-  uint32_t memory_addr;
+	// hardcoded address
+	// set in compile phase
+	uint32_t memory_addr;
 } heck_literal;
 
 heck_literal* create_literal_int(heck_code* c, int value);
 
 heck_literal* create_literal_float(heck_code* c, float value);
 
-//heck_literal* create_literal_bool(heck_code* c, bool value);
+// heck_literal* create_literal_bool(heck_code* c, bool value);
 extern heck_literal* literal_true;
 extern heck_literal* literal_false;
 

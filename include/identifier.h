@@ -8,9 +8,9 @@
 #ifndef identifier_h
 #define identifier_h
 
-#include <stdio.h>
 #include "str.h"
 #include <stdbool.h>
+#include <stdio.h>
 
 // array of consecutive identifiers separated by '.'
 typedef str_entry* heck_idf;

@@ -1,0 +1,6 @@
+UseTab: Always
+IndentCaseLabels: true
+PointerAlignment: Left
+IndentWidth: 8
+UseTab: Always
+BreakBeforeBraces: Allman

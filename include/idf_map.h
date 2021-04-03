@@ -11,8 +11,8 @@
 #define idf_map_h
 
 #include "str.h"
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 typedef struct idf_map idf_map;
 

@@ -9,20 +9,22 @@
 #define wasm_code_h
 
 #include "wasm_macros.h"
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 // evaluates args for nested expressions
-#define $eval_args(...)	__VA_ARGS__
+#define $eval_args(...) __VA_ARGS__
 
 // for nested expressions
-#define $(...)	$eval_args(__VA_ARGS__)
+#define $(...) $eval_args(__VA_ARGS__)
 
 // concatenates wasm bytes into a char array
-#define $cat_arr(...)	((char[]){__VA_ARGS__})
+#define $cat_arr(...) ((char[]){__VA_ARGS__})
 
 // adds bytes to a wasm_code* object
-#define $wasm(code, ...)	(wasm_code_add(code, $cat_arr(__VA_ARGS__), sizeof($cat_arr(__VA_ARGS__))))
+#define $wasm(code, ...)                                                       \
+	(wasm_code_add(code, $cat_arr(__VA_ARGS__),                            \
+		       sizeof($cat_arr(__VA_ARGS__))))
 
 typedef struct wasm_code wasm_code;
 

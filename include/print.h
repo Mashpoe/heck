@@ -8,15 +8,16 @@
 #ifndef print_h
 #define print_h
 
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
 
-enum {
-  PRINT_INT = 'i',
-  PRINT_CHAR = 'c',
-  PRINT_STRING = 's',
-  PRINT_DATA_TYPE = 't',
-  PRINT_IDF = 'I',
+enum
+{
+	PRINT_INT = 'i',
+	PRINT_CHAR = 'c',
+	PRINT_STRING = 's',
+	PRINT_DATA_TYPE = 't',
+	PRINT_IDF = 'I',
 };
 
 // custom print format:

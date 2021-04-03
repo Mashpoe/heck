@@ -12,61 +12,60 @@
 // do not include this file in other heckScript library headers
 
 #include "code.h"
-#include "token.h"
-#include "statement.h"
-#include "scope.h"
-#include "str_table.h"
+#include "idf_map.h"
 #include "literal.h"
+#include "scope.h"
+#include "statement.h"
+#include "str_table.h"
+#include "token.h"
 #include "types.h"
 #include "variable.h"
-#include "idf_map.h"
 
-struct heck_code {
-  // heck_code** import_vec;
+struct heck_code
+{
+	// heck_code** import_vec;
 
-  // indicates the main file or an imported file
-  bool main_file;
+	// indicates the main file or an imported file
+	bool main_file;
 
-  // mainly for printing errors
-  const char* filename;
+	// mainly for printing errors
+	const char* filename;
 
-  // token vector
+	// token vector
 	heck_token** token_vec;
 
-  // vector of token vectors
-  // TODO: free
-  heck_token*** import_tokens;
+	// vector of token vectors
+	// TODO: free
+	heck_token*** import_tokens;
 
-  heck_func* main; // code/syntax tree
-	heck_block* code; // the code block inside of main
-  heck_scope* global; // for easy access
+	heck_func* main;    // code/syntax tree
+	heck_block* code;   // the code block inside of main
+	heck_scope* global; // for easy access
 
+	// keep track of normal memory allocations
+	void** alloc_vec;
 
-  // keep track of normal memory allocations
-  void** alloc_vec;
+	// keep track of other objects that cannot be freed normally
+	heck_block** block_vec;
+	heck_scope** scope_vec;
+	heck_name** name_vec;
+	/* heck_expr_calls are stored in contiguous memory
+	alongside their parent heck_exprs */
+	heck_expr** call_vec;
+	heck_data_type** type_vec;
 
-  // keep track of other objects that cannot be freed normally
-  heck_block** block_vec;
-  heck_scope** scope_vec;
-  heck_name** name_vec;
-  /* heck_expr_calls are stored in contiguous memory
-  alongside their parent heck_exprs */
-  heck_expr** call_vec;
-  heck_data_type** type_vec;
-
-  // all unique string literals and identifiers
+	// all unique string literals and identifiers
 	str_table* strings;
 
-  // map of string literals
-  // maps strings to heck_literal*s
-  idf_map* string_literals;
-  
-  // these are freed elsewhere
-  heck_variable** global_vec;
-  heck_func** func_import_vec;
+	// map of string literals
+	// maps strings to heck_literal*s
+	idf_map* string_literals;
 
-  heck_func* str_cmp;
-	
+	// these are freed elsewhere
+	heck_variable** global_vec;
+	heck_func** func_import_vec;
+
+	heck_func* str_cmp;
 };
 
 // heck_code* heck_create_import(heck_code* c);

@@ -8,8 +8,8 @@
 #ifndef resolver_h
 #define resolver_h
 
-#include <stdio.h>
 #include "code.h"
+#include <stdio.h>
 
 bool heck_resolve(heck_code* c);
 

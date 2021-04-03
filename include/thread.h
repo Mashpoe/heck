@@ -13,7 +13,8 @@ typedef struct
 		VIOLATION_GLOBAL_WRITE,
 		VIOLATION_MUT_READ, // read a value that could be modified
 		VIOLATION_MUT_WRITE,
-		VIOLATION_FUNC_CALL, // a function with a thread violation was called
+		VIOLATION_FUNC_CALL, // a function with a thread violation was
+				     // called
 	} type;
 
 	// the violating expression
