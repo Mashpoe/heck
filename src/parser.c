@@ -759,7 +759,11 @@ heck_expr* assignment(parser* p, heck_scope* parent)
 			return asg;
 		}
 
-		// TODO: report invalid assignment target
+		// report invalid assignment target
+		parser_error(
+		    p, peek(p), true,
+		    "rvalue assignment (the right operand is not assignable)");
+		return create_expr_err(p->code, expr_start);
 	}
 
 	return expr;
@@ -1933,9 +1937,7 @@ void parse_statement(parser* p, heck_block* block, uint8_t flags)
 			//				if
 			//(STMT_IN_GLOBAL(flags)
 			//|| flags == STMT_FLAG_FUNC) {
-			// func_decl(p, block->scope); 				}
-			// else {
-			// parser_error(p,
+			// func_decl(p, block->scope); } else { parser_error(p,
 			// peek(p), true, "you cannot declare a function here");
 			//				}
 
@@ -1966,6 +1968,7 @@ void parse_statement(parser* p, heck_block* block, uint8_t flags)
 				parser_error(
 				    p, t, true,
 				    "return statement outside function");
+				return;
 			}
 			break;
 		case TK_BRAC_L:

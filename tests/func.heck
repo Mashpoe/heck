@@ -1,9 +1,25 @@
-print("enter first number")
+// print("enter first number")
 
-let a = parseInt(input())
+// let a = parseInt(input())
 
-print("enter second number")
+// print("enter second number")
 
-let b = parseInt(input())
+// let b = parseInt(input())
 
-print(a + b)
+// print(a + b)
+
+5    = 
+1
+
+let a: int
+
+a = 6
+
+func a(n) {
+	// if n > 1 {
+	// 	return a(n - 1)
+	// }
+	return 1
+}
+
+print(a(4))

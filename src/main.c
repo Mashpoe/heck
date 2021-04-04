@@ -87,12 +87,12 @@ int main(int argc, const char* argv[])
 		// printf("start.\n");
 		heck_code* c = heck_create();
 		heck_scan(c, code);
-		// heck_print_tokens(c);
+		heck_print_tokens(c);
 		bool success =
 		    heck_parse(c); // parsing includes resolving for now, since
 				   // it completes the syntax tree
 
-		// heck_print_tree(c);
+		heck_print_tree(c);
 
 		if (success)
 		{
