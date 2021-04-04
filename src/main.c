@@ -92,7 +92,7 @@ int main(int argc, const char* argv[])
 		    heck_parse(c); // parsing includes resolving for now, since
 				   // it completes the syntax tree
 
-		heck_print_tree(c);
+		// heck_print_tree(c);
 
 		if (success)
 		{

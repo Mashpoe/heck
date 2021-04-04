@@ -923,9 +923,15 @@ heck_stmt* if_statement(parser* p, heck_scope* parent, uint8_t flags)
 	heck_if_node* node = first_node;
 	heck_stmt* s = create_stmt_if(p->code, &start_tk->fp, node);
 
-	heck_block_type type = BLOCK_DEFAULT;
+	// `always_returns` is set to false if at least one block in the ladder
+	// does not return a value or if there is no else block
+	bool always_returns = true;
+
+	// `returns` is set to true if at least one block in the ladder returns
+	bool returns = false;
 
 	// loop over if else ladder (guaranteed to run at least once)
+	// `last` helps the loop keep track of regular "else" blocks
 	bool last = false;
 	for (;;)
 	{
@@ -943,30 +949,48 @@ heck_stmt* if_statement(parser* p, heck_scope* parent, uint8_t flags)
 		if (STMT_IN_FUNC(flags))
 		{
 
-			switch (node->code->type)
+			if (node->code->type != BLOCK_RETURNS)
 			{
-				case BLOCK_RETURNS:
-					if (node == first_node)
-					{
-						type = BLOCK_RETURNS;
-					}
-					else if (type != BLOCK_RETURNS)
-					{
-						type = BLOCK_MAY_RETURN;
-					}
-					break;
-				case BLOCK_MAY_RETURN:
-					type = BLOCK_MAY_RETURN;
-					break;
-				default:
-					if (type == BLOCK_RETURNS)
-						type = BLOCK_MAY_RETURN;
-					break;
+				always_returns = false;
 			}
+			else if (node->code->type == BLOCK_RETURNS ||
+				 node->code->type == BLOCK_MAY_RETURN)
+			{
+				// the ladder might return a value
+				returns = true;
+			}
+
+			// switch (node->code->type)
+			// {
+			// 	case BLOCK_RETURNS:
+			// 		if (node == first_node)
+			// 		{
+			// 			type = BLOCK_RETURNS;
+			// 		}
+			// 		else if (type != BLOCK_RETURNS)
+			// 		{
+			// 			type = BLOCK_MAY_RETURN;
+			// 		}
+			// 		break;
+			// 	case BLOCK_MAY_RETURN:
+			// 		type = BLOCK_MAY_RETURN;
+			// 		break;
+			// 	default:
+			// 		if (type == BLOCK_RETURNS)
+			// 			type = BLOCK_MAY_RETURN;
+			// 		break;
+			// }
 		}
 
-		if (last || !match(p, TK_KW_ELSE))
+		if (last)
 		{
+			break;
+		}
+		else if (!match(p, TK_KW_ELSE))
+		{
+			// there is no else block, which means there is no
+			// guarantee the ladder will always return a value
+			always_returns = false;
 			break;
 		}
 
@@ -982,6 +1006,21 @@ heck_stmt* if_statement(parser* p, heck_scope* parent, uint8_t flags)
 		}
 
 		node = node->next;
+	}
+
+	heck_block_type type;
+
+	if (always_returns)
+	{
+		type = BLOCK_RETURNS;
+	}
+	else if (returns)
+	{
+		type = BLOCK_MAY_RETURN;
+	}
+	else
+	{
+		type = BLOCK_DEFAULT;
 	}
 
 	s->value.if_stmt.type = type;
