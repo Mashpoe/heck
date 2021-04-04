@@ -382,10 +382,13 @@ bool scope_var_is_init(heck_scope* scope, heck_name* var_name)
 			}
 		}
 
+		if (scope == var_name->parent)
+			break;
+
 		scope = scope->parent;
 
-		// possibly remove && scope != NULL
-	} while (scope != var_name->parent && scope != NULL);
+		// possibly remove "scope != NULL"
+	} while (scope != NULL);
 
 	return false;
 }

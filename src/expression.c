@@ -170,11 +170,18 @@ inline heck_expr* resolve_expr_binary(heck_code* c, heck_scope* parent,
 {
 	heck_expr_binary* binary = &expr->value.binary;
 
-	binary->left = resolve_expr(c, parent, binary->left);
-	binary->right = resolve_expr(c, parent, binary->right);
+	heck_expr* left = resolve_expr(c, parent, binary->left);
+	heck_expr* right = resolve_expr(c, parent, binary->right);
+	if (left != NULL)
+		binary->left = left;
+
+	if (right != NULL)
+		binary->right = right;
 
 	// returns NULL on failure without branching
-	return (heck_expr*)((binary->left && binary->right) * (uintptr_t)expr);
+	// return (heck_expr*)((left && right) * (uintptr_t)expr);
+
+	return left && right ? expr : NULL;
 }
 
 // expects a heck_expr_value.

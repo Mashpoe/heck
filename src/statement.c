@@ -357,17 +357,13 @@ bool resolve_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt)
 	bool success = true;
 	do
 	{
-		// this avoids branching.
-		// if one node/block fails to resolve, success will remain
-		// false, since true * false = false and false * false = false
-		success *= resolve_block(c, node->code);
 
 		if (node->condition != NULL)
 		{
 			node->condition =
 			    resolve_expr(c, parent, node->condition);
 			success *= node->condition != NULL;
-			heck_data_type* condition_type =
+			const heck_data_type* condition_type =
 			    node->condition->data_type;
 			if (!data_type_is_truthy(condition_type))
 			{
@@ -377,6 +373,11 @@ bool resolve_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt)
 				success = false;
 			}
 		}
+
+		// this avoids branching.
+		// if one node/block fails to resolve, success will remain
+		// false, since true * false = false and false * false = false
+		success *= resolve_block(c, node->code);
 
 	} while ((
 	    node = node->next)); // will evaluate to false if node->next == NULL
