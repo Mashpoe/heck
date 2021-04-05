@@ -622,7 +622,8 @@ heck_stmt* copy_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt)
 		    block_copy(c, scope_create(c, parent), old_node->code);
 	}
 
-	if_stmt->type = old_if_stmt->type;
+	if_stmt->type = stmt->type;
+	if_stmt->value.if_stmt.type = old_if_stmt->type;
 	return if_stmt;
 }
 
