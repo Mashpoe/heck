@@ -703,6 +703,11 @@ bool heck_scan(heck_code* c, const char* code)
 						add_token_prim(c, &fp,
 							       data_type_bool);
 					}
+					else if (match_kw(&fp, "void"))
+					{
+						add_token_prim(c, &fp,
+							       data_type_void);
+					}
 					else if (match_kw(&fp, "string"))
 					{
 						add_token_prim(
