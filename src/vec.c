@@ -90,7 +90,7 @@ void* _vector_insert(vector* vec_addr, vec_type_t type_size, vec_size_t pos)
 void _vector_erase(vector* vec_addr, vec_type_t type_size, vec_size_t pos,
 		   vec_size_t len)
 {
-	vector_data* v_data = vector_get_data(vec_addr);
+	vector_data* v_data = vector_get_data(*vec_addr);
 	// anyone who puts in a bad index can face the consequences on their own
 	memmove(&v_data->buff[pos * type_size],
 		&v_data->buff[(pos + len) * type_size],

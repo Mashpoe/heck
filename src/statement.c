@@ -355,7 +355,7 @@ bool resolve_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt)
 	heck_if_node* node = stmt->value.if_stmt.contents;
 
 	bool success = true;
-	do
+	for (;;)
 	{
 
 		if (node->condition != NULL)
@@ -379,8 +379,67 @@ bool resolve_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt)
 		// false, since true * false = false and false * false = false
 		success *= resolve_block(c, node->code);
 
-	} while ((
-	    node = node->next)); // will evaluate to false if node->next == NULL
+		if (node->next == NULL)
+			break;
+
+		node = node->next;
+	}
+
+	// loop again to check for variable initializations
+	// signifies that the last node is an else block
+	if (node->condition == NULL && node->code->scope->var_inits != NULL)
+	{
+		heck_variable** common_inits =
+		    vector_copy(node->code->scope->var_inits);
+		vec_size_t common_inits_size = vector_size(common_inits);
+
+		heck_if_node* last_node = node;
+		node = stmt->value.if_stmt.contents;
+
+		do
+		{
+
+			const heck_variable** current_inits =
+			    node->code->scope->var_inits;
+
+			if (current_inits == NULL)
+				break;
+
+			vec_size_t current_inits_size =
+			    vector_size(current_inits);
+
+			// loop backwards through common inits so items can be
+			// removed
+			for (vec_size_t i = common_inits_size; i-- > 0;)
+			{
+				bool match = false;
+				for (vec_size_t j = 0; j < current_inits_size;
+				     ++j)
+				{
+					if (common_inits[i] == current_inits[j])
+					{
+						match = true;
+						break;
+					}
+				}
+
+				if (!match)
+				{
+					vector_remove(&common_inits, i);
+					--common_inits_size;
+				}
+			}
+
+			node = node->next;
+
+		} while (node != last_node);
+
+		// add all of the common inits to the parent scope
+		for (vec_size_t i = 0; i < common_inits_size; ++i)
+		{
+			vector_add(&parent->var_inits, common_inits[i]);
+		}
+	}
 
 	return success;
 }

@@ -21,13 +21,31 @@
 
 func a(n) {
 
+	let x: int
+	let y: int
+	let z: int
+
+	print(x)
+
 	if (n > 1) {
-		return 1
+		x = 1
+		y = 1
+		z = 3
 	} else if (n > 2) {
-		return 4
+		x = 2
+		z = 4
+		y = 2
 	} else {
-		return 2
+		x = 3
+		z = 4
 	}
+
+	print(x)
+	print(y)
+	print(z)
+
+
+	return 4
 }
 
 print(a(3))
