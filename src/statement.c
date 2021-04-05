@@ -439,6 +439,8 @@ bool resolve_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt)
 		{
 			vector_add(&parent->var_inits, common_inits[i]);
 		}
+
+		vector_free(common_inits);
 	}
 
 	return success;
