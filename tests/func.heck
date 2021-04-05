@@ -62,20 +62,14 @@
 
 //print(a(3))
 
-c(5)
-
-func c(n) -> void {
-	if (n > 2) {
-		c(n - 1)
-	} else {
-		d(n)
+func factorial(n) {
+	if (n == 1) {
+		return 1
 	}
+
+	return n * factorial(n - 1)
 }
 
-func d(n) -> void {
-	if (n > 1) {
-		d(n - 1)
-	} else {
-		c(n)
-	}
-}
+print(factorial(5))
+
+print(!true)

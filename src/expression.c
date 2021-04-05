@@ -779,7 +779,6 @@ heck_expr* resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr)
 			}
 
 			func_call->func = def;
-			return success;
 		}
 	}
 	else
@@ -854,20 +853,23 @@ heck_expr* resolve_expr_not(heck_code* c, heck_scope* parent, heck_expr* expr)
 {
 	heck_expr_unary* unary_expr = &expr->value.unary;
 
-	unary_expr->expr = resolve_expr(c, parent, unary_expr->expr);
+	heck_expr* tmp = resolve_expr(c, parent, unary_expr->expr);
+	if (tmp == NULL)
+		return NULL;
 
-	bool success = unary_expr->expr != NULL;
+	unary_expr->expr = tmp;
 
 	if (!data_type_is_truthy(unary_expr->expr->data_type))
 	{
-		heck_report_error(NULL, expr->fp,
-				  "cannot perform operation on a truthy value");
-		success = false;
+		heck_report_error(
+		    NULL, expr->fp,
+		    "cannot perform operation on a non-truthy type");
+		return NULL;
 	}
 
 	expr->data_type = data_type_bool;
 
-	return success;
+	return expr;
 }
 heck_expr* resolve_expr_bw_not(heck_code* c, heck_scope* parent,
 			       heck_expr* expr)

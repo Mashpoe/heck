@@ -71,7 +71,11 @@ void compile_func_imports(heck_compiler* cmplr)
 	vec_size_t num_imports = vector_size(cmplr->c->func_import_vec);
 	for (int i = 0; i < num_imports; ++i)
 	{
-		compile_func_import(cmplr, cmplr->c->func_import_vec[i]);
+		heck_func* current = cmplr->c->func_import_vec[i];
+
+		// only compile imports that were actually called
+		if (current->resolved)
+			compile_func_import(cmplr, current);
 	}
 }
 
