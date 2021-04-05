@@ -35,9 +35,12 @@ void wasm_code_add(wasm_code* code, char* bytes, size_t count)
 	size_t new_pos = code->pos + count;
 
 	if (new_pos >= code->alloc)
-		code->bytes = realloc(
-		    code->bytes,
-		    new_pos * REALLOC_FACTOR); // guaranteed to fit new bytes
+	{
+		// guaranteed to fit new bytes
+		code->alloc = new_pos * REALLOC_FACTOR;
+
+		code->bytes = realloc(code->bytes, code->alloc);
+	}
 
 	memcpy(&code->bytes[code->pos], bytes, count);
 
@@ -49,7 +52,12 @@ void wasm_add_byte(wasm_code* code, char byte)
 	size_t new_pos = code->pos + 1;
 
 	if (new_pos >= code->alloc)
-		code->bytes = realloc(code->bytes, new_pos * REALLOC_FACTOR);
+	{
+		// guaranteed to fit new bytes
+		code->alloc = new_pos * REALLOC_FACTOR;
+
+		code->bytes = realloc(code->bytes, code->alloc);
+	}
 
 	code->bytes[code->pos] = byte;
 
