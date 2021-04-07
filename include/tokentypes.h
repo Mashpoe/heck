@@ -122,6 +122,7 @@ typedef enum heck_tk_type
 	TK_KW_PROTECTED,
 	TK_KW_FRIEND,
 	TK_KW_IMPORT,
+	TK_KW_TYPEOF,
 
 	TK_CTX, // global/local context
 
@@ -133,7 +134,7 @@ typedef enum heck_tk_type
 	TK_KW_NONE,
 	TK_KW_GENERIC, // if used, remove this entry and emit a primitive type
 		       // "gen"
-	TK_KW_IS,      // compare references, ignore operator overloading
+	TK_KW_IS, // compare references, ignore operator overloading
 } heck_tk_type;
 
 #endif /* tokentypes_h */

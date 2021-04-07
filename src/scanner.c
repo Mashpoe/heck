@@ -737,6 +737,10 @@ bool heck_scan(heck_code* c, const char* code)
 					{
 						add_token(c, &fp, TK_KW_IS);
 					}
+					else if (match_kw(&fp, "typeof"))
+					{
+						add_token(c, &fp, TK_KW_TYPEOF);
+					}
 					else
 					{ // it's an identifier and not a
 					  // keyword

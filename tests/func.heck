@@ -62,7 +62,13 @@
 
 //print(a(3))
 
-func factorial(n) {
+let x = 4
+let y: typeof(x) = 4
+
+print(x)
+print(y)
+
+func factorial(n) -> typeof(n) {
 	if (n == 1) {
 		return 1
 	}

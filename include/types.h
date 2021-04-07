@@ -61,6 +61,9 @@ typedef enum heck_type_name
 	TYPE_ARR, // associated with another type, e.g. array of integers, array
 		  // of arrays of integers
 		  // TYPE_ARG_LIST, // type argument list
+
+	TYPE_TYPEOF, // the type is resolved to whatever data type the
+		     // expression resolves to
 } heck_type_name;
 
 typedef struct heck_data_type heck_data_type;
@@ -88,6 +91,7 @@ struct heck_data_type
 		heck_class_type class_type;
 		heck_data_type* arr_type; // recursive structure
 		heck_data_type* ref_type;
+		heck_expr* typeof_expr;
 	} value;
 };
 // resolve callback
@@ -124,6 +128,7 @@ extern const type_vtable type_vtable_arr;
 extern const type_vtable type_vtable_class;
 // class with a type argument list
 extern const type_vtable type_vtable_class_args;
+extern const type_vtable type_vtable_typeof;
 
 // these will be referenced when creating objects with primitive types
 // it saves resources because they don't have to be entered into the type table
@@ -142,6 +147,7 @@ extern const heck_data_type val_data_type_string;
 #define data_type_bool &val_data_type_bool
 #define data_type_string &val_data_type_string
 
+// assumes both data types have been resolved
 bool data_type_cmp(const heck_data_type* a, const heck_data_type* b);
 // implicit and explicit conversions
 bool data_type_imp_convertable(const heck_data_type* to,

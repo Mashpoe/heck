@@ -166,6 +166,9 @@ void parser_error(parser* p, heck_token* tk, bool panic, const char* format,
 // TODO: rename to parse_idf
 heck_idf identifier(parser* p);
 
+// expression is used for the typeof operator
+heck_expr* expression(parser* p, heck_scope* parent);
+
 // returns NULL on failure, but it might be changed to type_error
 heck_data_type* parse_data_type(parser* p, heck_scope* parent)
 {
@@ -259,6 +262,26 @@ heck_data_type* parse_data_type(parser* p, heck_scope* parent)
 			prim = true;
 			break;
 		}
+		case TK_KW_TYPEOF:
+		{
+			if (!match(p, TK_PAR_L))
+			{
+				parser_error(p, previous(p), true,
+					     "expected (");
+				return NULL;
+			}
+
+			t = create_data_type(&start_tk->fp, TYPE_TYPEOF);
+			t->value.typeof_expr = expression(p, parent);
+			t->vtable = &type_vtable_typeof;
+
+			if (!match(p, TK_PAR_R))
+			{
+				parser_error(p, previous(p), true,
+					     "expected )");
+			}
+			break;
+		}
 		default:
 		{
 			parser_error(p, previous(p), true, "expected a type");
@@ -299,9 +322,6 @@ heck_data_type* parse_data_type(parser* p, heck_scope* parent)
  * Parsing Expressions
  *
  */
-
-// forward declarations:
-heck_expr* expression(parser* p, heck_scope* parent);
 
 heck_idf identifier(parser* p)
 { // assumes an identifier was just found with match(p)

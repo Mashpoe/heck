@@ -21,6 +21,7 @@ heck_data_type* create_data_type(heck_file_pos* fp, heck_type_name name)
 	return t;
 }
 
+// assumes both data types have been resolved
 bool data_type_cmp(const heck_data_type* a, const heck_data_type* b)
 {
 
@@ -29,7 +30,15 @@ bool data_type_cmp(const heck_data_type* a, const heck_data_type* b)
 		return true;
 
 	if (a->type_name != b->type_name)
+	{
+		if (a->type_name == TYPE_TYPEOF)
+			return data_type_cmp(a->value.typeof_expr->data_type,
+					     b);
+		if (b->type_name == TYPE_TYPEOF)
+			return data_type_cmp(b->value.typeof_expr->data_type,
+					     a);
 		return false;
+	}
 
 	switch (a->type_name)
 	{
@@ -39,18 +48,7 @@ bool data_type_cmp(const heck_data_type* a, const heck_data_type* b)
 			const heck_class_type* class_a = &a->value.class_type;
 			const heck_class_type* class_b = &b->value.class_type;
 
-			heck_name* name_a = scope_resolve_idf(
-			    class_a->parent, class_a->class_name);
-			if (!name_a)
-				return false;
-
-			heck_name* name_b = scope_resolve_idf(
-			    class_b->parent, class_b->class_name);
-			if (!name_b)
-				return false;
-
-			// check if class scopes are the same
-			if (name_a != name_b)
+			if (class_a->class_value != class_b->class_value)
 				return false;
 
 			// check if they have type arguments; return false if
@@ -81,6 +79,9 @@ bool data_type_cmp(const heck_data_type* a, const heck_data_type* b)
 		case TYPE_ARR:
 			return data_type_cmp(a->value.arr_type,
 					     b->value.arr_type);
+		case TYPE_TYPEOF:
+			return data_type_cmp(a->value.arr_type,
+					     b->value.arr_type);
 		default:
 			return true;
 	}
@@ -102,6 +103,10 @@ bool data_type_exp_convertable(const heck_data_type* to,
 
 inline bool data_type_is_numeric(const heck_data_type* type)
 {
+	if (type->type_name == TYPE_TYPEOF)
+	{
+		return data_type_is_numeric(type->value.typeof_expr->data_type);
+	}
 	return type == data_type_int || type == data_type_float;
 }
 
@@ -215,6 +220,14 @@ void print_type_class_args(const heck_data_type* type, FILE* f);
 const type_vtable type_vtable_class_args = {
     resolve_type_class_args, compile_type_class_args, print_type_class_args};
 
+// for the typeof operator
+bool resolve_type_typeof(heck_code* c, heck_scope* parent,
+			 heck_data_type* type);
+void compile_type_typeof(heck_compiler* cmplr, heck_data_type* type);
+void print_type_typeof(const heck_data_type* type, FILE* f);
+const type_vtable type_vtable_typeof = {resolve_type_typeof,
+					compile_type_typeof, print_type_typeof};
+
 // already resolved
 bool resolve_type_prim(heck_code* c, heck_scope* parent, heck_data_type* type)
 {
@@ -288,6 +301,18 @@ bool resolve_type_class_args(heck_code* c, heck_scope* parent,
 	return true;
 }
 
+bool resolve_type_typeof(heck_code* c, heck_scope* parent, heck_data_type* type)
+{
+	heck_expr* resolved_expr =
+	    resolve_expr(c, parent, type->value.typeof_expr);
+
+	if (resolved_expr == NULL)
+		return false;
+
+	type->value.typeof_expr = resolved_expr;
+	return true;
+}
+
 // void free_type_prim(heck_data_type* type) {
 // 	// primitive/error types are not allocated on the heap
 // 	// free(hong kong)
@@ -352,6 +377,13 @@ void print_type_arr(const heck_data_type* type, FILE* f)
 {
 	fprint_data_type(type->value.arr_type, f);
 	fputs("[]", f);
+}
+
+void print_type_typeof(const heck_data_type* type, FILE* f)
+{
+	fputs("typeof(expr: ", f);
+	fprint_data_type(type->value.typeof_expr->data_type, f);
+	fputs(")", f);
 }
 
 /*

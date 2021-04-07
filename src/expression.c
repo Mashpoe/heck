@@ -884,7 +884,7 @@ heck_expr* resolve_expr_cast(heck_code* c, heck_scope* parent, heck_expr* expr)
 	if (expr->value.expr == NULL)
 		return NULL;
 
-	// this is the only place where expr->data type isn't already resolved
+	// this is the only place where expr->data_type isn't already resolved
 	if (!resolve_data_type(c, parent, expr->data_type))
 		return NULL;
 

@@ -44,3 +44,8 @@ void compile_type_class_args(heck_compiler* cmplr, heck_data_type* type)
 {
 	// TODO: write each type
 }
+
+void compile_type_typeof(heck_compiler* cmplr, heck_data_type* type)
+{
+	compile_data_type(cmplr, type->value.typeof_expr->data_type);
+}

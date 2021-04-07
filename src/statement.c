@@ -319,30 +319,32 @@ bool resolve_stmt_let(heck_code* c, heck_scope* parent, heck_stmt* stmt)
 	// uninitialized variables must have a type
 	if (variable->value == NULL)
 	{
-		return variable->data_type != NULL;
+		return variable->data_type != NULL &&
+		       resolve_data_type(c, parent, variable->data_type);
 	}
 
-	if (resolve_expr(c, parent, variable->value))
+	heck_expr* tmp = resolve_expr(c, parent, variable->value);
+	if (tmp != NULL)
 	{
+		variable->value = tmp;
 
 		if (variable->data_type == NULL)
 		{
 			variable->data_type = variable->value->data_type;
+			return true;
 		}
 		else
 		{
+
+			resolve_data_type(c, parent, variable->data_type);
 
 			// make sure the data type matches value
 			return data_type_cmp(variable->data_type,
 					     variable->value->data_type);
 		}
 	}
-	else
-	{
-		return false;
-	}
 
-	return true;
+	return false;
 }
 
 bool resolve_stmt_block(heck_code* c, heck_scope* parent, heck_stmt* stmt)
@@ -360,17 +362,28 @@ bool resolve_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt)
 
 		if (node->condition != NULL)
 		{
-			node->condition =
+			heck_expr* tmp =
 			    resolve_expr(c, parent, node->condition);
-			success *= node->condition != NULL;
-			const heck_data_type* condition_type =
-			    node->condition->data_type;
-			if (!data_type_is_truthy(condition_type))
+
+			if (tmp == NULL)
 			{
-				heck_report_error(NULL, stmt->fp,
-						  "if statement condition must "
-						  "be a truthy type");
 				success = false;
+			}
+			else
+			{
+				node->condition = tmp;
+
+				const heck_data_type* condition_type =
+				    node->condition->data_type;
+
+				if (!data_type_is_truthy(condition_type))
+				{
+					heck_report_error(
+					    NULL, stmt->fp,
+					    "if statement condition must "
+					    "be a truthy type");
+					success = false;
+				}
 			}
 		}
 

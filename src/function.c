@@ -104,16 +104,21 @@ bool func_resolve_decl(heck_code* c, heck_scope* parent, heck_func_decl* decl)
 		}
 	}
 
-	// resolve return type
-	heck_data_type* return_type = decl->return_type;
+	// there is no reason to resolve the return type here. There is a good
+	// chance it isn't even possible to resolve the return type since the
+	// function body may need to be resolved first, or the type may be based
+	// off of generic params
 
-	if (return_type != NULL)
-	{
-		if (!resolve_data_type(c, parent, return_type))
-		{
-			success = false;
-		}
-	}
+	// // resolve return type
+	// heck_data_type* return_type = decl->return_type;
+
+	// if (return_type != NULL)
+	// {
+	// 	if (!resolve_data_type(c, decl->scope, return_type))
+	// 	{
+	// 		success = false;
+	// 	}
+	// }
 
 	return success;
 }
@@ -157,6 +162,9 @@ bool func_decl_cmp(heck_func_decl* a, heck_func_decl* b)
 		if (!data_type_cmp(a_type, b_type))
 			return false;
 	}
+
+	// so the compiler shuts up
+	return false;
 }
 
 // TODO: check for duplicates, match defs and decls
@@ -338,8 +346,15 @@ bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def)
 	bool success = true;
 
 	// set to true either way so we only have to resolve and deal with
-	// errors once
+	// errors once.
+	// This also allows us to detect if the return type can be inferred in a
+	// recursive call because the return type will be NULL and resolved will
+	// be set to true.
 	func_def->resolved = true;
+
+	if (func_def->decl.return_type != NULL)
+		success *= resolve_data_type(c, func_def->value.code->scope,
+					     func_def->decl.return_type);
 
 	// there is no code block to resolve in an import
 	if (!func_def->imported)
@@ -360,6 +375,7 @@ bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def)
 		success *= resolve_block(c, func_def->value.code);
 	}
 
+	// if the data type is still NULL, set it to void by default
 	if (func_def->decl.return_type == NULL)
 		func_def->decl.return_type = data_type_void;
 
