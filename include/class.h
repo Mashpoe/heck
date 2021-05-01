@@ -23,6 +23,7 @@ typedef struct heck_class
 	// TODO: make flags
 	bool resolved; // resolved when constructor is called
 	int size;      // determined at resolve
+	// TODO: add static_var_vec
 	heck_variable** inst_var_vec;
 
 	// operator and conversion overloads
@@ -31,6 +32,8 @@ typedef struct heck_class
 	// store let statements and some function statements to be resolved
 	// after parsing
 	// heck_stmt** declarations; // no
+
+	heck_name* class_name;
 
 } heck_class;
 

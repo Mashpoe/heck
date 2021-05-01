@@ -62,20 +62,30 @@
 
 //print(a(3))
 
-let x = 4
-let y: typeof(x) = 4
+// let x = 4
+// let y: typeof(x) = 4
 
-print(x)
-print(y)
+// print(x)
+// print(y)
 
-func factorial(n) -> typeof(n) {
-	if (n == 1) {
-		return 1
-	}
+// func factorial(n) -> typeof(n) {
+// 	if (n == 1) {
+// 		return 1
+// 	}
 
-	return n * factorial(n - 1)
+// 	return n * factorial(n - 1)
+// }
+
+// print(factorial(5))
+
+let x = 5
+
+func printGlobal() {
+	let x = 4
+	print(x)
+	print(global.x)
 }
 
-print(factorial(5))
+printGlobal()
 
-print(!true)
+print("big chungus")

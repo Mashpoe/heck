@@ -42,10 +42,16 @@ enum heck_expr_type
 	EXPR_VALUE,   // value of a variable
 	EXPR_CALL,
 	EXPR_ARR_ACCESS,
-	EXPR_CALLBACK,
+	EXPR_FUNC_NAME,
 	EXPR_ASG,
 	EXPR_TERNARY,
-	EXPR_CAST
+	EXPR_CAST,
+	// these expression types are only created during the "resolve" phase.
+	// member access, reference access, overload access,
+	EXPR_MEMBR_ACCESS,
+	EXPR_REF_ACCESS,
+	EXPR_OVRLD_ACCESS,
+	EXPR_MTHD_ACCESS,
 };
 
 // TODO: maybe make these callbacks take void pointers instead of heck_expr
@@ -98,15 +104,66 @@ typedef struct heck_expr_unary
 	heck_expr* expr;
 	heck_tk_type operator;
 } heck_expr_unary;
-heck_expr* create_expr_unary(heck_code* c, heck_file_pos* fp, heck_expr* expr,
-			     heck_tk_type operator, const expr_vtable * vtable);
+// heck_expr* create_expr_unary(heck_code* c, heck_file_pos* fp, heck_expr*
+// expr, heck_tk_type operator, const expr_vtable * vtable);
+
+typedef struct heck_expr_member_access
+{
+	// the index of the member we are accessing
+	int offset;
+	heck_expr* child;
+} heck_expr_member_access;
+// heck_expr* create_expr_member_access(heck_code* c, heck_file_pos* fp,
+// heck_expr* expr, int offset);
+
+typedef struct heck_expr_reference_access
+{
+	// implementation details are still unknown
+	heck_expr* child;
+} heck_expr_reference_access;
+// heck_expr* create_expr_reference_access(heck_code* c, heck_file_pos* fp,
+// heck_expr* expr);
+
+// should an overload be the same as a method_access?
+// typedef struct heck_expr_overload_access
+// {
+// 	heck_data_type* type;
+// 	int jmp_amt;
+// 	heck_expr* child;
+// } heck_expr_member_access;
+
+// these structs can be used for direct method access or for operator
+// (including .) overloading
+typedef struct heck_expr_method_access
+{
+	heck_name* method_name;
+	heck_expr* object;
+	// probably not needed but doesn't hurt i guess
+	heck_class* method_class;
+} heck_expr_method_access;
+heck_expr* create_expr_method_access(heck_code* c, heck_file_pos* fp,
+				     heck_name* method_name, heck_expr* object,
+				     heck_class* method_class);
 
 // variable/variable value
 typedef struct heck_expr_value
 {
-	heck_idf idf;
-	heck_name* name; // set at resolve
+	// this., global., etc.
 	idf_context context;
+	// the identifier chain, e.g. a.b.c.d.e.f.g
+	heck_idf idf;
+	// set at resolve time. Only resolves to a top-level variable name, does
+	// not handle object members.
+	heck_name* name;
+	// deals with object members
+	// the data_type of the heck_expr_value will be the bottom-level class
+	// type
+	// heck_member_access* member_access_vec;
+	heck_expr* value;
+	// if the final identifier in the chain is a function (not a callback,
+	// which is considered a variable), store that information here to make
+	// function calls easier to resolve.
+	// heck_func* func;
 } heck_expr_value;
 heck_expr* create_expr_value(heck_code* c, heck_file_pos* fp, heck_idf idf,
 			     idf_context context);
@@ -160,9 +217,13 @@ typedef union
 	heck_expr_call call;
 	heck_expr_arr_access arr_access;
 	heck_expr_value value;
+	heck_expr_member_access member_access;
+	heck_expr_reference_access reference_access;
+	// heck_expr_overload_access overload_access;
+	heck_expr_method_access method_access;
 	heck_literal* literal;
-	heck_expr*
-	    expr; // used for cast expression, cast type is stored in parent ^^
+	// used for cast expression, cast type is stored in parent ^^
+	heck_expr* expr;
 } heck_expr_data;
 
 struct heck_expr
@@ -272,5 +333,11 @@ extern const expr_vtable expr_vtable_ternary;
 
 // precedence 14
 extern const expr_vtable expr_vtable_asg;
+
+// member access (separate precedence)
+extern const expr_vtable expr_vtable_member_access;
+extern const expr_vtable expr_vtable_reference_access;
+extern const expr_vtable expr_vtable_overload_access;
+extern const expr_vtable expr_vtable_method_access;
 
 #endif /* expression_h */

@@ -1519,9 +1519,13 @@ void parse_class_def(parser* p, heck_scope* parent)
 		return;
 	}
 
+	// create the "class" object
 	class_name->value.class_value = class_create(p->code);
 
-	heck_class* class = class_name->value.class_value;
+	// use as a temporary referenct to the class
+	heck_class* class_obj = class_name->value.class_value;
+	// provide the class object with a reference to its "name"
+	class_obj->class_name = class_name;
 
 	// parse parents and friends and stuff
 	if (match(p, TK_COLON))
@@ -1533,12 +1537,14 @@ void parse_class_def(parser* p, heck_scope* parent)
 			if (match(p, TK_KW_FRIEND) && match(p, TK_IDF))
 			{
 				// friend will be resolved later
-				vector_add(&class->friend_vec, identifier(p));
+				vector_add(&class_obj->friend_vec,
+					   identifier(p));
 			}
 			else if (match(p, TK_IDF))
 			{
 				// parent will be resolved later
-				vector_add(&class->parent_vec, identifier(p));
+				vector_add(&class_obj->parent_vec,
+					   identifier(p));
 			}
 			else
 			{
@@ -1566,13 +1572,38 @@ void parse_class_def(parser* p, heck_scope* parent)
 		{
 			case TK_KW_LET:
 			{
-				heck_stmt* let_stmt = let_statement(p, parent);
+				// heck_stmt* let_stmt = let_statement(p,
+				// parent);
 
-				if (let_stmt->type == EXPR_ERR)
-					break;
+				// if (let_stmt->type == EXPR_ERR)
+				// 	break;
 
 				// scope_add_decl(class_name->child_scope,
 				// let_stmt);
+
+				step(p);
+
+				heck_variable* variable =
+				    variable_decl(p, parent);
+
+				if (variable == NULL)
+					break;
+
+				// the position within the class
+				int var_pos = 0;
+				if (class_obj->inst_var_vec == NULL)
+				{
+					class_obj->inst_var_vec =
+					    vector_create();
+				}
+				else
+				{
+					var_pos = vector_size(
+					    class_obj->inst_var_vec);
+				}
+				// TODO: add static vec
+				variable->class_position = var_pos;
+				vector_add(&class_obj->inst_var_vec, variable);
 
 				break;
 			}

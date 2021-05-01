@@ -23,6 +23,11 @@ typedef struct heck_variable
 	bool global;
 	// set during compile phase
 	int local_index;
+	// only applies to instance members.
+	// stores the index out of all class members to assist in the resolve
+	// phase. during the compile phase, this is repurposed and will be
+	// reassigned to be the actual memory offset of the variable.
+	int class_position;
 } heck_variable;
 
 // attempts to create a variable in a given scope

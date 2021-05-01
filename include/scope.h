@@ -96,12 +96,13 @@ heck_scope* scope_create_global(heck_code* c);
 void scope_free(heck_scope* scope);
 heck_name* scope_get_child(heck_code* c, heck_scope* scope, heck_idf idf);
 
-// parent is the scope you are referring from, child is the parent of name, and
-// name is name
-bool name_accessible(const heck_scope* parent, const heck_scope* child,
-		     const heck_name* name);
+// parent is the scope you are referring from and name is name
+bool name_accessible(const heck_scope* parent, const heck_name* name);
 // returns null if the scope couldn't be resolved or access wasn't allowed
 heck_name* scope_resolve_idf(const heck_scope* parent, heck_idf idf);
+// only resolves scope fields, so when it hits an object it stops and ingores
+// any member access that follows. The rest of the idf can be resolved later
+heck_name* scope_resolve_idf_name(const heck_scope* parent, heck_idf* idf_ptr);
 heck_name* scope_resolve_value(heck_code* c, heck_scope* parent,
 			       heck_expr_value* value);
 bool scope_resolve_names(heck_code* c, heck_scope* scope);

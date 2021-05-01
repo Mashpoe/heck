@@ -43,6 +43,7 @@ heck_variable* variable_create(heck_code* c, heck_scope* parent,
 	variable->value = value;
 	variable->global = false;
 	variable->local_index = 0;
+	variable->class_position = 0;
 
 	// add the variable to the scope
 	var_name = name_create(c, parent, IDF_VARIABLE);

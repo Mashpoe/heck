@@ -410,3 +410,9 @@ void compile_expr_asg(heck_compiler* cmplr, heck_expr* expr)
 		wasm_str_lit(cmplr->wasm, ".store\n");
 	}
 }
+
+// TODO:
+void compile_expr_member_access(heck_compiler* cmplr, heck_expr* expr) {}
+void compile_expr_reference_access(heck_compiler* cmplr, heck_expr* expr) {}
+void compile_expr_overload_access(heck_compiler* cmplr, heck_expr* expr) {}
+void compile_expr_method_access(heck_compiler* cmplr, heck_expr* expr) {}

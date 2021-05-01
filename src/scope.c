@@ -198,14 +198,15 @@ heck_name* scope_get_child(heck_code* c, heck_scope* scope, heck_idf idf)
 	return name;
 }
 
-bool name_accessible(const heck_scope* parent, const heck_scope* child,
-		     const heck_name* name)
+// "parent" is the scope we are requesting access from, "name" is the item we
+// are requesting access to
+bool name_accessible(const heck_scope* parent, const heck_name* name)
 {
 	if (name->access == ACCESS_PUBLIC)
 		return true;
 
 	if (name->type == IDF_CLASS &&
-	    parent->parent_class == child->parent_class)
+	    parent->parent_class == name->child_scope->parent_class)
 		return true;
 
 	if (name->access == ACCESS_PRIVATE || name->access == ACCESS_PROTECTED)
@@ -218,8 +219,14 @@ bool name_accessible(const heck_scope* parent, const heck_scope* child,
 	return false;
 }
 
-heck_name* scope_resolve_idf(const heck_scope* parent, heck_idf idf)
+// this will be called by scope_resolve_idf. It will do the same thing as
+// scope_resolve_idf, but it will stop once it gets to a variable. idf_ptr is an
+// input and an output. It will increment the idf, e.g. ++(*idf_ptr), to either
+// the last element or the first one that refers to the variable.
+heck_name* scope_resolve_idf_name(const heck_scope* parent, heck_idf* idf_ptr)
 {
+
+	heck_idf idf = *idf_ptr;
 
 	// find the parent of the idf
 	heck_name* name;
@@ -234,6 +241,7 @@ heck_name* scope_resolve_idf(const heck_scope* parent, heck_idf idf)
 
 			// printf("not found idf: %i, %s\n", idf[0]->hash,
 			// idf[0]->value);
+			// TODO: report error
 			return NULL;
 		}
 
@@ -245,49 +253,106 @@ heck_name* scope_resolve_idf(const heck_scope* parent, heck_idf idf)
 
 	/*	we have found the parent of the identifier
 		now find the identifier "children" if they exist */
-	int i = 1;
-	while (idf[i] != NULL)
+	while (idf[1] != NULL)
 	{
-		// keep track of child's child_scope as the parent of
+		++idf;
 		heck_scope* child_scope = name->child_scope;
 
 		if (child_scope == NULL)
+			// TODO: report error
 			return NULL;
 
-		if (idf_map_get(child_scope->names, idf[i], (void*)&name))
+		if (idf_map_get(child_scope->names, idf[0], (void*)&name))
 		{
 			// TODO: check if private/protected/friend
-			if (!name_accessible(parent, child_scope, name))
+			if (!name_accessible(parent, name))
+				// TODO: report error
 				return NULL;
+		}
+		else if (name->type == IDF_VARIABLE)
+		{
+			// check if the name is an object
+			const heck_data_type* var_type =
+			    name->value.var_value->data_type;
+			heck_class* var_class;
+			if (var_type->type_name == TYPE_CLASS)
+			{
+				// the class type is resolved when the
+				// variable's declaration is resolved, so we can
+				// access it here
+				var_class =
+				    var_type->value.class_type.class_value;
+			}
+			else
+			{
+				// the variable is not an object and therefore
+				// has no children.
+				// TODO: report error
+				return NULL;
+			}
+
+			// if we weren't able to find the child in the
+			// scope, that probably means the heck_idf
+			// refers to an instance variable. if there are
+			// no instance variables, then there is an
+			// error. if there are instance variables, we
+			// can pass on the result to the callee where it
+			// can be properly handled.
+			if (var_class->inst_var_vec == NULL)
+				// TODO: report error
+				return NULL;
+
+			// break out of the loop so we can return the result
+			break;
 		}
 		else
 		{
+			// TODO: report error
 			return NULL;
 		}
 
-		i++;
+		++idf;
 	}
 
+	(*idf_ptr) = idf;
 	return name;
 }
 
-heck_name* scope_resolve_value(heck_code* c, heck_scope* parent,
-			       heck_expr_value* value)
+// calls socpe_resolve_idf_name, and returns NULL if the output idf is not the
+// last element of the idf chain (meaning it returns NULL if the idf contains
+// object member access)
+heck_name* scope_resolve_idf(const heck_scope* parent, heck_idf idf)
 {
-	switch (value->context)
-	{
-		case CONTEXT_LOCAL:
-			return scope_resolve_idf(parent, value->idf);
-		case CONTEXT_THIS:
-			if (parent->parent_class == NULL ||
-			    parent->parent_class->child_scope == NULL)
-				return NULL;
-			return scope_resolve_idf(
-			    parent->parent_class->child_scope, value->idf);
-		case CONTEXT_GLOBAL:
-			return scope_resolve_idf(c->global, value->idf);
-	}
+	heck_idf tmp = idf;
+	heck_name* result = scope_resolve_idf_name(parent, &tmp);
+
+	// check if scope_resolve_idf_name was able to reach the end of the
+	// heck_idf. If not, we cannot resolve the remaining items, which means
+	// there is an error and we will return NULL.
+	if (tmp != NULL && tmp[1] != NULL)
+		// TODO: report error
+		return NULL;
+
+	return result;
 }
+
+// heck_name* scope_resolve_value(heck_code* c, heck_scope* parent,
+// 			       heck_expr_value* value)
+// {
+// 	switch (value->context)
+// 	{
+// 		case CONTEXT_LOCAL:
+// 			return scope_resolve_idf(parent, value->idf);
+// 		case CONTEXT_THIS:
+// 			if (parent->parent_class == NULL ||
+// 			    parent->parent_class->child_scope == NULL)
+// 				return NULL;
+// 			return scope_resolve_idf(
+// 			    parent->parent_class->child_scope, value->idf);
+// 		case CONTEXT_GLOBAL:
+// 			return scope_resolve_idf(c->global, value->idf);
+// 	}
+// }
 
 // helper struct for resolve_name_callback
 typedef struct resolve_name_data

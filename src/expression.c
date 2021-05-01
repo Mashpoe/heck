@@ -5,6 +5,7 @@
 //  Created by Mashpoe on 6/10/19.
 //
 
+#include "class.h"
 #include "vec.h"
 #include <code_impl.h>
 #include <error.h>
@@ -76,6 +77,108 @@ heck_expr* create_expr_unary(heck_code* c, heck_file_pos* fp, heck_expr* expr,
 	return e;
 }
 
+heck_expr* create_expr_var_access(heck_code* c, heck_file_pos* fp, heck_idf idf,
+				  heck_name* parent)
+{
+	return NULL;
+}
+
+// // idf will be a pointer to an element in an idf. This allows us to access
+// // the remaining elements.
+// heck_expr* create_expr_member_access(heck_code* c, heck_file_pos* fp,
+// 				     heck_idf idf, heck_name* parent)
+// {
+// 	heck_name* name = parent;
+// 	// return the appropriate expression type
+// 	switch (parent->type)
+// 	{
+// 		case IDF_UNDECLARED_CLASS: // fallthrough
+// 		case IDF_CLASS:
+// 		{
+// 			// probably an error
+// 			return NULL;
+// 			break;
+// 		}
+// 		case IDF_UNDECLARED: // fallthrough
+// 		case IDF_NAMESPACE:
+// 			// also probably an error
+// 			return NULL;
+// 			break;
+// 		case IDF_VARIABLE:
+// 		{
+// 			// idf is a null-terminated array of ptrs, so if the
+// 			// next element is null then we are at the end of the
+// 			// chain
+// 			if (idf[1] == NULL)
+// 			{
+// 				// blah blah return something
+// 				return NULL;
+// 			}
+
+// 			do
+// 			{
+// 				++idf; // advance to the next element
+// 				if ()
+// 			} while (idf != NULL); // stop at the end of the chain
+
+// 			break;
+// 		}
+// 		case IDF_FUNCTION:
+// 			break;
+// 	}
+
+// 	// recursively get child from the name
+
+// 	// if child is an EXPR_FUNC_NAME, return
+
+// 	// otherwise,
+
+// 	return NULL;
+// }
+
+heck_expr* create_expr_member_access(heck_code* c, heck_file_pos* fp,
+				     heck_expr* expr, int offset)
+{
+	heck_expr* e =
+	    heck_alloc(c, EXPR_SIZE + sizeof(heck_expr_member_access));
+	init_expr(fp, e, EXPR_MEMBR_ACCESS, &expr_vtable_member_access);
+
+	heck_expr_member_access* value = &e->value.member_access;
+	value->child = expr;
+	value->offset = offset;
+
+	return e;
+}
+
+heck_expr* create_expr_reference_access(heck_code* c, heck_file_pos* fp,
+					heck_expr* expr)
+{
+	heck_expr* e =
+	    heck_alloc(c, EXPR_SIZE + sizeof(heck_expr_reference_access));
+	init_expr(fp, e, EXPR_REF_ACCESS, &expr_vtable_reference_access);
+
+	heck_expr_reference_access* value = &e->value.reference_access;
+	value->child = expr;
+
+	return e;
+}
+
+heck_expr* create_expr_method_access(heck_code* c, heck_file_pos* fp,
+				     heck_name* method_name, heck_expr* object,
+				     heck_class* method_class)
+{
+	heck_expr* e =
+	    heck_alloc(c, EXPR_SIZE + sizeof(heck_expr_method_access));
+	init_expr(fp, e, EXPR_MTHD_ACCESS, &expr_vtable_method_access);
+
+	heck_expr_method_access* value = &e->value.method_access;
+	value->method_name = method_name;
+	value->method_class = method_class;
+	value->object = object;
+
+	return e;
+}
+
 heck_expr* create_expr_value(heck_code* c, heck_file_pos* fp, heck_idf idf,
 			     idf_context context)
 {
@@ -87,6 +190,8 @@ heck_expr* create_expr_value(heck_code* c, heck_file_pos* fp, heck_idf idf,
 	value->idf = idf;
 	value->name = NULL;
 	value->context = context;
+	value->value = NULL;
+	// value->func = NULL;
 
 	return e;
 }
@@ -184,50 +289,282 @@ inline heck_expr* resolve_expr_binary(heck_code* c, heck_scope* parent,
 	return left && right ? expr : NULL;
 }
 
-// expects a heck_expr_value.
-// used for access and assignment
-// do not confuse with resolve_expr_value, this function is for internal use.
-bool resolve_value(heck_code* c, heck_scope* parent, heck_expr* expr)
+// handle the various types of member access with recursive descent parsing to
+// get the correct precedence order
+
+typedef struct
+{
+	heck_code* c;
+	heck_scope* parent;
+	heck_file_pos* fp;
+
+	// these members change each time a new element on the chain is resolved
+	heck_idf idf;
+	heck_name* name;
+	heck_expr* expr;
+} member_access_resolver;
+
+bool resolve_member_access_direct(member_access_resolver* resolver)
 {
 
-	// try to find the identifier
-	heck_name* name = scope_resolve_value(c, parent, &expr->value.value);
+	// we can assume we're dealing with an object here
+	heck_variable* obj_var = resolver->name->value.var_value;
 
-	if (name == NULL)
+	// TODO: make a function to get the class from a variable
+
+	heck_class* obj_class =
+	    obj_var->data_type->value.class_type.class_value;
+
+	// inst_var_vec is a quick way to check for object members
+	while (obj_class->inst_var_vec != NULL)
 	{
-		heck_report_error(NULL, expr->fp,
-				  "use of undeclared identifier \"{I}\"",
-				  expr->value.value.idf);
+
+		heck_name* member_name;
+
+		// find the name in the class scope
+		if (!idf_map_get(obj_class->class_name->child_scope->names,
+				 resolver->idf[1], &member_name))
+		{
+			break;
+		}
+
+		if (!name_accessible(resolver->parent, member_name))
+		{
+			// TODO: report error
+			return NULL;
+		}
+
+		resolver->name = member_name;
+		++resolver->idf;
+
+		// check if the new name is a variable
+		if (member_name->type != IDF_VARIABLE)
+			break;
+
+		// TODO: make sure the variable isn't static
+		obj_var = member_name->value.var_value;
+
+		// check if the new name is an object
+		if (obj_var->data_type->type_name != TYPE_CLASS)
+			break;
+
+		obj_class = obj_var->data_type->value.class_type.class_value;
+
+		// get the offset
+		int offset = obj_var->class_position;
+
+		// create the expression
+		heck_expr* member_access = create_expr_member_access(
+		    resolver->c, resolver->fp, resolver->expr, offset);
+
+		// vec_size_t num_vars = vector_size(obj_class->inst_var_vec);
+		// for (vec_size_t i = 0; i < num_vars; ++i)
+		// {
+		// 	// TODO: check if variable is static
+		// 	if (obj_class->inst_var_vec[i]->)
+		// }
+
+		// stop if we have made it to the end
+		if (resolver->idf[0] == NULL)
+		{
+			return true;
+		}
+	}
+
+	return NULL;
+}
+
+bool resolve_member_access_reference(member_access_resolver* resolver)
+{
+	if (!resolve_member_access_direct(resolver))
+	{
 		return false;
 	}
 
-	heck_expr_value* value = &expr->value.value;
-
-	if (name->type == IDF_VARIABLE)
+	if (resolver->idf[0] == NULL)
 	{
+		return true;
+	}
 
-		if (name->value.var_value->data_type == NULL)
-		{
-			heck_report_error(NULL, expr->fp,
-					  "use of invalid variable \"{I}\"",
-					  value->idf);
-			return false;
-		}
+	// check for reference access just check if resolver->name is a
+	// reference type, since member_access_direct would have updated it but
+	// ignored it's value if it wasn't an object.
 
-		// set data type
-		expr->data_type = name->value.var_value->data_type;
+	// if the variable is a reference to an object and the idf has more
+	// children, then the next child must be found and passed on to
+	// member_access_direct
+
+	// if there is no reference type,
+	return true;
+}
+
+bool resolve_member_access_overload(member_access_resolver* resolver)
+{
+	if (!resolve_member_access_reference(resolver))
+	{
+		return false;
+	}
+
+	if (resolver->idf[0] == NULL)
+	{
+		return true;
+	}
+
+	// check for operator overload
+	// this function might be removed because it may be easier to check for
+	// overloads in member_access_direct
+
+	return true;
+}
+
+bool resolve_member_access_method(member_access_resolver* resolver)
+{
+
+	if (!resolve_member_access_overload(resolver))
+	{
+		return false;
+	}
+
+	if (resolver->idf[0] == NULL)
+	{
+		return true;
+	}
+
+	// check for class method
+	if (resolver->name->type == IDF_FUNCTION)
+	{
+		// add the expression
+		heck_expr* method_access = create_expr_method_access(
+		    resolver->c, resolver->fp, resolver->name, resolver->expr,
+		    resolver->name->parent->parent_class);
 	}
 	else
 	{
-		// TODO: support callbacks
-		heck_report_error(NULL, expr->fp, "invalid use of {s} \"{I}\"",
-				  get_idf_type_string(name->type), value->idf);
+		// TODO: report error
+		return false;
 	}
 
-	// set name
-	expr->value.value.name = name;
+	// since this function has the lowest precedence, we cannot
+	// return true if no method was found
+	return false;
+}
 
-	return true;
+// expects a heck_expr_value.
+// allows the value to be resolved partially so it can be handled properly
+// depending on the context it is being used in, which could be regular
+// access, assignment, or a function call. do not confuse with
+// resolve_expr_value; this function is for internal use.
+bool resolve_value(heck_code* c, heck_scope* parent, heck_expr* expr)
+{
+
+	heck_expr_value* value = &expr->value.value;
+
+	// try to find the identifier
+	heck_name* name;
+	heck_idf tmp_idf = value->idf;
+
+	switch (value->context)
+	{
+		case CONTEXT_LOCAL:
+		{
+			name = scope_resolve_idf_name(parent, &tmp_idf);
+			break;
+		}
+		case CONTEXT_THIS:
+		{
+			if (parent->parent_class == NULL ||
+			    parent->parent_class->child_scope == NULL)
+			{
+				// TODO: report error
+				return false;
+			}
+			name = scope_resolve_idf_name(
+			    parent->parent_class->child_scope, &tmp_idf);
+			break;
+		}
+		case CONTEXT_GLOBAL:
+		{
+			name = scope_resolve_idf_name(c->global, &tmp_idf);
+			break;
+		}
+	}
+
+	if (name == NULL)
+		return false;
+
+	value->name = name;
+
+	// if tmp_idf[1] is not null, then there are still identifiers to
+	// resolve
+	if (tmp_idf[1] != NULL)
+	{
+		// scope_resolve_idf_name already makes sure the name refers to
+		// an object if the heck_idf has extra elements, so we can just
+		// assume we're dealing with an object here.
+		member_access_resolver resolver = {.c = c,
+						   .parent = parent,
+						   .fp = expr->fp,
+						   .idf = tmp_idf,
+						   .name = name,
+						   .expr = NULL};
+		if (resolve_member_access_method(&resolver))
+		{
+			value->value = resolver.expr;
+			expr->data_type = resolver.expr->data_type;
+			return true;
+		}
+	}
+	else if (name->type == IDF_VARIABLE)
+	{
+		// if the name is a valid value type, return true
+		expr->data_type = name->value.var_value->data_type;
+		return true;
+	}
+	else if (name->type == IDF_FUNCTION)
+	{
+		return true;
+	}
+
+	return false;
+
+	// // try to find the identifier
+	// heck_name* name = scope_resolve_value(c, parent, &expr->value.value);
+
+	// if (name == NULL)
+	// {
+	// 	heck_report_error(NULL, expr->fp,
+	// 			  "use of undeclared identifier \"{I}\"",
+	// 			  expr->value.value.idf);
+	// 	return false;
+	// }
+
+	// heck_expr_value* value = &expr->value.value;
+
+	// if (name->type == IDF_VARIABLE)
+	// {
+
+	// 	if (name->value.var_value->data_type == NULL)
+	// 	{
+	// 		heck_report_error(NULL, expr->fp,
+	// 				  "use of invalid variable \"{I}\"",
+	// 				  value->idf);
+	// 		return false;
+	// 	}
+
+	// 	// set data type
+	// 	expr->data_type = name->value.var_value->data_type;
+	// }
+	// else
+	// {
+	// 	// TODO: support callbacks
+	// 	heck_report_error(NULL, expr->fp, "invalid use of {s} \"{I}\"",
+	// 			  get_idf_type_string(name->type), value->idf);
+	// }
+
+	// // set name
+	// expr->value.value.name = name;
+
+	// return true;
 }
 
 /************************
@@ -568,6 +905,27 @@ void print_expr_asg(heck_expr* expr);
 const expr_vtable expr_vtable_asg = {resolve_expr_asg, compile_expr_asg,
 				     copy_expr_binary, print_expr_asg};
 
+// member access (separate precedence)
+void compile_expr_member_access(heck_compiler* cmplr, heck_expr* expr);
+void print_expr_member_access(heck_expr* expr);
+const expr_vtable expr_vtable_member_access = {NULL, compile_expr_member_access,
+					       NULL, print_expr_member_access};
+
+void compile_expr_reference_access(heck_compiler* cmplr, heck_expr* expr);
+void print_expr_reference_access(heck_expr* expr);
+const expr_vtable expr_vtable_reference_access = {
+    NULL, compile_expr_reference_access, NULL, print_expr_reference_access};
+
+void compile_expr_overload_access(heck_compiler* cmplr, heck_expr* expr);
+void print_expr_overload_access(heck_expr* expr);
+const expr_vtable expr_vtable_overload_access = {
+    NULL, compile_expr_overload_access, NULL, print_expr_overload_access};
+
+void compile_expr_method_access(heck_compiler* cmplr, heck_expr* expr);
+void print_expr_method_access(heck_expr* expr);
+const expr_vtable expr_vtable_method_access = {NULL, compile_expr_method_access,
+					       NULL, print_expr_method_access};
+
 /************************
  * all resolve definitions
  ************************/
@@ -679,10 +1037,7 @@ heck_expr* resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr)
 	{
 
 		// try to find the identifier
-		heck_name* name =
-		    scope_resolve_value(c, parent, &operand->value.value);
-
-		if (name == NULL)
+		if (!resolve_value(c, parent, operand))
 		{
 			heck_report_error(
 			    NULL, expr->fp,
@@ -690,6 +1045,7 @@ heck_expr* resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr)
 			    operand->value.value.idf);
 			return NULL;
 		}
+		heck_name* name = operand->value.value.name;
 
 		// TODO: check declaration/definition status
 		if (name->type != IDF_FUNCTION)
@@ -1329,6 +1685,13 @@ void print_expr_value(heck_expr* expr)
 {
 	fputs("[", stdout);
 	print_value_idf(&expr->value.value);
+	heck_expr* child = expr->value.value.value;
+	if (child != NULL)
+	{
+		fputs("(", stdout);
+		print_expr(expr->value.value.value);
+		fputs(")", stdout);
+	}
 	fputs("]", stdout);
 }
 
@@ -1419,6 +1782,27 @@ void print_expr_ternary(heck_expr* expr)
 	fputs("] : [", stdout);
 	print_expr(ternary->value_b);
 	fputs("]", stdout);
+}
+
+// TODO:
+void print_expr_member_access(heck_expr* expr)
+{
+	heck_expr_member_access* member_access = &expr->value.member_access;
+
+	fputs("member access", stdout);
+	if (member_access->child != NULL)
+	{
+		fputs("->", stdout);
+		print_expr(member_access->child);
+	}
+}
+void print_expr_reference_access(heck_expr* expr) {}
+void print_expr_overload_access(heck_expr* expr) {}
+void print_expr_method_access(heck_expr* expr)
+{
+	heck_expr_method_access* method_access = &expr->value.method_access;
+	print_expr(method_access->object);
+	fputs("->method access", stdout);
 }
 
 //
