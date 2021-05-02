@@ -104,8 +104,8 @@ typedef struct heck_expr_unary
 	heck_expr* expr;
 	heck_tk_type operator;
 } heck_expr_unary;
-// heck_expr* create_expr_unary(heck_code* c, heck_file_pos* fp, heck_expr*
-// expr, heck_tk_type operator, const expr_vtable * vtable);
+heck_expr* create_expr_unary(heck_code* c, heck_file_pos* fp, heck_expr* expr,
+			     heck_tk_type operator, const expr_vtable * vtable);
 
 typedef struct heck_expr_member_access
 {

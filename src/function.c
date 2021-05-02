@@ -387,14 +387,15 @@ bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def)
 // uses a resolved function call for types
 // adds the instance to the name
 // returns the instance so it can be matched/resolved
-heck_func* func_create_gen_inst(heck_code* c, heck_name* func_name,
-				heck_func* func, heck_expr_call* call)
+heck_func* func_create_gen_inst(heck_code* c, heck_scope* parent,
+				heck_func_list* func_list, heck_func* func,
+				heck_expr_call* call)
 {
 
 	// copy params and return type
 	heck_func_decl new_decl;
 	new_decl.fp = func->decl.fp;
-	new_decl.scope = scope_create(c, func_name->parent);
+	new_decl.scope = scope_create(c, parent);
 
 	// copy parameters
 	// assumes that the func has params
@@ -443,7 +444,7 @@ heck_func* func_create_gen_inst(heck_code* c, heck_name* func_name,
 	}
 
 	// add it to the def vec
-	vector_add(&func_name->value.func_value.def_vec, new_func);
+	vector_add(&func_list->def_vec, new_func);
 
 	return new_func;
 }
@@ -474,11 +475,11 @@ heck_func* func_create_gen_inst(heck_code* c, heck_name* func_name,
 // 	return false;
 // }
 
-heck_func* func_match_def(heck_code* c, heck_name* func_name,
-			  heck_expr_call* call)
+heck_func* func_match_def(heck_code* c, heck_scope* parent,
+			  heck_func_list* func_list, heck_expr_call* call)
 {
 
-	heck_func_list* func_list = &func_name->value.func_value;
+	// heck_func_list* func_list = &func_name->value.func_value;
 	if (func_list->def_vec == NULL)
 	{
 		// no definitions; nothing to call
@@ -568,8 +569,8 @@ heck_func* func_match_def(heck_code* c, heck_name* func_name,
 	if (best_match != NULL)
 	{
 		if (best_match->decl.generic)
-			return func_create_gen_inst(c, func_name, best_match,
-						    call);
+			return func_create_gen_inst(c, parent, func_list,
+						    best_match, call);
 		return best_match;
 	}
 

@@ -826,7 +826,7 @@ void extern_decl(parser* p, heck_scope* parent);
 
 // returns NULL on failure
 // puts variables in appropriate scopes and lists
-heck_name* variable_decl(parser* p, heck_scope* parent)
+heck_variable* variable_decl(parser* p, heck_scope* parent)
 {
 	heck_token* start_tk = peek(p);
 
@@ -1059,7 +1059,7 @@ heck_stmt* while_statement(parser* p, heck_scope* parent, uint8_t flags)
 	if (peek(p)->type != TK_BRAC_L)
 	{
 		parser_error(p, peek(p), true, "expected {");
-		return create_stmt_err(p->code, peek(p));
+		return create_stmt_err(p->code, &peek(p)->fp);
 	}
 
 	heck_scope* block_scope = scope_create(p->code, parent);
@@ -1651,7 +1651,7 @@ heck_name* get_extern_func(parser* p, heck_scope* parent, str_entry name_str)
 		func_name->value.func_value.def_vec = NULL;
 		idf_map_set(parent->names, name_str, func_name);
 	}
-	else if (idf_map_get(parent->names, name_str, &func_name))
+	else if (idf_map_get(parent->names, name_str, (void**)&func_name))
 	{
 
 		if (func_name->type == IDF_FUNCTION)

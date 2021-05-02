@@ -71,7 +71,7 @@ struct heck_func
 	union
 	{
 		heck_block* code;
-		str_entry* import; // makes it easier to compile imports
+		str_entry import; // makes it easier to compile imports
 	} value;
 };
 
@@ -91,10 +91,10 @@ bool func_resolve_name(heck_code* c, heck_name* func_name, str_entry name_str);
 // error flags can be stored in func_name
 bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def);
 
-// finds the correct definition/overload for a given call
+// finds the correct definition/overload for a given call.
 // returns NULL if there is no match
-heck_func* func_match_def(heck_code* c, heck_name* func_name,
-			  heck_expr_call* call);
+heck_func* func_match_def(heck_code* c, heck_scope* parent,
+			  heck_func_list* func_list, heck_expr_call* call);
 
 // checks if a definition matches a given argument list
 // finds the best match with the precedence exact=>generic=>castable

@@ -323,7 +323,7 @@ bool resolve_member_access_direct(member_access_resolver* resolver)
 
 		// find the name in the class scope
 		if (!idf_map_get(obj_class->class_name->child_scope->names,
-				 resolver->idf[1], &member_name))
+				 resolver->idf[1], (void**)&member_name))
 		{
 			break;
 		}
@@ -436,7 +436,7 @@ bool resolve_member_access_method(member_access_resolver* resolver)
 		// add the expression
 		heck_expr* method_access = create_expr_method_access(
 		    resolver->c, resolver->fp, resolver->name, resolver->expr,
-		    resolver->name->parent->parent_class);
+		    resolver->name->parent->parent_class->value.class_value);
 	}
 	else
 	{
@@ -1061,7 +1061,9 @@ heck_expr* resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr)
 		{
 
 			// try to find a matching overload/def
-			heck_func* def = func_match_def(c, name, func_call);
+			heck_func* def =
+			    func_match_def(c, name->parent,
+					   &name->value.func_value, func_call);
 
 			if (def == NULL)
 			{
@@ -1528,7 +1530,7 @@ heck_expr* resolve_expr_asg(heck_code* c, heck_scope* parent, heck_expr* expr)
 				   value->name->value.var_value);
 		}
 	}
-	else if (asg->left->type = EXPR_ARR_ACCESS)
+	else if (asg->left->type == EXPR_ARR_ACCESS)
 	{
 
 		asg->left = resolve_expr(c, parent, asg->left);

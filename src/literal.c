@@ -39,8 +39,10 @@ heck_literal* create_literal_float(heck_code* c, float value)
 // 	return literal;
 // }
 
-heck_literal literal_true_val = {data_type_bool, true, 0};
-heck_literal literal_false_val = {data_type_bool, false, 0};
+heck_literal literal_true_val = {
+    .data_type = data_type_bool, .memory_addr = 0, .value.bool_value = true};
+heck_literal literal_false_val = {
+    .data_type = data_type_bool, .memory_addr = 0, .value.bool_value = false};
 
 heck_literal* literal_true = &literal_true_val;
 heck_literal* literal_false = &literal_false_val;

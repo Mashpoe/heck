@@ -67,7 +67,7 @@ void compile_stmt_if(heck_compiler* cmplr, heck_stmt* stmt)
 
 void compile_stmt_while(heck_compiler* cmplr, heck_stmt* stmt)
 {
-	heck_stmt_while* while_stmt = &stmt->value.if_stmt;
+	heck_stmt_while* while_stmt = &stmt->value.while_stmt;
 	wasm_str_lit(cmplr->wasm, "loop\n");
 	compile_expr(cmplr, while_stmt->condition);
 	wasm_str_lit(cmplr->wasm, "if\n");

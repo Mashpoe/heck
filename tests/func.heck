@@ -78,7 +78,15 @@
 
 // print(factorial(5))
 
-let x = 5
+namespace ree {
+	func oof() {
+		return 5
+	}
+}
+
+let x = ree.oof()
+
+//let x = 5
 
 func printGlobal() {
 	let x = 4
@@ -89,3 +97,5 @@ func printGlobal() {
 printGlobal()
 
 print("big chungus")
+
+print(false)
