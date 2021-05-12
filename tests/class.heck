@@ -1,17 +1,23 @@
 class Villager {
 
-  x: int
-  y: int
+  let x: int = 0
+  let y: int = 0
+  let z: int // not initialized, so it must be initialized by the constructor
 
   func setCoords(newX: int, newY: int) {
     x = newX
     y = newY
   }
 
+  func Villager() {
+	  // blah
+	  z = 4
+  }
+
 }
 
 let v = Villager()
 
-if (nearZombie) {
+if (true) {
   v.setCoords(v.x + 1, v.y + 1)
 }

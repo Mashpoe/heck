@@ -1134,9 +1134,9 @@ bool parse_parameters(parser* p, heck_func_decl* decl)
 	return true;
 }
 
-// parses parameters and return type
+// parses parameters and return type, aka its type signature.
 // expects decl->scope to be set
-bool parse_func_decl(parser* p, heck_func_decl* decl)
+bool parse_func_signature(parser* p, heck_func_decl* decl)
 {
 	if (!parse_parameters(p, decl))
 		return false;
@@ -1234,7 +1234,7 @@ bool parse_operator_decl(parser* p, heck_operator_type* type_out,
 	}
 
 	// parse the parameters and return type
-	return parse_func_decl(p, decl);
+	return parse_func_signature(p, decl);
 }
 
 void parse_func_def(parser* p, heck_scope* parent)
@@ -1371,7 +1371,7 @@ void parse_func_def(parser* p, heck_scope* parent)
 		func_decl.fp = &start_tk->fp;
 		func_decl.scope = scope_create(p->code, parent);
 
-		if (!parse_func_decl(p, &func_decl))
+		if (!parse_func_signature(p, &func_decl))
 			return;
 
 		// there are no issues; create the function
@@ -1584,7 +1584,7 @@ void parse_class_def(parser* p, heck_scope* parent)
 				step(p);
 
 				heck_variable* variable =
-				    variable_decl(p, parent);
+				    variable_decl(p, class_name->child_scope);
 
 				if (variable == NULL)
 					break;
@@ -1646,7 +1646,8 @@ heck_name* get_extern_func(parser* p, heck_scope* parent, str_entry name_str)
 		parent->names = idf_map_create();
 
 		// add the function to the scope
-		func_name = name_create(p->code, parent, IDF_FUNCTION);
+		func_name =
+		    name_create(p->code, parent, IDF_FUNCTION, name_str);
 		func_name->value.func_value.decl_vec = NULL;
 		func_name->value.func_value.def_vec = NULL;
 		idf_map_set(parent->names, name_str, func_name);
@@ -1693,7 +1694,8 @@ heck_name* get_extern_func(parser* p, heck_scope* parent, str_entry name_str)
 	else
 	{
 		// add the function to the scope
-		func_name = name_create(p->code, parent, IDF_FUNCTION);
+		func_name =
+		    name_create(p->code, parent, IDF_FUNCTION, name_str);
 		func_name->value.func_value.decl_vec = vector_create();
 		func_name->value.func_value.def_vec = NULL;
 		idf_map_set(parent->names, name_str, func_name);
@@ -1721,7 +1723,7 @@ void parse_func_extern(parser* p, heck_scope* parent)
 		heck_func_decl func_decl;
 		func_decl.fp = &start_tk->fp;
 		func_decl.scope = scope_create(p->code, parent);
-		if (!parse_func_decl(p, &func_decl))
+		if (!parse_func_signature(p, &func_decl))
 			return;
 
 		heck_func_list* func_value = &func_name->value.func_value;
@@ -1811,7 +1813,7 @@ void import_func(parser* p, heck_scope* parent)
 		heck_func_decl func_decl;
 		func_decl.fp = &start_tk->fp;
 		func_decl.scope = scope_create(p->code, parent);
-		if (!parse_func_decl(p, &func_decl))
+		if (!parse_func_signature(p, &func_decl))
 			return;
 
 		// create a function definition with no child scope

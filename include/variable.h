@@ -9,6 +9,7 @@
 #define variable_h
 
 #include "code.h"
+#include "declarations.h"
 #include "expression.h"
 #include "str.h"
 #include "token.h"
@@ -17,7 +18,7 @@
 typedef struct heck_variable
 {
 	heck_file_pos* fp;
-	str_entry name;
+	heck_name* name;
 	heck_data_type* data_type;
 	heck_expr* value;
 	bool global;

@@ -96,7 +96,7 @@ int main(int argc, const char* argv[])
 
 		if (success)
 		{
-			heck_compile(c);
+			// heck_compile(c);
 		}
 		else
 		{

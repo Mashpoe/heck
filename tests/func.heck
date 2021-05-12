@@ -84,7 +84,7 @@ namespace ree {
 	}
 }
 
-let x = ree.oof()
+let x = ree.meme.oof()
 
 //let x = 5
 

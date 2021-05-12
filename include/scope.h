@@ -34,6 +34,8 @@ enum heck_idf_type
 	IDF_CLASS,
 	IDF_UNDECLARED_CLASS, // a forward declaration has not been found yet
 	IDF_FUNCTION,
+	IDF_CONSTRUCTOR, // used to re-label function names during the resolve
+			 // phase.
 	IDF_VARIABLE,
 };
 
@@ -64,6 +66,7 @@ typedef struct heck_name
 
 	heck_idf_type type;
 	heck_access access; // access modifier
+	str_entry name_str;
 
 	// data for unique scopes, such as classes and functions
 	union
@@ -75,7 +78,8 @@ typedef struct heck_name
 
 	struct heck_scope* child_scope; // optional, might be null
 } heck_name;
-heck_name* name_create(heck_code* c, heck_scope* parent, heck_idf_type type);
+heck_name* name_create(heck_code* c, heck_scope* parent, heck_idf_type type,
+		       str_entry name_str);
 void name_free(heck_name* name);
 
 typedef struct heck_scope
@@ -99,10 +103,12 @@ heck_name* scope_get_child(heck_code* c, heck_scope* scope, heck_idf idf);
 // parent is the scope you are referring from and name is name
 bool name_accessible(const heck_scope* parent, const heck_name* name);
 // returns null if the scope couldn't be resolved or access wasn't allowed
-heck_name* scope_resolve_idf(const heck_scope* parent, heck_idf idf);
+heck_name* scope_resolve_idf(const heck_scope* parent, heck_idf idf,
+			     heck_file_pos* fp);
 // only resolves scope fields, so when it hits an object it stops and ingores
 // any member access that follows. The rest of the idf can be resolved later
-heck_name* scope_resolve_idf_name(const heck_scope* parent, heck_idf* idf_ptr);
+heck_name* scope_resolve_idf_name(const heck_scope* parent, heck_idf* idf_ptr,
+				  heck_file_pos* fp);
 heck_name* scope_resolve_value(heck_code* c, heck_scope* parent,
 			       heck_expr_value* value);
 bool scope_resolve_names(heck_code* c, heck_scope* scope);

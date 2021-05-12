@@ -249,7 +249,8 @@ bool resolve_type_class(heck_code* c, heck_scope* parent, heck_data_type* type)
 	// find the correct class using the parent scope
 	heck_class_type* class_type = &type->value.class_type;
 
-	heck_name* n = scope_resolve_idf(parent, class_type->class_name);
+	heck_name* n =
+	    scope_resolve_idf(parent, class_type->class_name, type->fp);
 
 	// TODO: line numbers in error messages
 	if (n == NULL)

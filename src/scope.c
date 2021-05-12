@@ -8,12 +8,14 @@
 #include "vec.h"
 #include <class.h>
 #include <code_impl.h>
+#include <error.h>
 #include <function.h>
 #include <print.h>
 #include <scope.h>
 #include <stdio.h>
 
-heck_name* name_create(heck_code* c, heck_scope* parent, heck_idf_type type)
+heck_name* name_create(heck_code* c, heck_scope* parent, heck_idf_type type,
+		       str_entry name_str)
 {
 	heck_name* name = malloc(sizeof(heck_name));
 	heck_add_name(c, name);
@@ -22,6 +24,7 @@ heck_name* name_create(heck_code* c, heck_scope* parent, heck_idf_type type)
 	name->value.class_value = NULL; // will set all fields to NULL
 	name->parent = parent;
 	name->child_scope = NULL;
+	name->name_str = name_str;
 
 	name->flags = 0x0; // set all flags to 0
 
@@ -174,7 +177,7 @@ heck_name* scope_get_child(heck_code* c, heck_scope* scope, heck_idf idf)
 		// we'll just create one instead
 		for (;;)
 		{
-			name = name_create(c, scope, IDF_UNDECLARED);
+			name = name_create(c, scope, IDF_UNDECLARED, idf[i]);
 
 			idf_map_set(scope->names, idf[i], name);
 
@@ -223,7 +226,8 @@ bool name_accessible(const heck_scope* parent, const heck_name* name)
 // scope_resolve_idf, but it will stop once it gets to a variable. idf_ptr is an
 // input and an output. It will increment the idf, e.g. ++(*idf_ptr), to either
 // the last element or the first one that refers to the variable.
-heck_name* scope_resolve_idf_name(const heck_scope* parent, heck_idf* idf_ptr)
+heck_name* scope_resolve_idf_name(const heck_scope* parent, heck_idf* idf_ptr,
+				  heck_file_pos* fp)
 {
 
 	heck_idf idf = *idf_ptr;
@@ -241,7 +245,9 @@ heck_name* scope_resolve_idf_name(const heck_scope* parent, heck_idf* idf_ptr)
 
 			// printf("not found idf: %i, %s\n", idf[0]->hash,
 			// idf[0]->value);
-			// TODO: report error
+			heck_report_error(
+			    NULL, fp, "unable to resolve identifier \"{s}\"",
+			    idf[0]->value);
 			return NULL;
 		}
 
@@ -251,23 +257,25 @@ heck_name* scope_resolve_idf_name(const heck_scope* parent, heck_idf* idf_ptr)
 	}
 	// printf("found idf: %i, %s\n", idf[0]->hash, idf[0]->value);
 
-	/*	we have found the parent of the identifier
+	/*	we have found the parent of the identifier.
 		now find the identifier "children" if they exist */
 	while (idf[1] != NULL)
 	{
-		++idf;
 		heck_scope* child_scope = name->child_scope;
 
-		if (child_scope == NULL)
-			// TODO: report error
-			return NULL;
-
-		if (idf_map_get(child_scope->names, idf[0], (void*)&name))
+		if (child_scope != NULL)
 		{
-			// TODO: check if private/protected/friend
-			if (!name_accessible(parent, name))
-				// TODO: report error
+			if (idf_map_get(child_scope->names, idf[1],
+					(void*)&name))
+			{
+				if (!name_accessible(parent, name))
+					heck_report_error(
+					    NULL, fp,
+					    "identifier \"{I}\" cannot "
+					    "be accessed from here",
+					    *idf_ptr);
 				return NULL;
+			}
 		}
 		else if (name->type == IDF_VARIABLE)
 		{
@@ -275,35 +283,39 @@ heck_name* scope_resolve_idf_name(const heck_scope* parent, heck_idf* idf_ptr)
 			const heck_data_type* var_type =
 			    name->value.var_value->data_type;
 			heck_class* var_class;
-			if (var_type->type_name == TYPE_CLASS)
+			if (var_type == NULL)
+			{
+				heck_report_error(
+				    NULL, fp,
+				    "member access on variable \"{s}\" whose "
+				    "type is unknown",
+				    idf[0]->value);
+				return NULL;
+			}
+			else if (var_type->type_name == TYPE_CLASS)
 			{
 				// the class type is resolved when the
 				// variable's declaration is resolved, so we can
 				// access it here
 				var_class =
 				    var_type->value.class_type.class_value;
+				// class members will be processed later.
+				// exit the function.
+				break;
 			}
 			else
 			{
 				// the variable is not an object and therefore
 				// has no children.
-				// TODO: report error
+				heck_report_error(
+				    NULL, fp,
+				    "member access is not permitted for this "
+				    "type \"{I}\"",
+				    *idf_ptr);
 				return NULL;
 			}
-
-			// if we weren't able to find the child in the
-			// scope, that probably means the heck_idf
-			// refers to an instance variable. if there are
-			// no instance variables, then there is an
-			// error. if there are instance variables, we
-			// can pass on the result to the callee where it
-			// can be properly handled.
-			if (var_class->inst_var_vec == NULL)
-				// TODO: report error
-				return NULL;
-
-			// break out of the loop so we can return the result
-			break;
+			// increment to the next identifier
+			++idf;
 		}
 		else
 		{
@@ -321,17 +333,20 @@ heck_name* scope_resolve_idf_name(const heck_scope* parent, heck_idf* idf_ptr)
 // calls socpe_resolve_idf_name, and returns NULL if the output idf is not the
 // last element of the idf chain (meaning it returns NULL if the idf contains
 // object member access)
-heck_name* scope_resolve_idf(const heck_scope* parent, heck_idf idf)
+heck_name* scope_resolve_idf(const heck_scope* parent, heck_idf idf,
+			     heck_file_pos* fp)
 {
 	heck_idf tmp = idf;
-	heck_name* result = scope_resolve_idf_name(parent, &tmp);
+	heck_name* result = scope_resolve_idf_name(parent, &tmp, fp);
 
 	// check if scope_resolve_idf_name was able to reach the end of the
 	// heck_idf. If not, we cannot resolve the remaining items, which means
 	// there is an error and we will return NULL.
 	if (tmp != NULL && tmp[1] != NULL)
-		// TODO: report error
+	{
+		heck_report_error(NULL, fp, "invalid access to \"{I}\"", idf);
 		return NULL;
+	}
 
 	return result;
 }
@@ -369,7 +384,7 @@ void resolve_name_callback(str_entry key, void* value, void* user_ptr)
 	{
 		case IDF_FUNCTION:
 		{
-			data->success *= func_resolve_name(data->c, name, key);
+			data->success *= func_resolve_name(data->c, name);
 			break;
 		}
 		case IDF_UNDECLARED_CLASS:
@@ -484,6 +499,9 @@ void print_idf_map(str_entry key, void* value, void* user_ptr)
 	heck_name* name = (heck_name*)value;
 	switch (name->type)
 	{
+		case IDF_CONSTRUCTOR: // fallthrough
+			print_indent(indent);
+			printf("constructor:\n");
 		case IDF_FUNCTION:
 			print_func_decls(&name->value.func_value, key->value,
 					 indent);

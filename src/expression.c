@@ -330,7 +330,9 @@ bool resolve_member_access_direct(member_access_resolver* resolver)
 
 		if (!name_accessible(resolver->parent, member_name))
 		{
-			// TODO: report error
+			heck_report_error(NULL, resolver->fp,
+					  "cannot access \"{I}\" from here",
+					  resolver->idf);
 			return NULL;
 		}
 
@@ -344,18 +346,28 @@ bool resolve_member_access_direct(member_access_resolver* resolver)
 		// TODO: make sure the variable isn't static
 		obj_var = member_name->value.var_value;
 
-		// check if the new name is an object
-		if (obj_var->data_type->type_name != TYPE_CLASS)
-			break;
-
-		obj_class = obj_var->data_type->value.class_type.class_value;
-
 		// get the offset
 		int offset = obj_var->class_position;
 
 		// create the expression
 		heck_expr* member_access = create_expr_member_access(
 		    resolver->c, resolver->fp, resolver->expr, offset);
+		member_access->data_type = obj_var->data_type;
+		resolver->expr = member_access;
+
+		// stop if we have made it to the end and there are no more
+		// children
+		if (resolver->idf[1] == NULL)
+		{
+			++resolver->idf;
+			return true;
+		}
+
+		// check if the new name is an object
+		if (obj_var->data_type->type_name != TYPE_CLASS)
+			break;
+
+		obj_class = obj_var->data_type->value.class_type.class_value;
 
 		// vec_size_t num_vars = vector_size(obj_class->inst_var_vec);
 		// for (vec_size_t i = 0; i < num_vars; ++i)
@@ -363,15 +375,10 @@ bool resolve_member_access_direct(member_access_resolver* resolver)
 		// 	// TODO: check if variable is static
 		// 	if (obj_class->inst_var_vec[i]->)
 		// }
-
-		// stop if we have made it to the end
-		if (resolver->idf[0] == NULL)
-		{
-			return true;
-		}
 	}
 
-	return NULL;
+	// pass on to the next function
+	return true;
 }
 
 bool resolve_member_access_reference(member_access_resolver* resolver)
@@ -437,16 +444,26 @@ bool resolve_member_access_method(member_access_resolver* resolver)
 		heck_expr* method_access = create_expr_method_access(
 		    resolver->c, resolver->fp, resolver->name, resolver->expr,
 		    resolver->name->parent->parent_class->value.class_value);
+		resolver->expr = method_access;
+
+		// make sure we are at the end
+		if (resolver->idf[1] != NULL)
+		{
+			// functions/methods cannot have children
+			heck_report_error(NULL, resolver->fp,
+					  "cannot perform member access on a "
+					  "class method: \"{I}\"",
+					  resolver->idf);
+			return false;
+		}
 	}
 	else
 	{
-		// TODO: report error
+		heck_report_error(NULL, resolver->fp, "invalid member access");
 		return false;
 	}
 
-	// since this function has the lowest precedence, we cannot
-	// return true if no method was found
-	return false;
+	return true;
 }
 
 // expects a heck_expr_value.
@@ -467,7 +484,8 @@ bool resolve_value(heck_code* c, heck_scope* parent, heck_expr* expr)
 	{
 		case CONTEXT_LOCAL:
 		{
-			name = scope_resolve_idf_name(parent, &tmp_idf);
+			name =
+			    scope_resolve_idf_name(parent, &tmp_idf, expr->fp);
 			break;
 		}
 		case CONTEXT_THIS:
@@ -475,22 +493,31 @@ bool resolve_value(heck_code* c, heck_scope* parent, heck_expr* expr)
 			if (parent->parent_class == NULL ||
 			    parent->parent_class->child_scope == NULL)
 			{
-				// TODO: report error
+				heck_report_error(
+				    NULL, expr->fp,
+				    "the \"this\" keyword cannot be used "
+				    "outside of a class");
 				return false;
 			}
 			name = scope_resolve_idf_name(
-			    parent->parent_class->child_scope, &tmp_idf);
+			    parent->parent_class->child_scope, &tmp_idf,
+			    expr->fp);
 			break;
 		}
 		case CONTEXT_GLOBAL:
 		{
-			name = scope_resolve_idf_name(c->global, &tmp_idf);
+			name = scope_resolve_idf_name(c->global, &tmp_idf,
+						      expr->fp);
 			break;
 		}
 	}
 
 	if (name == NULL)
+	{
+		heck_report_error(NULL, expr->fp, "unable to access \"{I}\"",
+				  value->idf);
 		return false;
+	}
 
 	value->name = name;
 
@@ -524,7 +551,16 @@ bool resolve_value(heck_code* c, heck_scope* parent, heck_expr* expr)
 	{
 		return true;
 	}
+	else if (name->type == IDF_CLASS || name->type == IDF_UNDECLARED_CLASS)
+	{
+		// a heck_expr_value cannot be a class, so it must be referring
+		// to its constructor
+		value->name = name->value.class_value->constructors;
+		return true;
+	}
 
+	heck_report_error(NULL, expr->fp, "invalid use of identifier \"{I}\"",
+			  value->idf);
 	return false;
 
 	// // try to find the identifier
@@ -1045,16 +1081,28 @@ heck_expr* resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr)
 			    operand->value.value.idf);
 			return NULL;
 		}
-		heck_name* name = operand->value.value.name;
+
+		heck_expr_value* value_operand = &operand->value.value;
+		heck_name* name = value_operand->name;
 
 		// TODO: check declaration/definition status
 		if (name->type != IDF_FUNCTION)
 		{
-			heck_report_error(NULL, expr->fp,
-					  "call to \"{s}\" \"{I}\"",
-					  get_idf_type_string(name->type),
-					  operand->value.value.idf);
-			return NULL;
+			if (value_operand->value != NULL &&
+			    value_operand->value->type == EXPR_MTHD_ACCESS)
+			{
+				// reassign name to the class method
+				name = value_operand->value->value.method_access
+					   .method_name;
+			}
+			else if (name->type != IDF_CONSTRUCTOR)
+			{
+				heck_report_error(
+				    NULL, expr->fp, "call to \"{s}\" \"{I}\"",
+				    get_idf_type_string(name->type),
+				    operand->value.value.idf);
+				return NULL;
+			}
 		}
 
 		if (args_resolved)
@@ -1126,7 +1174,29 @@ heck_expr* resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr)
 				success = false;
 			}
 
-			if (def->decl.return_type == data_type_void)
+			// check for constructor
+			if (name->type == IDF_CONSTRUCTOR)
+			{
+				// create a custom class type based on
+				// the constructor.
+				// this is a temporary solution to
+				// constructors not having return types.
+				// the implementation details behind
+				// class templates are still unknown.
+				heck_data_type* t;
+				t = create_data_type(operand->fp, TYPE_CLASS);
+				t->value.class_type.class_name =
+				    value_operand->idf;
+				t->value.class_type.parent = parent;
+				t->value.class_type.class_value =
+				    name->parent->parent_class->value
+					.class_value;
+				t->value.class_type.type_arg_vec = NULL;
+				t->vtable = &type_vtable_class;
+
+				expr->data_type = t;
+			}
+			else if (def->decl.return_type == data_type_void)
 			{
 				// an expression cannot return void
 				expr->data_type = NULL;
@@ -1791,20 +1861,24 @@ void print_expr_member_access(heck_expr* expr)
 {
 	heck_expr_member_access* member_access = &expr->value.member_access;
 
-	fputs("member access", stdout);
 	if (member_access->child != NULL)
 	{
-		fputs("->", stdout);
 		print_expr(member_access->child);
+		fputs("->", stdout);
 	}
+	fputs("member access", stdout);
 }
 void print_expr_reference_access(heck_expr* expr) {}
 void print_expr_overload_access(heck_expr* expr) {}
 void print_expr_method_access(heck_expr* expr)
 {
 	heck_expr_method_access* method_access = &expr->value.method_access;
-	print_expr(method_access->object);
-	fputs("->method access", stdout);
+	if (method_access->object != NULL)
+	{
+		print_expr(method_access->object);
+		fputs("->", stdout);
+	}
+	fputs("method access", stdout);
 }
 
 //

@@ -29,6 +29,11 @@ typedef struct heck_class
 	// operator and conversion overloads
 	heck_operator_list operators;
 
+	// set during resolve phase.
+	// once scope_resolve_names() is called. The origninal heck_name will
+	// still exist, but it will be re-labeled as a constructor.
+	heck_name* constructors;
+
 	// store let statements and some function statements to be resolved
 	// after parsing
 	// heck_stmt** declarations; // no

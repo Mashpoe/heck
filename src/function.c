@@ -6,12 +6,14 @@
 //
 
 #include "vec.h"
+#include <class.h>
 #include <code_impl.h>
 #include <error.h>
 #include <function.h>
 #include <print.h>
 #include <scope.h>
 #include <stdio.h>
+#include <string.h>
 
 // heck_param* param_create(str_entry name) {
 //	heck_param* param = malloc(sizeof(heck_param));
@@ -167,11 +169,10 @@ bool func_decl_cmp(heck_func_decl* a, heck_func_decl* b)
 	return false;
 }
 
-// TODO: check for duplicates, match defs and decls
-// for now we'll just resolve param and return types
-// this function has the highest optimization priority of any function in this
-// repo, it has so many nested loops (all of which are necessary)
-bool func_resolve_name(heck_code* c, heck_name* func_name, str_entry name_str)
+// checks for duplicates, match defs and decls.
+// this function should get some optimization attention since it has so many
+// nested loops
+bool func_resolve_name(heck_code* c, heck_name* func_name)
 {
 
 	if (func_name->flags & NAME_RESOLVED)
@@ -183,8 +184,79 @@ bool func_resolve_name(heck_code* c, heck_name* func_name, str_entry name_str)
 		return true;
 
 	heck_func_list* func_list = &func_name->value.func_value;
+	str_entry name_str = func_name->name_str;
 
 	bool success = true;
+
+	// check for constructor
+	if (scope_is_class(func_name->parent))
+	{
+		str_entry class_name_str =
+		    func_name->parent->parent_class->name_str;
+		str_entry func_name_str = func_name->name_str;
+		if (strcmp(class_name_str->value, func_name_str->value) == 0)
+		{
+			heck_class* class_obj =
+			    func_name->parent->parent_class->value.class_value;
+
+			heck_func_list* funcs = &func_name->value.func_value;
+
+			// label the func as a constructor so it isn't called
+			// incorrectly
+			func_name->type = IDF_CONSTRUCTOR;
+			class_obj->constructors = func_name;
+
+			// check if constructor is valid
+
+			// loop through decls
+			if (funcs->decl_vec != NULL)
+			{
+				vec_size_t num_funcs =
+				    vector_size(funcs->decl_vec);
+				for (int i = 0; i < num_funcs; ++i)
+				{
+					// there better not be any
+					// explicit return type
+					heck_data_type* ret_type =
+					    funcs->decl_vec[i].return_type;
+					if (ret_type != NULL)
+					{
+						heck_report_error(
+						    NULL, ret_type->fp,
+						    "use of explicit return "
+						    "type for "
+						    "\"{s}\" constructor",
+						    name_str->value);
+						success = false;
+					}
+				}
+			}
+
+			// loop through defs
+			if (funcs->def_vec != NULL)
+			{
+				vec_size_t num_funcs =
+				    vector_size(funcs->def_vec);
+				for (int i = 0; i < num_funcs; ++i)
+				{
+					// there better not be any
+					// explicit return type
+					heck_data_type* ret_type =
+					    funcs->def_vec[i]->decl.return_type;
+					if (ret_type != NULL)
+					{
+						heck_report_error(
+						    NULL, ret_type->fp,
+						    "use of explicit return "
+						    "type for "
+						    "\"{s}\" constructor",
+						    name_str->value);
+					}
+					success = false;
+				}
+			}
+		}
+	}
 
 	// resolve def return and param types
 	vec_size_t num_defs;
@@ -234,15 +306,16 @@ bool func_resolve_name(heck_code* c, heck_name* func_name, str_entry name_str)
 					decl_match = true;
 					// set "declared" to true
 					def->declared = true;
-					// if the decl has a return type it
-					// better match
+					// if the decl has a return type
+					// it better match
 					if (decl->return_type != NULL)
 					{
 
 						if (def->decl.return_type ==
 						    NULL)
 						{
-							// implicitly set return
+							// implicitly
+							// set return
 							// type
 							def->decl.return_type =
 							    decl->return_type;
@@ -272,7 +345,8 @@ bool func_resolve_name(heck_code* c, heck_name* func_name, str_entry name_str)
 			{
 				heck_report_error(
 				    NULL, decl->fp,
-				    "declaration for function \"{s}\" has no "
+				    "declaration for function \"{s}\" "
+				    "has no "
 				    "matching definition",
 				    name_str->value);
 				success = false;
@@ -314,7 +388,8 @@ bool func_resolve_name(heck_code* c, heck_name* func_name, str_entry name_str)
 				success = false;
 				heck_report_error(
 				    NULL, def_a->decl.fp,
-				    "definition for function \"{s}\" has no "
+				    "definition for function \"{s}\" "
+				    "has no "
 				    "matching declaration",
 				    name_str->value);
 			}
@@ -326,7 +401,8 @@ bool func_resolve_name(heck_code* c, heck_name* func_name, str_entry name_str)
 					success = false;
 					heck_report_error(
 					    NULL, def_b->decl.fp,
-					    "duplicate definition for function "
+					    "duplicate definition for "
+					    "function "
 					    "\"{s}\"",
 					    name_str->value);
 				}
@@ -345,16 +421,22 @@ bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def)
 
 	bool success = true;
 
-	// set to true either way so we only have to resolve and deal with
-	// errors once.
-	// This also allows us to detect if the return type can be inferred in a
-	// recursive call because the return type will be NULL and resolved will
-	// be set to true.
+	// set to true either way so we only have to resolve and deal
+	// with errors once. This also allows us to detect if the return
+	// type can be inferred in a recursive call because the return
+	// type will be NULL and resolved will be set to true.
 	func_def->resolved = true;
 
-	if (func_def->decl.return_type != NULL)
-		success *= resolve_data_type(c, func_def->value.code->scope,
-					     func_def->decl.return_type);
+	if (func_def->decl.return_type != NULL &&
+	    !resolve_data_type(c, func_def->value.code->scope,
+			       func_def->decl.return_type))
+	{
+		// set return type to NULL so we can be sure that a successfully
+		// resolved return type (which will not be null) can still be
+		// used for additional type checks.
+		success = false;
+		func_def->decl.return_type = NULL;
+	}
 
 	// there is no code block to resolve in an import
 	if (!func_def->imported)
@@ -362,8 +444,8 @@ bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def)
 		heck_func_decl* func_decl = &func_def->decl;
 
 		// TODO: check for default arguments, resolve them
-		// resolve default arguments with func_name->parent to avoid
-		// conflicts with function definition locals
+		// resolve default arguments with func_name->parent to
+		// avoid conflicts with function definition locals
 		if (func_def->value.code->type == BLOCK_MAY_RETURN)
 		{
 			success = false;
@@ -378,6 +460,30 @@ bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def)
 	// if the data type is still NULL, set it to void by default
 	if (func_def->decl.return_type == NULL)
 		func_def->decl.return_type = data_type_void;
+
+	if (func_name->type == IDF_CONSTRUCTOR)
+	{
+		// make sure all members are initialized.
+
+		heck_class* cl =
+		    func_name->parent->parent_class->value.class_value;
+
+		vec_size_t num_members = vector_size(cl->inst_var_vec);
+		for (vec_size_t i = 0; i < num_members; ++i)
+		{
+			heck_variable* current = cl->inst_var_vec[i];
+			if (!scope_var_is_init(func_def->decl.scope,
+					       current->name))
+			{
+				success = false;
+				heck_report_error(
+				    NULL, func_def->decl.fp,
+				    "member \"{s}\" is not initialized in this "
+				    "constructor",
+				    current->name->name_str->value);
+			}
+		}
+	}
 
 	return success;
 }
@@ -419,9 +525,9 @@ heck_func* func_create_gen_inst(heck_code* c, heck_scope* parent,
 			new_value = old_param->value;
 		}
 		// create a new variable with the correct type
-		heck_variable* param =
-		    variable_create(c, new_decl.scope, old_param->fp,
-				    old_param->name, new_type, new_value);
+		heck_variable* param = variable_create(
+		    c, new_decl.scope, old_param->fp, old_param->name->name_str,
+		    new_type, new_value);
 		// assumes the variable was successfully created
 		// it should be because the original was created
 		vector_add(&new_decl.param_vec, param);
@@ -454,8 +560,8 @@ heck_func* func_create_gen_inst(heck_code* c, heck_scope* parent,
 // 	vec_size_t param_count = vector_size(func->param_vec);
 
 // 	for (vec_size_t i = 0; i < def_count; ++i) {
-// 		if (param_count != vector_size(list->func_vec[i]->param_vec))
-// 			continue;
+// 		if (param_count !=
+// vector_size(list->func_vec[i]->param_vec)) continue;
 
 // 		bool match = true;
 
@@ -463,8 +569,8 @@ heck_func* func_create_gen_inst(heck_code* c, heck_scope* parent,
 // 			// check for matching parameter types
 // 			if
 // (!data_type_cmp(list->func_vec[i]->param_vec[j]->data_type,
-// func->param_vec[j]->data_type)) { 				match = false;
-// break;
+// func->param_vec[j]->data_type)) { 				match =
+// false; break;
 // 			}
 // 		}
 
@@ -545,7 +651,8 @@ heck_func* func_match_def(heck_code* c, heck_scope* parent,
 				}
 				else
 				{
-					// type is not convertable, no match
+					// type is not convertable, no
+					// match
 					match = false;
 					break;
 				}

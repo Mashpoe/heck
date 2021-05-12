@@ -25,7 +25,7 @@ heck_variable* variable_create(heck_code* c, heck_scope* parent,
 		// create idf map and insert variable
 		parent->names = idf_map_create();
 	}
-	else if (idf_map_get(parent->names, name, &var_name))
+	else if (idf_map_get(parent->names, name, (void**)&var_name))
 	{
 
 		heck_report_error(
@@ -36,19 +36,22 @@ heck_variable* variable_create(heck_code* c, heck_scope* parent,
 		return NULL;
 	}
 
+	// allocate the variable object
 	heck_variable* variable = heck_alloc(c, sizeof(heck_variable));
+
+	// add the variable to the scope
+	var_name = name_create(c, parent, IDF_VARIABLE, name);
+	var_name->value.var_value = variable;
+	idf_map_set(parent->names, name, var_name);
+
+	// initialize the variable fields
 	variable->fp = fp;
-	variable->name = name;
+	variable->name = var_name;
 	variable->data_type = type;
 	variable->value = value;
 	variable->global = false;
 	variable->local_index = 0;
 	variable->class_position = 0;
-
-	// add the variable to the scope
-	var_name = name_create(c, parent, IDF_VARIABLE);
-	var_name->value.var_value = variable;
-	idf_map_set(parent->names, variable->name, var_name);
 
 	// add it to the global/local list
 	if (parent == c->global)

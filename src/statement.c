@@ -590,7 +590,7 @@ heck_stmt* copy_stmt_let(heck_code* c, heck_scope* parent, heck_stmt* stmt)
 	heck_variable* old_var = stmt->value.var_value;
 	// we need to remake the variable
 	heck_variable* new_variable =
-	    variable_create(c, parent, old_var->fp, old_var->name,
+	    variable_create(c, parent, old_var->fp, old_var->name->name_str,
 			    old_var->data_type, old_var->value);
 	return create_stmt_let(c, stmt->fp, new_variable);
 }

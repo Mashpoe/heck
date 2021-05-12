@@ -86,7 +86,7 @@ heck_func* func_create(heck_func_decl* decl, bool declared);
 // resolve param and return types
 // match declarations with definitions
 // check for duplicates
-bool func_resolve_name(heck_code* c, heck_name* func_name, str_entry name_str);
+bool func_resolve_name(heck_code* c, heck_name* func_name);
 
 // error flags can be stored in func_name
 bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def);
