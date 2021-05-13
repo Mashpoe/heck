@@ -80,8 +80,8 @@ void print_class(heck_name* class_name, const char* name, int indent)
 			if (operator_def->type.flags & OPERATOR_CONVERSION)
 			{
 				void* w = operator_def->type.value.data_type;
-				void* v =
-				    operator_def->type.value.data_type->vtable;
+				void* v = (void*)operator_def->type.value
+					      .data_type->vtable;
 				heck_print_fmt(
 				    "as {t}",
 				    operator_def->type.value.data_type);

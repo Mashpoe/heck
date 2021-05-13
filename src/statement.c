@@ -379,7 +379,7 @@ bool resolve_stmt_if(heck_code* c, heck_scope* parent, heck_stmt* stmt)
 				if (!data_type_is_truthy(condition_type))
 				{
 					heck_report_error(
-					    NULL, stmt->fp,
+					    c, stmt->fp,
 					    "if statement condition must "
 					    "be a truthy type");
 					success = false;
@@ -469,7 +469,7 @@ bool resolve_stmt_while(heck_code* c, heck_scope* parent, heck_stmt* stmt)
 
 	if (!data_type_is_truthy(condition_type))
 	{
-		heck_report_error(NULL, stmt->fp,
+		heck_report_error(c, stmt->fp,
 				  "while loop condition must be a truthy type");
 		success = false;
 	}
@@ -503,7 +503,7 @@ bool resolve_stmt_ret(heck_code* c, heck_scope* parent, heck_stmt* stmt)
 
 		if (ret_type == NULL)
 		{
-			heck_report_error(NULL, stmt->fp,
+			heck_report_error(c, stmt->fp,
 					  "cannot return the value of an "
 					  "expression with no type");
 			return false;
@@ -519,7 +519,7 @@ bool resolve_stmt_ret(heck_code* c, heck_scope* parent, heck_stmt* stmt)
 		// handle void return type
 		if (func_ret_type->type_name == TYPE_VOID)
 		{
-			heck_report_error(NULL, stmt->fp,
+			heck_report_error(c, stmt->fp,
 					  "cannot return a value in function "
 					  "with return type \"{t}\"",
 					  func_ret_type);
@@ -530,7 +530,7 @@ bool resolve_stmt_ret(heck_code* c, heck_scope* parent, heck_stmt* stmt)
 		if (!data_type_cmp(func_ret_type, ret_type))
 		{
 			heck_report_error(
-			    NULL, stmt->fp,
+			    c, stmt->fp,
 			    "cannot return a value of type \"{t}\" in function "
 			    "with return type \"{t}\"",
 			    ret_type, func_ret_type);
@@ -551,7 +551,7 @@ bool resolve_stmt_ret(heck_code* c, heck_scope* parent, heck_stmt* stmt)
 	// there is no return value but the function expects one
 	if (func_ret_type->type_name != TYPE_VOID)
 	{
-		heck_report_error(NULL, stmt->fp,
+		heck_report_error(c, stmt->fp,
 				  "empty return statement in function with "
 				  "return type \"{t}\"",
 				  func_ret_type);

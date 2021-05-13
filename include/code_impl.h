@@ -31,6 +31,9 @@ struct heck_code
 	// mainly for printing errors
 	const char* filename;
 
+	// initially set to true; set to false if there are any errors.
+	bool success;
+
 	// token vector
 	heck_token** token_vec;
 

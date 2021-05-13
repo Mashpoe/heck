@@ -54,6 +54,8 @@ struct heck_func
 	bool resolved;
 	bool compiled; // set during compile phase
 	bool imported;
+	// helps for resolving
+	bool returns_value;
 
 	// set during parse phase
 	// keep track of all local variables within a function
@@ -88,7 +90,8 @@ heck_func* func_create(heck_func_decl* decl, bool declared);
 // check for duplicates
 bool func_resolve_name(heck_code* c, heck_name* func_name);
 
-// error flags can be stored in func_name
+// error flags can be stored in func_name // <-- what does this mean?
+// returns true if the return type was successfully resolved
 bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def);
 
 // finds the correct definition/overload for a given call.

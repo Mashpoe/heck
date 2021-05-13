@@ -29,7 +29,7 @@ heck_variable* variable_create(heck_code* c, heck_scope* parent,
 	{
 
 		heck_report_error(
-		    NULL, fp,
+		    c, fp,
 		    "cannot create variable with the same name as {s} \"{s}\"",
 		    get_idf_type_string(var_name->type), name->value);
 

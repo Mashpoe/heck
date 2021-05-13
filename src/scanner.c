@@ -527,7 +527,7 @@ bool heck_scan(heck_code* c, const char* code)
 				// there shouldn't be any escape sequences here,
 				// match_newline() already handles escaped
 				// newlines
-				heck_report_error(NULL, &fp.ch_fp,
+				heck_report_error(c, &fp.ch_fp,
 						  "unexpected escape sequence");
 
 				add_token_err(c, &fp);
@@ -807,7 +807,7 @@ bool parse_string(heck_code* c, file_pos* fp)
 		if (is_end(fp))
 		{
 
-			heck_report_error(NULL, &fp->ch_fp,
+			heck_report_error(c, &fp->ch_fp,
 					  "expected terminating quote");
 
 			add_token_err(c, fp);
@@ -855,7 +855,7 @@ bool parse_string(heck_code* c, file_pos* fp)
 
 					// TODO: format certain character values
 					heck_report_error(
-					    NULL, &fp->ch_fp,
+					    c, &fp->ch_fp,
 					    "invalid escape sequence: {c}",
 					    fp->current);
 

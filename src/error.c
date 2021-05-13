@@ -5,32 +5,34 @@
 //  Created by Mashpoe on 10/26/19.
 //
 
+#include <code_impl.h>
 #include <error.h>
 #include <print.h>
 #include <scope.h>
 #include <stdarg.h>
 #include <stdio.h>
 
-void heck_report_error(const char* filename, heck_file_pos* fp,
-		       const char* format, ...)
+void heck_report_error(heck_code* c, heck_file_pos* fp, const char* format, ...)
 {
 	va_list args;
 	va_start(args, format);
 
-	heck_vreport_error(filename, fp, format, args);
+	heck_vreport_error(c, fp, format, args);
 
 	va_end(args);
 }
 
-void heck_vreport_error(const char* filename, heck_file_pos* fp,
-			const char* format, va_list args)
+void heck_vreport_error(heck_code* c, heck_file_pos* fp, const char* format,
+			va_list args)
 {
+	// don't allow the program to compile if there are errors
+	c->success = false;
 
 	fputs("error:", stderr);
 
-	if (filename != NULL)
+	if (c->filename != NULL)
 	{
-		fprintf(stderr, "%s:", filename);
+		fprintf(stderr, "%s:", c->filename);
 	}
 
 	if (fp != NULL)

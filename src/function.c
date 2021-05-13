@@ -34,6 +34,7 @@ heck_func* func_create(heck_func_decl* decl, bool declared)
 	func->resolved = false;
 	func->compiled = false;
 	func->imported = false;
+	func->returns_value = false;
 
 	func->value.code = NULL;
 	func->local_vec = NULL;
@@ -99,7 +100,7 @@ bool func_resolve_decl(heck_code* c, heck_scope* parent, heck_func_decl* decl)
 			if (param->value != NULL)
 			{
 				heck_report_error(
-				    NULL, param->value->fp,
+				    c, param->value->fp,
 				    "default arguments are not supported yet");
 				success = false;
 			}
@@ -222,7 +223,7 @@ bool func_resolve_name(heck_code* c, heck_name* func_name)
 					if (ret_type != NULL)
 					{
 						heck_report_error(
-						    NULL, ret_type->fp,
+						    c, ret_type->fp,
 						    "use of explicit return "
 						    "type for "
 						    "\"{s}\" constructor",
@@ -246,7 +247,7 @@ bool func_resolve_name(heck_code* c, heck_name* func_name)
 					if (ret_type != NULL)
 					{
 						heck_report_error(
-						    NULL, ret_type->fp,
+						    c, ret_type->fp,
 						    "use of explicit return "
 						    "type for "
 						    "\"{s}\" constructor",
@@ -328,7 +329,7 @@ bool func_resolve_name(heck_code* c, heck_name* func_name)
 
 							decl_match = false;
 							heck_report_error(
-							    NULL, def->decl.fp,
+							    c, def->decl.fp,
 							    "definition for "
 							    "function \"{s}\" "
 							    "has a different "
@@ -344,7 +345,7 @@ bool func_resolve_name(heck_code* c, heck_name* func_name)
 			if (!decl_match)
 			{
 				heck_report_error(
-				    NULL, decl->fp,
+				    c, decl->fp,
 				    "declaration for function \"{s}\" "
 				    "has no "
 				    "matching definition",
@@ -368,7 +369,7 @@ bool func_resolve_name(heck_code* c, heck_name* func_name)
 				{
 					success = false;
 					heck_report_error(
-					    NULL, decl_b->fp,
+					    c, decl_b->fp,
 					    "duplicate declaration for "
 					    "function \"{s}\"",
 					    name_str->value);
@@ -387,7 +388,7 @@ bool func_resolve_name(heck_code* c, heck_name* func_name)
 			{
 				success = false;
 				heck_report_error(
-				    NULL, def_a->decl.fp,
+				    c, def_a->decl.fp,
 				    "definition for function \"{s}\" "
 				    "has no "
 				    "matching declaration",
@@ -400,7 +401,7 @@ bool func_resolve_name(heck_code* c, heck_name* func_name)
 				{
 					success = false;
 					heck_report_error(
-					    NULL, def_b->decl.fp,
+					    c, def_b->decl.fp,
 					    "duplicate definition for "
 					    "function "
 					    "\"{s}\"",
@@ -419,6 +420,7 @@ bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def)
 	if (func_def->resolved)
 		return true;
 
+	// only concerned with the return type
 	bool success = true;
 
 	// set to true either way so we only have to resolve and deal
@@ -450,16 +452,34 @@ bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def)
 		{
 			success = false;
 			heck_report_error(
-			    NULL, func_decl->fp,
+			    c, func_decl->fp,
 			    "function only returns in some cases");
 		}
 
-		success *= resolve_block(c, func_def->value.code);
+		// we don't care if the function body can't resolve as long as
+		// the return type can
+		// success *= resolve_block(c, func_def->value.code);
 	}
 
-	// if the data type is still NULL, set it to void by default
 	if (func_def->decl.return_type == NULL)
-		func_def->decl.return_type = data_type_void;
+	{
+
+		if (func_def->returns_value)
+		{
+			success = false;
+			// possibly unnecessary, since this error was probably
+			// caught when resolving a return statement
+			heck_report_error(
+			    c, func_def->decl.fp,
+			    "function does not return a valid type");
+		}
+		else
+		{
+			// if the data type is still NULL, set it to void by
+			// default
+			func_def->decl.return_type = data_type_void;
+		}
+	}
 
 	if (func_name->type == IDF_CONSTRUCTOR)
 	{
@@ -475,9 +495,9 @@ bool func_resolve_def(heck_code* c, heck_name* func_name, heck_func* func_def)
 			if (!scope_var_is_init(func_def->decl.scope,
 					       current->name))
 			{
-				success = false;
+				// success = false;
 				heck_report_error(
-				    NULL, func_def->decl.fp,
+				    c, func_def->decl.fp,
 				    "member \"{s}\" is not initialized in this "
 				    "constructor",
 				    current->name->name_str->value);

@@ -250,20 +250,19 @@ bool resolve_type_class(heck_code* c, heck_scope* parent, heck_data_type* type)
 	heck_class_type* class_type = &type->value.class_type;
 
 	heck_name* n =
-	    scope_resolve_idf(parent, class_type->class_name, type->fp);
+	    scope_resolve_idf(c, parent, class_type->class_name, type->fp);
 
 	// TODO: line numbers in error messages
 	if (n == NULL)
 	{
-		heck_report_error(NULL, type->fp,
-				  "no type named \"{I}\" exists",
+		heck_report_error(c, type->fp, "no type named \"{I}\" exists",
 				  class_type->class_name);
 		return false;
 	}
 
 	if (n->type != IDF_CLASS)
 	{
-		heck_report_error(NULL, type->fp, "{s} \"{I}\" is not a type",
+		heck_report_error(c, type->fp, "{s} \"{I}\" is not a type",
 				  get_idf_type_string(n->type),
 				  class_type->class_name);
 	}
@@ -271,7 +270,7 @@ bool resolve_type_class(heck_code* c, heck_scope* parent, heck_data_type* type)
 	class_type->class_value = n->value.class_value;
 
 	// until classes are supported
-	heck_report_error(NULL, type->fp,
+	heck_report_error(c, type->fp,
 			  "unable to resolve class type \"{I}\" because "
 			  "classes are not fully supported yet",
 			  class_type->class_name);
@@ -293,7 +292,7 @@ bool resolve_type_class_args(heck_code* c, heck_scope* parent,
 	{
 		if (!resolve_data_type(c, parent, class_type->type_arg_vec[i]))
 		{
-			heck_report_error(NULL, class_type->type_arg_vec[i]->fp,
+			heck_report_error(c, class_type->type_arg_vec[i]->fp,
 					  "invalid type argument");
 			return false;
 		}

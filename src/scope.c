@@ -226,8 +226,8 @@ bool name_accessible(const heck_scope* parent, const heck_name* name)
 // scope_resolve_idf, but it will stop once it gets to a variable. idf_ptr is an
 // input and an output. It will increment the idf, e.g. ++(*idf_ptr), to either
 // the last element or the first one that refers to the variable.
-heck_name* scope_resolve_idf_name(const heck_scope* parent, heck_idf* idf_ptr,
-				  heck_file_pos* fp)
+heck_name* scope_resolve_idf_name(heck_code* c, const heck_scope* parent,
+				  heck_idf* idf_ptr, heck_file_pos* fp)
 {
 
 	heck_idf idf = *idf_ptr;
@@ -246,7 +246,7 @@ heck_name* scope_resolve_idf_name(const heck_scope* parent, heck_idf* idf_ptr,
 			// printf("not found idf: %i, %s\n", idf[0]->hash,
 			// idf[0]->value);
 			heck_report_error(
-			    NULL, fp, "unable to resolve identifier \"{s}\"",
+			    c, fp, "unable to resolve identifier \"{s}\"",
 			    idf[0]->value);
 			return NULL;
 		}
@@ -270,7 +270,7 @@ heck_name* scope_resolve_idf_name(const heck_scope* parent, heck_idf* idf_ptr,
 			{
 				if (!name_accessible(parent, name))
 					heck_report_error(
-					    NULL, fp,
+					    c, fp,
 					    "identifier \"{I}\" cannot "
 					    "be accessed from here",
 					    *idf_ptr);
@@ -286,7 +286,7 @@ heck_name* scope_resolve_idf_name(const heck_scope* parent, heck_idf* idf_ptr,
 			if (var_type == NULL)
 			{
 				heck_report_error(
-				    NULL, fp,
+				    c, fp,
 				    "member access on variable \"{s}\" whose "
 				    "type is unknown",
 				    idf[0]->value);
@@ -308,7 +308,7 @@ heck_name* scope_resolve_idf_name(const heck_scope* parent, heck_idf* idf_ptr,
 				// the variable is not an object and therefore
 				// has no children.
 				heck_report_error(
-				    NULL, fp,
+				    c, fp,
 				    "member access is not permitted for this "
 				    "type \"{I}\"",
 				    *idf_ptr);
@@ -333,18 +333,18 @@ heck_name* scope_resolve_idf_name(const heck_scope* parent, heck_idf* idf_ptr,
 // calls socpe_resolve_idf_name, and returns NULL if the output idf is not the
 // last element of the idf chain (meaning it returns NULL if the idf contains
 // object member access)
-heck_name* scope_resolve_idf(const heck_scope* parent, heck_idf idf,
-			     heck_file_pos* fp)
+heck_name* scope_resolve_idf(heck_code* c, const heck_scope* parent,
+			     heck_idf idf, heck_file_pos* fp)
 {
 	heck_idf tmp = idf;
-	heck_name* result = scope_resolve_idf_name(parent, &tmp, fp);
+	heck_name* result = scope_resolve_idf_name(c, parent, &tmp, fp);
 
 	// check if scope_resolve_idf_name was able to reach the end of the
 	// heck_idf. If not, we cannot resolve the remaining items, which means
 	// there is an error and we will return NULL.
 	if (tmp != NULL && tmp[1] != NULL)
 	{
-		heck_report_error(NULL, fp, "invalid access to \"{I}\"", idf);
+		heck_report_error(c, fp, "invalid access to \"{I}\"", idf);
 		return NULL;
 	}
 

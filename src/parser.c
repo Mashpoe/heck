@@ -1428,6 +1428,9 @@ heck_stmt* ret_statement(parser* p, heck_scope* parent)
 	{
 		return create_stmt_ret(p->code, &start_tk->fp, NULL);
 	}
+	// since there is a return value, we must set the corresponding
+	// func_decl flag to true
+	parent->parent_func->returns_value = true;
 	return create_stmt_ret(p->code, &start_tk->fp, expression(p, parent));
 }
 

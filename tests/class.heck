@@ -11,7 +11,7 @@ class Villager {
 
   func Villager() {
 	  // blah
-	  z = 4
+	  //z = 4
   }
 
 }

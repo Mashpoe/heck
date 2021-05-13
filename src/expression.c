@@ -330,7 +330,7 @@ bool resolve_member_access_direct(member_access_resolver* resolver)
 
 		if (!name_accessible(resolver->parent, member_name))
 		{
-			heck_report_error(NULL, resolver->fp,
+			heck_report_error(resolver->c, resolver->fp,
 					  "cannot access \"{I}\" from here",
 					  resolver->idf);
 			return NULL;
@@ -450,7 +450,7 @@ bool resolve_member_access_method(member_access_resolver* resolver)
 		if (resolver->idf[1] != NULL)
 		{
 			// functions/methods cannot have children
-			heck_report_error(NULL, resolver->fp,
+			heck_report_error(resolver->c, resolver->fp,
 					  "cannot perform member access on a "
 					  "class method: \"{I}\"",
 					  resolver->idf);
@@ -459,7 +459,8 @@ bool resolve_member_access_method(member_access_resolver* resolver)
 	}
 	else
 	{
-		heck_report_error(NULL, resolver->fp, "invalid member access");
+		heck_report_error(resolver->c, resolver->fp,
+				  "invalid member access");
 		return false;
 	}
 
@@ -484,8 +485,8 @@ bool resolve_value(heck_code* c, heck_scope* parent, heck_expr* expr)
 	{
 		case CONTEXT_LOCAL:
 		{
-			name =
-			    scope_resolve_idf_name(parent, &tmp_idf, expr->fp);
+			name = scope_resolve_idf_name(c, parent, &tmp_idf,
+						      expr->fp);
 			break;
 		}
 		case CONTEXT_THIS:
@@ -494,19 +495,19 @@ bool resolve_value(heck_code* c, heck_scope* parent, heck_expr* expr)
 			    parent->parent_class->child_scope == NULL)
 			{
 				heck_report_error(
-				    NULL, expr->fp,
+				    c, expr->fp,
 				    "the \"this\" keyword cannot be used "
 				    "outside of a class");
 				return false;
 			}
 			name = scope_resolve_idf_name(
-			    parent->parent_class->child_scope, &tmp_idf,
+			    c, parent->parent_class->child_scope, &tmp_idf,
 			    expr->fp);
 			break;
 		}
 		case CONTEXT_GLOBAL:
 		{
-			name = scope_resolve_idf_name(c->global, &tmp_idf,
+			name = scope_resolve_idf_name(c, c->global, &tmp_idf,
 						      expr->fp);
 			break;
 		}
@@ -514,7 +515,7 @@ bool resolve_value(heck_code* c, heck_scope* parent, heck_expr* expr)
 
 	if (name == NULL)
 	{
-		heck_report_error(NULL, expr->fp, "unable to access \"{I}\"",
+		heck_report_error(c, expr->fp, "unable to access \"{I}\"",
 				  value->idf);
 		return false;
 	}
@@ -559,7 +560,7 @@ bool resolve_value(heck_code* c, heck_scope* parent, heck_expr* expr)
 		return true;
 	}
 
-	heck_report_error(NULL, expr->fp, "invalid use of identifier \"{I}\"",
+	heck_report_error(c, expr->fp, "invalid use of identifier \"{I}\"",
 			  value->idf);
 	return false;
 
@@ -568,7 +569,7 @@ bool resolve_value(heck_code* c, heck_scope* parent, heck_expr* expr)
 
 	// if (name == NULL)
 	// {
-	// 	heck_report_error(NULL, expr->fp,
+	// 	heck_report_error(c, expr->fp,
 	// 			  "use of undeclared identifier \"{I}\"",
 	// 			  expr->value.value.idf);
 	// 	return false;
@@ -581,7 +582,7 @@ bool resolve_value(heck_code* c, heck_scope* parent, heck_expr* expr)
 
 	// 	if (name->value.var_value->data_type == NULL)
 	// 	{
-	// 		heck_report_error(NULL, expr->fp,
+	// 		heck_report_error(c, expr->fp,
 	// 				  "use of invalid variable \"{I}\"",
 	// 				  value->idf);
 	// 		return false;
@@ -593,7 +594,7 @@ bool resolve_value(heck_code* c, heck_scope* parent, heck_expr* expr)
 	// else
 	// {
 	// 	// TODO: support callbacks
-	// 	heck_report_error(NULL, expr->fp, "invalid use of {s} \"{I}\"",
+	// 	heck_report_error(c, expr->fp, "invalid use of {s} \"{I}\"",
 	// 			  get_idf_type_string(name->type), value->idf);
 	// }
 
@@ -610,8 +611,7 @@ bool resolve_value(heck_code* c, heck_scope* parent, heck_expr* expr)
 heck_expr* resolve_not_supported(heck_code* c, heck_scope* parent,
 				 heck_expr* expr)
 {
-	heck_report_error(NULL, expr->fp,
-			  "operator is not fully supported yet");
+	heck_report_error(c, expr->fp, "operator is not fully supported yet");
 	return NULL;
 }
 
@@ -993,7 +993,7 @@ heck_expr* resolve_expr_value(heck_code* c, heck_scope* parent, heck_expr* expr)
 
 	if (name->type == IDF_VARIABLE && !scope_var_is_init(parent, name))
 	{
-		heck_report_error(NULL, expr->fp,
+		heck_report_error(c, expr->fp,
 				  "use of uninitialized variable \"{I}\"",
 				  expr->value.value.idf);
 		return NULL;
@@ -1019,13 +1019,13 @@ heck_expr* resolve_expr_post_incr(heck_code* c, heck_scope* parent,
 	if (operand->data_type == NULL)
 	{
 		heck_report_error(
-		    NULL, expr->fp,
+		    c, expr->fp,
 		    "operation not permitted on a value with no type");
 		return NULL;
 	}
 	if (!data_type_is_numeric(operand->data_type))
 	{
-		heck_report_error(NULL, expr->fp,
+		heck_report_error(c, expr->fp,
 				  "operation not permitted on a value with a "
 				  "non-numeric type");
 		return NULL;
@@ -1061,7 +1061,7 @@ heck_expr* resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr)
 			else if (current_arg->data_type == NULL)
 			{
 				args_resolved = false;
-				heck_report_error(NULL, current_arg->fp,
+				heck_report_error(c, current_arg->fp,
 						  "argument must have a type",
 						  operand->value.value.idf);
 			}
@@ -1076,7 +1076,7 @@ heck_expr* resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr)
 		if (!resolve_value(c, parent, operand))
 		{
 			heck_report_error(
-			    NULL, expr->fp,
+			    c, expr->fp,
 			    "call to undeclared identifier \"{I}\"",
 			    operand->value.value.idf);
 			return NULL;
@@ -1098,7 +1098,7 @@ heck_expr* resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr)
 			else if (name->type != IDF_CONSTRUCTOR)
 			{
 				heck_report_error(
-				    NULL, expr->fp, "call to \"{s}\" \"{I}\"",
+				    c, expr->fp, "call to \"{s}\" \"{I}\"",
 				    get_idf_type_string(name->type),
 				    operand->value.value.idf);
 				return NULL;
@@ -1116,7 +1116,7 @@ heck_expr* resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr)
 			if (def == NULL)
 			{
 				heck_report_error(
-				    NULL, expr->fp,
+				    c, expr->fp,
 				    "no function named \"{I}\" exists with "
 				    "matching parameters",
 				    operand->value.value.idf);
@@ -1155,7 +1155,7 @@ heck_expr* resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr)
 				if (def->decl.return_type == NULL)
 				{
 					heck_report_error(
-					    NULL, expr->fp,
+					    c, expr->fp,
 					    "cannot resolve call to function "
 					    "\"{I}\" before its return type "
 					    "has been deduced. Hint: try "
@@ -1168,7 +1168,7 @@ heck_expr* resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr)
 			else if (!func_resolve_def(c, name, def))
 			{
 				heck_report_error(
-				    NULL, expr->fp,
+				    c, expr->fp,
 				    "error from call to function \"{I}\"",
 				    operand->value.value.idf);
 				success = false;
@@ -1213,7 +1213,7 @@ heck_expr* resolve_expr_call(heck_code* c, heck_scope* parent, heck_expr* expr)
 	{
 		// TODO: check for callback function type
 		// just return NULL for now
-		heck_report_error(NULL, expr->fp,
+		heck_report_error(c, expr->fp,
 				  "callbacks are not supported yet");
 		return NULL;
 	}
@@ -1236,7 +1236,7 @@ heck_expr* resolve_expr_arr_access(heck_code* c, heck_scope* parent,
 	if (arr_type->type_name != TYPE_ARR)
 	{
 		heck_report_error(
-		    NULL, expr->fp,
+		    c, expr->fp,
 		    "cannot use array access on a non-array type");
 		return NULL;
 	}
@@ -1244,7 +1244,7 @@ heck_expr* resolve_expr_arr_access(heck_code* c, heck_scope* parent,
 	if (!data_type_is_numeric(arr_access->value->data_type))
 	{
 		heck_report_error(
-		    NULL, arr_access->value->fp,
+		    c, arr_access->value->fp,
 		    "cannot access an array element using a non-numeric type");
 		return NULL;
 	}
@@ -1290,7 +1290,7 @@ heck_expr* resolve_expr_not(heck_code* c, heck_scope* parent, heck_expr* expr)
 	if (!data_type_is_truthy(unary_expr->expr->data_type))
 	{
 		heck_report_error(
-		    NULL, expr->fp,
+		    c, expr->fp,
 		    "cannot perform operation on a non-truthy type");
 		return NULL;
 	}
@@ -1327,7 +1327,7 @@ heck_expr* resolve_expr_cast(heck_code* c, heck_scope* parent, heck_expr* expr)
 	if (data_type_exp_convertable(l_type, r_type))
 		return expr;
 
-	heck_report_error(NULL, expr->fp,
+	heck_report_error(c, expr->fp,
 			  "unable to convert from type \"{t}\" to \"{t}\"",
 			  l_type, r_type);
 
@@ -1360,7 +1360,7 @@ heck_expr* resolve_expr_mult(heck_code* c, heck_scope* parent, heck_expr* expr)
 	}
 	// TODO: check for operator overloads
 	heck_report_error(
-	    NULL, expr->fp,
+	    c, expr->fp,
 	    "cannot perform a numeric operation with types \"{t}\" and \"{t}\"",
 	    l_type, r_type);
 
@@ -1459,7 +1459,7 @@ heck_expr* resolve_expr_eq(heck_code* c, heck_scope* parent, heck_expr* expr)
 		}
 		else
 		{
-			heck_report_error(NULL, expr->fp,
+			heck_report_error(c, expr->fp,
 					  "cannot compare between values of "
 					  "type \"{t}\" and \"{t}\"",
 					  l_type, r_type);
@@ -1473,7 +1473,7 @@ heck_expr* resolve_expr_eq(heck_code* c, heck_scope* parent, heck_expr* expr)
 		if (c->str_cmp == NULL)
 		{
 			heck_report_error(
-			    NULL, expr->fp,
+			    c, expr->fp,
 			    "cannot compare strings without standard library "
 			    "function \"_str_cmp\"");
 			return NULL;
@@ -1518,7 +1518,7 @@ heck_expr* resolve_expr_and(heck_code* c, heck_scope* parent, heck_expr* expr)
 	if (!data_type_is_truthy(l_type) || !data_type_is_truthy(r_type))
 	{
 		heck_report_error(
-		    NULL, expr->fp,
+		    c, expr->fp,
 		    "cannot perform operation on a non-truthy value");
 		return NULL;
 	}
@@ -1581,7 +1581,7 @@ heck_expr* resolve_expr_asg(heck_code* c, heck_scope* parent, heck_expr* expr)
 		if (value->name->type != IDF_VARIABLE)
 		{
 			heck_report_error(
-			    NULL, expr->fp, "unable to assign to {s} {I}",
+			    c, expr->fp, "unable to assign to {s} {I}",
 			    get_idf_type_string(value->name->type), value->idf);
 			return NULL;
 		}
@@ -1611,7 +1611,7 @@ heck_expr* resolve_expr_asg(heck_code* c, heck_scope* parent, heck_expr* expr)
 	else
 	{
 		// TODO: resolve and handle other types of lvalues
-		heck_report_error(NULL, expr->fp,
+		heck_report_error(c, expr->fp,
 				  "unable to assign to expression");
 		return NULL;
 	}
@@ -1631,7 +1631,7 @@ heck_expr* resolve_expr_asg(heck_code* c, heck_scope* parent, heck_expr* expr)
 		else
 		{
 			heck_report_error(
-			    NULL, expr->fp, "unable to convert {t} to {t}",
+			    c, expr->fp, "unable to convert {t} to {t}",
 			    asg->right->data_type, asg->left->data_type);
 
 			return NULL;
